@@ -9,8 +9,9 @@ function EdgeLabel(name, info)
 
 EdgeLabel.prototype.equals = function (x)
 {
-    return  x instanceof EdgeLabel
-        && this.name === x.name;
+    return  (x instanceof EdgeLabel)
+        && this.name === x.name
+        && _.isEqual(this.info, x.info);
 }
 
 EdgeLabel.prototype.toString = function ()

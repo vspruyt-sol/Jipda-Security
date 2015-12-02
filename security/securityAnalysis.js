@@ -66,7 +66,7 @@ var graphToTriples = function(g){
 
 	for (var i = 0; i < g.initial._successors.length; i++){
 		
-		tripleStore.push(new Triple(g.initial, g.initial.node.edgelabel, g.initial._successors[i].state, true));
+		tripleStore.push(new GraphTriple(g.initial, g.initial.node.edgelabel, g.initial._successors[i].state, true));
 	}
 
 	for(var j = 0; j < tripleStore.length; j++){
@@ -84,14 +84,14 @@ var graphToTriples = function(g){
 		if(state){
 			if(state._successors.length > 0){	
 				for (var k = 0; k < state._successors.length; k++){
-					var t = new Triple(state, (state.node ? state.node.edgelabel : false) , state._successors[k].state);
+					var t = new GraphTriple(state, (state.node ? state.node.edgelabel : false) , state._successors[k].state);
 					if(!containsTriple(tripleStore,t)){
 						tripleStore.push(t);
 					}
 				}
 			}
 			else {
-				tripleStore.push(new Triple(state, new EdgeLabel('ResultState'), false, false, true));
+				tripleStore.push(new GraphTriple(state, new EdgeLabel('ResultState'), false, false, true));
 			}
 		}	
 		
@@ -125,10 +125,6 @@ function generateStates(initial){
 		});  
 	}
 }
-
-//ALGORITHM
-
-
 
 //NAVIGATION
 

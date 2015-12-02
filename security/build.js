@@ -2,7 +2,7 @@
 "use strong";
 
 
-load("edgeLabel.js");
+load("algorithm/edgeLabel.js");
 load("../lib/esprima.js");
 
 let console = {log:print}
@@ -43,4 +43,5 @@ Array.prototype.toString =
 
 
 load("securityAnalysis.js");
-load("triple.js");
+load("algorithm/dataStructures.js");
+load("algorithm/existentialQuery.js");
