@@ -4,7 +4,9 @@ function securityAnalysis(src){
 	var ast = Ast.createAst(src, {loc:true});
     var cesk = createCesk(ast);
     var system = cesk.explore(ast);
-    postComputeGraph(system.initial);
+    generateStates(system.initial);
+    //for backward nodes
+    graphToTriples(system);
 
 	//DEFINE SPECIFIC NODES
 	var variableDeclarations = findNodes(states, function(x){
@@ -37,11 +39,11 @@ function securityAnalysis(src){
 
     //mark with css classes	
 	//var fws = followingNodes(variableDeclarations[2], system.initial);
-	var next = nextNodes(variableDeclarations[2]);
-	var next2 = nextNodes(variableDeclarations[3]);
+	//var prev = previousNodes(variableDeclarations[2]);
+	//var next = nextNodes(variableDeclarations[3]);
 	//_markStates(functionCalls, 'fCall'); 
 	//_markStates(variableDeclarationsAlias, 'vDecl');
-	_markStates(next2, 'violation');
+	_markStates(prev, 'violation');
 
 	return states;
 }
@@ -51,15 +53,6 @@ function _markStates(ids, marker){
 	for(var i = 0; i < states.length; i++){
 		if(ids.indexOf(states[i]._id) > -1) states[i].marker = marker;
 	}
-}
-
-//remove, is redundant
-function _fromStateIds(states){
-	var ids = [];
-	for(var i = 0; i < states.length; i++){
-		ids.push(states[i].from._id);
-	}
-	return ids;
 }
 
 function createCesk(ast){
@@ -115,7 +108,7 @@ function containsTriple(a, obj) {
     return false;
 }
 
-function postComputeGraph(initial){
+function generateStates(initial){
 	states = [];
 	transitions = [];
 	var todo = [initial];
@@ -133,6 +126,12 @@ function postComputeGraph(initial){
 	}
 }
 
+//ALGORITHM
+
+
+
+//NAVIGATION
+
 function findNodes(g, check){
 	var result = g.map(function(x){
 		if(check(x)){
@@ -141,62 +140,6 @@ function findNodes(g, check){
 		return false;
 	});
 	return result.filter(Boolean);
-}
-
-function followingNodes(id, init){
-	//TODO: ON MERGE OF BRANCHES stoppen met descenden (1< successors)
-	//Nadat uit functie(!) stoppen met descenden
-
-	var currId = id;
-	var enc = false;
-	var done = [];
-	var following = [];
-
-	descend(init);
-	return following;
-
-	function descend(state, branch){
-		//check if skipped by other branch
-		currId = state._id;
-		//if already done: skip
-		if(done.indexOf(currId) > -1) return;
-
-		enc = enc || id === currId;
-		//if(enc && rbranch){
-		//	done.push(branch._id);
-		//}
-
-		if (enc){
-			following.push(currId);
-			if(branch && done.indexOf(branch._id) === -1) done.push(branch._id);
-			//filltoend?
-
-		}
-		
-		done.push(currId);
-		var succs = state._successors || [];
-		if (succs.length > 1){
-			if (!enc){
-				//left
-				descend(succs[0].state, succs[1].state);
-				//right
-				descend(succs[1].state, succs[0].state);
-			}
-			else{
-				descend(succs[0].state);
-				descend(succs[1].state);
-			}
-		}
-		else if (succs.length === 1){
-			//1 successor
-			descend(succs[0].state, branch);
-		}
-		else {
-			//no successors
-			return;
-		}
-
-	}
 }
 
 function nextNodes(id){
@@ -213,6 +156,26 @@ function nextNodes(id){
 	return next;
 }
 
-function previousNodes(id, triples){
+function previousNodes(id){
+	var pred = [id];
+	addPredecessors(findPredecessors(id));
 
+	function addPredecessors(ids){
+		//foreach successor add its successors
+		for(var i = 0; i < ids.length; i++){
+			pred.push(ids[i]);
+			addPredecessors(findPredecessors(ids[i]));
+		}
+	}
+
+	function findPredecessors(id){
+		var pred = [];
+		for(var i = 0; i < tripleStore.length; i++){
+			if(tripleStore[i].final) continue;
+			if(tripleStore[i].target._id === id) pred.push(tripleStore[i].from._id);
+		}
+		return pred;
+	}
+
+	return pred;
 }
