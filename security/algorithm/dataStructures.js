@@ -71,5 +71,16 @@ Theta.prototype.equals = function(x){
       && _.isEqual(this._map, x);
 }
 
+//InfoPair
+function InfoPair(name, info){
+	this.name = name;
+	this.info = info;
+}
+
+//DUMMY NODE TO CHECK ALGORITHM
+function DummyNode(id){
+	this._id = id || -1;
+}
+
 //ARRAY EQUALITY
 //http://stackoverflow.com/questions/3115982/how-to-check-if-two-arrays-are-equal-with-javascript

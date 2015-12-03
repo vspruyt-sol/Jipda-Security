@@ -10,8 +10,8 @@ function EdgeLabel(name, info)
 EdgeLabel.prototype.equals = function (x)
 {
     return  (x instanceof EdgeLabel)
-        && this.name === x.name
-        && _.isEqual(this.info, x.info);
+        && this.name === x.name;
+        //&& _.isEqual(this.info, x.info);
 }
 
 EdgeLabel.prototype.toString = function ()
@@ -25,3 +25,5 @@ EdgeLabel.prototype.toString = function ()
       return this.name;
   }
 }
+
+//TODO: om te comparen switch case van alle verschillende zaken

@@ -43,11 +43,15 @@ function securityAnalysis(src){
 	//var next = nextNodes(variableDeclarations[3]);
 	//_markStates(functionCalls, 'fCall'); 
 	//_markStates(variableDeclarationsAlias, 'vDecl');
-	_markStates(prev, 'violation');
+	//_markStates(prev, 'violation');
+	var d1 = dummyGraph();
+	var d2 = dummyLeak();
+	var eq = new ExistentialQuery(d1, d2, [d2[1]], d1[0], d2[0]);
 
 	return states;
 }
 
+//GRAPHICS
 function _markStates(ids, marker){
 	//var ids = _fromStateIds(triples);
 	for(var i = 0; i < states.length; i++){
@@ -59,7 +63,62 @@ function createCesk(ast){
 	return jsCesk({a:createTagAg(), l:new JipdaLattice()});
 }
 
-var graphToTriples = function(g){
+//SETTING UP DATA
+
+function dummyGraph(){
+	// 1 -> assignFunc(a) -> 2
+	// 2 -> fCall(a) -> 3
+	// Should be 1 -> assignFunc('a') -> x, x -> wildcard('*') -> x1, x1 -> fCall(['a']) -> y
+	return [
+		new GraphTriple(new DummyNode(1), 
+						new EdgeLabel('dummy', 		{}), 
+						new DummyNode(2)),
+		new GraphTriple(new DummyNode(2), 
+						new EdgeLabel('dummy', 		{}), 
+						new DummyNode(3)),
+		new GraphTriple(new DummyNode(3), 
+						new EdgeLabel('dummy', 		{}), 
+						new DummyNode(4)),
+		new GraphTriple(new DummyNode(5), 
+						new EdgeLabel('dummy', 		{}), 
+						new DummyNode(5)),
+		new GraphTriple(new DummyNode(5), 
+						new EdgeLabel('ExpressionStatement',	{
+																	expression: {
+																		type: 'AssignExpression',
+																		left: {
+																			name: 'a'
+																		}
+																	}
+																}), 
+						new DummyNode(6)),
+		new GraphTriple(new DummyNode(8), 
+						new EdgeLabel('CallExpression', 		{
+																	arguments: [{
+																		type: 'Literal',
+																		name: 'a'
+																	}],
+																	callee: {name: 'sink'}
+																}), 
+						new DummyNode(7)),
+	];
+}
+
+function dummyLeak(){
+	// 1 -> assignFunc(a) -> 2
+	// 2 -> fCall(a) -> 3
+	// Should be 1 -> assignFunc('a') -> x, x -> wildcard('*') -> x1, x1 -> fCall(['a']) -> y
+	return [
+		new GraphTriple(new DummyNode(1), 
+						new EdgeLabel('assign', {leftName: 'x'}), 
+						new DummyNode(2)),
+		new GraphTriple(new DummyNode(2), 
+						new EdgeLabel('fCall', 	{argument: 'x', callee: 'callee'}), 
+						new DummyNode(3))
+	];
+}
+
+function graphToTriples(g){
 	//initialization
 	tripleStore = [];
 	var doneList = [];
@@ -99,15 +158,6 @@ var graphToTriples = function(g){
 	return tripleStore;
 }
 
-function containsTriple(a, obj) {
-    for (var i = 0; i < a.length; i++) {
-        if (a[i].equals(obj)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 function generateStates(initial){
 	states = [];
 	transitions = [];
@@ -125,6 +175,20 @@ function generateStates(initial){
 		});  
 	}
 }
+
+
+//UTILITIES
+
+function containsTriple(a, obj) {
+    for (var i = 0; i < a.length; i++) {
+        if (a[i].equals(obj)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 
 //NAVIGATION
 

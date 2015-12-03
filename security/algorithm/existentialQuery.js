@@ -65,11 +65,74 @@ ExistentialQuery.prototype.match = function(el, tl){
 	//TODO
 	//tl zal iets zijn als: type, occurence(1,+ of *), parameters afhankelijk van type
 	//el is de edgelabel met zelfde info als node in een state.
-	return [];
+	//el bevat alle informatie, tl partial
+	var _map = {};
+	console.log(tl.name);
+	switch(tl.name){
+		case 'assign'		: return this.matchAssign(el, tl); break;
+		case 'fCall'		: return this.matchFCall(el, tl); break;
+		case 'dummy'		: break;
+		default:
+			throw "Can not handle 'tl.name'. Source: ExistentialQuery.match(el, tl)"
+	}
+	return _map; //substitution
 }
+
+// MATCHING
+// TODO BLOCKSTATEMENTS MET 1 ELEMENT
+ExistentialQuery.prototype.matchAssign = function(el, tl){
+	//tl can contain fields for: 
+	//leftName
+	var elInfo = el.info;
+	var tlInfo = tl.info;
+	var _map = {};
+	if(el.name === 'ExpressionStatement' && elInfo.expression.type === 'AssignExpression'){
+		if(tlInfo.leftName) _map[tlInfo.leftName] = elInfo.expression.left.name;
+	}
+	console.log('matchAssign:');
+	console.log(_map);
+	return _map;
+}
+
+ExistentialQuery.prototype.matchFCall = function(el, tl){
+	//tl can contain fields for: 
+	//argument
+	//callee
+	var elInfo = el.info;
+	var tlInfo = tl.info;
+
+	var argumentFirstLiteral = function(args){
+		for(var i = 0; i < args.length; i++){
+			if(args[i].type === 'Literal') return args[i].name;
+		}
+	return false;
+	}
+
+	var _map = {};
+	//Momenteel voor arguments enkel ondersteuning voor literals & single argument
+	if(el.name === 'CallExpression'){
+		if (tlInfo.argument) _map[tlInfo.argument] = argumentFirstLiteral(elInfo.arguments);
+		if (tlInfo.callee) _map[tlInfo.callee] = elInfo.callee.name;
+	}
+	else if(el.name === 'ExpressionStatement' && elInfo.expression.type === 'CallExpression'){
+		if (tlInfo.argument) _map[tlInfo.argument] = argumentFirstLiteral(elInfo.expression.arguments);
+		if (tlInfo.callee) _map[tlInfo.callee] = elInfo.expression.callee.name;
+	}
+	else if(el.name === 'BlockStatement' && elInfo.body.length === 1 
+			&& elInfo.body[0].type === 'ExpressionStatement' 
+			&& elInfo.body[0].expression.type === 'CallExpression'){
+		if (tlInfo.argument) _map[tlInfo.argument] = argumentFirstLiteral(elInfo.body[0].expression.arguments);
+		if (tlInfo.callee) _map[tlInfo.callee] = elInfo.body[0].expression.callee.name;
+	}
+	return _map; //substitution
+}
+// END MATCHING
 
 ExistentialQuery.prototype.merge = function(theta, otherTheta){
 	//TODO
+	//(1) undefined if any two substitutions in S disagree on the mapping 
+	//of any variable in the intersection of their domains and 
+	//(2) the union of the substitutions in S otherwise.
 	return [];
 }
 
