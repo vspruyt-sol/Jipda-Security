@@ -46,7 +46,7 @@ function securityAnalysis(src){
 	//_markStates(prev, 'violation');
 	var d1 = dummyGraph();
 	var d2 = dummyLeak();
-	var eq = new ExistentialQuery(d1, d2, [d2[1]], d1[0], d2[0]);
+	var eq = new ExistentialQuery(d1, d2, [d2[1].target], d1[0], d2[0]);
 
 	return states;
 }

@@ -12,9 +12,9 @@ function GraphTriple(fromState, edgeLabel, toState, initial, final){
 GraphTriple.prototype.equals = function(x){
 	//TODO
     return (x instanceof GraphTriple)
-      && this.from.equals(x.from)
-      && this.edge.equals(x.edge)
-      && this.target.equals(x.target);
+      && (this.from === x.from || this.from.equals(x.from))
+      && (this.edge === x.edge || this.edge.equals(x.edge))
+      && (this.target === x.target || this.target.equals(x.target));
 }
 
 GraphTriple.prototype.toString = function(x){
@@ -35,12 +35,23 @@ function WorklistTriple(v, s, theta){
 	this.theta = theta;
 }
 
-WorklistTriple.prototype.equals = function(x){
+WorklistTriple.prototype.equals = function(x){ //OK
 	//TODO
     return (x instanceof WorklistTriple)
-      && this.v === x.v
+      && (this.v === x.v || this.v.equals(x.v))
       && (this.s === x.s || this.s.equals(x.s))
-      && this.theta.equals(x.theta);
+      && (this.theta === x.theta || _.isEqual(this.theta, x.theta));
+}
+
+WorklistTriple.prototype.toString = function(){ //OK
+	//TODO
+    var str = this.v.toString() + '& ' + this.s.toString() + ' {';
+    for(var prop in this.theta){
+    	if(this.theta.hasOwnProperty(prop)){
+    		str += prop + ' -> ' + this.theta[prop] + ', ';
+    	}
+    }
+    return str.substring(0, str.length - 2) + '}';
 }
 
 //VertexThetaPair
@@ -51,36 +62,38 @@ function VertexThetaPair(v, theta){
 
 VertexThetaPair.prototype.equals = function(x){
 	//TODO
-    return (x instanceof VertexThetapair)
-      && this.v === x.v
-      && this.theta.equals(x.theta);
+    return (x instanceof VertexThetaPair)
+      && (this.v === x.v || this.v.equals(x.v))
+      && (this.theta === x.theta || _.isEqual(this.theta, x.theta));
 }
 
-//Theta
-function Theta(map){
-	this._map = map || {};
-}
-
-Theta.prototype.substitute = function(toSubstitute){
-	return this._map[toSubstitute] || false;
-}
-
-Theta.prototype.equals = function(x){
-	//TODO
-    return (x instanceof Theta)
-      && _.isEqual(this._map, x);
-}
-
-//InfoPair
-function InfoPair(name, info){
-	this.name = name;
-	this.info = info;
+VertexThetaPair.prototype.toString = function(){
+    var str = this.v.toString() + ' {';
+    var props = false;
+    for(var prop in this.theta){
+    	if(this.theta.hasOwnProperty(prop)){
+    		props = true;
+    		str += prop + ' -> ' + this.theta[prop] + ', ';
+    	}
+    }
+    str = props ?  str.substring(0, str.length - 2) : str;
+    return  str + '}';
 }
 
 //DUMMY NODE TO CHECK ALGORITHM
 function DummyNode(id){
 	this._id = id || -1;
 }
+
+DummyNode.prototype.equals = function(x){
+	return this._id === x._id;
+}
+
+DummyNode.prototype.toString = function(){
+	return this._id;
+}
+
+
 
 //ARRAY EQUALITY
 //http://stackoverflow.com/questions/3115982/how-to-check-if-two-arrays-are-equal-with-javascript
