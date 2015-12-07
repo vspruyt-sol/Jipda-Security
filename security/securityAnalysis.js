@@ -46,7 +46,7 @@ function securityAnalysis(src){
 	//_markStates(prev, 'violation');
 	var d1 = dummyGraph();
 	var d2 = dummyLeak();
-	var eq = new ExistentialQuery(d1, d2, [d2[1].target], d1[0], d2[0]);
+	var eq = new ExistentialQuery(d1, d2, [d2[1].target], d1[0].from, d2[0].from);
 
 	return states;
 }
@@ -74,15 +74,6 @@ function dummyGraph(){
 						new EdgeLabel('dummy', 		{}), 
 						new DummyNode(2)),
 		new GraphTriple(new DummyNode(2), 
-						new EdgeLabel('dummy', 		{}), 
-						new DummyNode(3)),
-		new GraphTriple(new DummyNode(3), 
-						new EdgeLabel('dummy', 		{}), 
-						new DummyNode(4)),
-		new GraphTriple(new DummyNode(5), 
-						new EdgeLabel('dummy', 		{}), 
-						new DummyNode(5)),
-		new GraphTriple(new DummyNode(5), 
 						new EdgeLabel('ExpressionStatement',	{
 																	expression: {
 																		type: 'AssignExpression',
@@ -91,8 +82,8 @@ function dummyGraph(){
 																		}
 																	}
 																}), 
-						new DummyNode(6)),
-		new GraphTriple(new DummyNode(8), 
+						new DummyNode(3)),
+		new GraphTriple(new DummyNode(3), 
 						new EdgeLabel('CallExpression', 		{
 																	arguments: [{
 																		type: 'Literal',
@@ -100,7 +91,7 @@ function dummyGraph(){
 																	}],
 																	callee: {name: 'sink'}
 																}), 
-						new DummyNode(7)),
+						new DummyNode(4)),
 	];
 }
 

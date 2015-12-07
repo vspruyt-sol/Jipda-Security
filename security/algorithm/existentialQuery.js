@@ -26,17 +26,21 @@ ExistentialQuery.prototype.run = function(){
 	var W = [];
 	for(var i = 0; i < this.G.length; i++){
 		tripleG = this.G[i];
-		for(var j = 0; j < this.P.length; j++){
-			tripleP = this.P[j];
-			theta = this.match(tripleG.edge,tripleP.edge); //PROBLEEM: RETURNT {...}, moet array zijn? 
-			for(var k = 0; k < theta.length; k++){
-				W = this.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
+		if(tripleG.from.equals(this.v0)){ //v0?
+			for(var j = 0; j < this.P.length; j++){
+				tripleP = this.P[j];
+				if(tripleP.from.equals(this.s0)){ //s0?
+					theta = this.match(tripleG.edge,tripleP.edge); 
+					for(var k = 0; k < theta.length; k++){
+						W = this.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
+					}
+					//for(var property in theta){
+					//	if(theta.hasOwnProperty(property)){
+					//		W = this.union(W, [new WorklistTriple(tripleG.target, tripleP.target, ))])
+					//	}
+					//}
+				}
 			}
-			//for(var property in theta){
-			//	if(theta.hasOwnProperty(property)){
-			//		W = this.union(W, [new WorklistTriple(tripleG.target, tripleP.target, ))])
-			//	}
-			//}
 		}
 	}
 	//return W; //SHOULDNT BE HERE
@@ -59,7 +63,6 @@ ExistentialQuery.prototype.run = function(){
 							tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
 							if(!this.contains(R, tripleTemp)){
 								W = this.union(W, [tripleTemp]);
-								
 							}
 						}
 					//}
@@ -82,12 +85,18 @@ ExistentialQuery.prototype.match = function(el, tl){
 	var substitutions = [];
 	var _map = {};
 	switch(tl.name){
-		case 'assign'		: substitutions.push(this.matchAssign(el, tl)); break;
-		case 'fCall'		: substitutions.push(this.matchFCall(el, tl)); break;
-		case 'dummy'		: break;
+		case 'assign'		: 	_map = this.matchAssign(el, tl); 
+								break;
+		case 'fCall'		: 	_map = this.matchFCall(el, tl); 
+								break;
+		case 'dummy'		: 	_map = {};
+								break;
 		default:
 			throw "Can not handle 'tl.name'. Source: ExistentialQuery.match(el, tl)"
 	}
+	//if(!Object.keys(_map).lenght === 0)
+	//if(_.keys(_map).length > 0) {console.log('tet');substitutions.push(_map);}
+	//console.log(_map);
 	substitutions.push(_map);
 	return substitutions; //substitution
 }
@@ -104,6 +113,7 @@ ExistentialQuery.prototype.matchAssign = function(el, tl){
 	if(el.name === 'ExpressionStatement' && elInfo.expression.type === 'AssignExpression'){
 		if(tlInfo.leftName) _map[tlInfo.leftName] = elInfo.expression.left.name;
 	}
+
 	return _map;
 }
 
