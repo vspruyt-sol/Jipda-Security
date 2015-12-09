@@ -34,42 +34,43 @@ ExistentialQuery.prototype.run = function(){
 					for(var k = 0; k < theta.length; k++){
 						W = this.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
 					}
-					//for(var property in theta){
-					//	if(theta.hasOwnProperty(property)){
-					//		W = this.union(W, [new WorklistTriple(tripleG.target, tripleP.target, ))])
-					//	}
-					//}
 				}
 			}
 		}
 	}
-	//return W; //SHOULDNT BE HERE
-
 	var E = [];
 	while(W.length > 0){
 		tripleW = W.pop();
 		R = this.union(R, [tripleW]);
-		//W = this.removeTriple(W, tripleW); //DONE BY POP()!
 		for(var i = 0; i < this.G.length; i++){
 			tripleG = this.G[i];
-			for(var j = 0; j < this.P.length; j++){
-				tripleP = this.P[j];
-				theta = this.match(tripleG.edge,tripleP.edge);
-				//for(var property in theta){
-				for(var k = 0; k < theta.length; k++){
-					//if(theta.hasOwnProperty(property)){
-						theta2 = this.merge(tripleW.theta, theta[k])
-						if(theta2){
-							tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
-							if(!this.contains(R, tripleTemp)){
-								W = this.union(W, [tripleTemp]);
+			console.log('tripleG: ' + tripleG.toString());
+			if(tripleG.from.equals(tripleW.v)){ //KLOPT DIT WEL????
+				for(var j = 0; j < this.P.length; j++){
+					tripleP = this.P[j];	
+					console.log('tripleP: '+tripleP.toString());		
+					if(tripleP.from.equals(tripleW.s)){ //KLOPT DIT WEL????
+						theta = this.match(tripleG.edge,tripleP.edge); //theta = [[{x:a},{callee:sink}]]
+						//for(var property in theta){
+						for(var k = 0; k < theta.length; k++){
+							theta2 = this.merge(tripleW.theta, theta[k]);
+							if(theta2){
+								tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
+								if(!this.contains(R, tripleTemp)){
+									console.log('added to worklist:' + tripleTemp.toString())
+									W = this.union(W, [tripleTemp]);
+									//console.log(W.toString());
+								}
 							}
-						}
-					//}
-				}//end for
-			} //end for 
+						}//end for
+					}
+				} //end for 
+			}
 		} //end for
+		console.log('IfContains: ' + tripleW.s);
 		if(this.contains(this.F, tripleW.s)){
+			console.log('contains');
+			//TODO: unionMerge && equality theta's
 			E = this.union(E, [new VertexThetaPair(tripleW.v, tripleW.theta)]);
 		}
 	} //end while
@@ -83,21 +84,23 @@ ExistentialQuery.prototype.match = function(el, tl){
 	//no negations but can be very large otherwise. For example, match(use(a),¬use(x)) is the set of 
 	//substitutions of the form {x 􏰀→ b}, where b is any symbol other than a.
 	var substitutions = [];
-	var _map = {};
+	var _map = [];
 	switch(tl.name){
-		case 'assign'		: 	_map = this.matchAssign(el, tl); 
+		case 'assign'		: 	_map = this.matchAssign(el, tl);
 								break;
 		case 'fCall'		: 	_map = this.matchFCall(el, tl); 
 								break;
-		case 'dummy'		: 	_map = {};
+		case 'dummy'		: 	_map = [];
 								break;
 		default:
 			throw "Can not handle 'tl.name'. Source: ExistentialQuery.match(el, tl)"
 	}
+	//console.log(substitutions);
+	substitutions.push(_map);
 	//if(!Object.keys(_map).lenght === 0)
 	//if(_.keys(_map).length > 0) {console.log('tet');substitutions.push(_map);}
 	//console.log(_map);
-	substitutions.push(_map);
+	//substitutions.push(_map);
 	return substitutions; //substitution
 }
 
@@ -109,12 +112,18 @@ ExistentialQuery.prototype.matchAssign = function(el, tl){
 	//leftName
 	var elInfo = el.info;
 	var tlInfo = tl.info;
+	var subst = [];
 	var _map = {};
 	if(el.name === 'ExpressionStatement' && elInfo.expression.type === 'AssignExpression'){
-		if(tlInfo.leftName) _map[tlInfo.leftName] = elInfo.expression.left.name;
+		if(tlInfo.leftName) {
+			//_map[tlInfo.leftName] = elInfo.expression.left.name;
+			var obj = {};
+			obj[tlInfo.leftName] = elInfo.expression.left.name;
+			subst.push(obj);
+		}
 	}
 
-	return _map;
+	return subst;
 }
 
 ExistentialQuery.prototype.matchFCall = function(el, tl){
@@ -130,24 +139,56 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 		}
 	return false;
 	}
-
+	var subst = [];
 	var _map = {};
 	//Momenteel voor arguments enkel ondersteuning voor literals & single argument
 	if(el.name === 'CallExpression'){
-		if (tlInfo.argument) _map[tlInfo.argument] = argumentFirstLiteral(elInfo.arguments);
-		if (tlInfo.callee) _map[tlInfo.callee] = elInfo.callee.name;
+		if (tlInfo.argument) {
+			var obj = {}; 
+			obj[tlInfo.argument] = argumentFirstLiteral(elInfo.arguments); 
+			subst.push(obj);
+			//_map[tlInfo.argument] = argumentFirstLiteral(elInfo.arguments);
+		}
+		if (tlInfo.callee){
+			var obj = {}; 
+			obj[tlInfo.callee] = elInfo.callee.name; 
+			subst.push(obj);
+			//_map[tlInfo.callee] = elInfo.callee.name;
+		}
 	}
 	else if(el.name === 'ExpressionStatement' && elInfo.expression.type === 'CallExpression'){
-		if (tlInfo.argument) _map[tlInfo.argument] = argumentFirstLiteral(elInfo.expression.arguments);
-		if (tlInfo.callee) _map[tlInfo.callee] = elInfo.expression.callee.name;
+		if (tlInfo.argument) {
+			var obj = {}; 
+			obj[tlInfo.argument] = argumentFirstLiteral(elInfo.expression.arguments); 
+			subst.push(obj);
+			//_map[tlInfo.argument] = argumentFirstLiteral(elInfo.expression.arguments);
+		}	
+		if (tlInfo.callee){
+			var obj = {}; 
+			obj[tlInfo.callee] = elInfo.expression.callee.name; 
+			subst.push(obj);
+			//_map[tlInfo.callee] = elInfo.expression.callee.name;
+		}
 	}
 	else if(el.name === 'BlockStatement' && elInfo.body.length === 1 
 			&& elInfo.body[0].type === 'ExpressionStatement' 
 			&& elInfo.body[0].expression.type === 'CallExpression'){
-		if (tlInfo.argument) _map[tlInfo.argument] = argumentFirstLiteral(elInfo.body[0].expression.arguments);
-		if (tlInfo.callee) _map[tlInfo.callee] = elInfo.body[0].expression.callee.name;
+
+		if (tlInfo.argument) {
+			var obj = {}; 
+			obj[tlInfo.argument] = argumentFirstLiteral(elInfo.body[0].expression.arguments); 
+			subst.push(obj);
+			//_map[tlInfo.argument] = argumentFirstLiteral(elInfo.body[0].expression.arguments);
+		}
+		if (tlInfo.argument) {
+			var obj = {}; 
+			obj[tlInfo.callee] =  elInfo.body[0].expression.callee.name ;
+			subst.push(obj);
+			//_map[tlInfo.callee] = elInfo.body[0].expression.callee.name;
+		}
+		//
 	}
-	return _map; //substitution
+	return subst; //substitution
 }
 // END MATCHING
 
@@ -157,7 +198,7 @@ ExistentialQuery.prototype.merge = function(theta, otherTheta){
 	//of any variable in the intersection of their domains and 
 	//(2) the union of the substitutions in S otherwise.
 	//iterate over set 1
-	for (var property in theta) {
+	/*for (var property in theta) {
 	    if (theta.hasOwnProperty(property)) {
 	        if(otherTheta[property]){
 	        	if(otherTheta[property] !== theta[property]) return false;
@@ -168,7 +209,45 @@ ExistentialQuery.prototype.merge = function(theta, otherTheta){
 	    }
 	}
 
-	return otherTheta;
+	return otherTheta;*/
+	var res = [];
+	function mergeIterate(theta, otherTheta){
+		var p;
+		for(var i = 0; i < theta.length; i++){
+			for(var prop in theta[i]){
+				if(theta[i].hasOwnProperty(prop)){
+					p = findProp(otherTheta, prop);
+					if(p){ //if property found, they need to match
+						if(!(p === theta[i][prop])){
+							return false;
+						}
+					}
+					else if(_.keys(theta[i]).length > 0){//not found
+						otherTheta.push(theta[i]);
+					}
+				}
+			}
+		}
+		return otherTheta;
+	}
+
+	function findProp(arr, prop){
+		for(var i = 0; i <  arr.length; i++){
+			for(var property in arr[i]){
+				if(arr[i].hasOwnProperty(property)){
+					if(property === prop) return arr[i][property];
+				}
+			}
+		}
+		return false;
+	}
+
+
+
+	res = mergeIterate(theta, otherTheta);
+	
+
+	return res;
 }
 
 ExistentialQuery.prototype.union = function(set, otherSet, debug){

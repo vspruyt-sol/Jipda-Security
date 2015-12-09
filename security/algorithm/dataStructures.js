@@ -45,11 +45,14 @@ WorklistTriple.prototype.equals = function(x){ //OK
 
 WorklistTriple.prototype.toString = function(){ //OK
 	//TODO
-    var str = this.v.toString() + '& ' + this.s.toString() + ' {';
-    for(var prop in this.theta){
-    	if(this.theta.hasOwnProperty(prop)){
-    		str += prop + ' -> ' + this.theta[prop] + ', ';
-    	}
+    var str = this.v.toString() + ' & ' + this.s.toString() + ' {';
+    for(var i = 0; i < this.theta.length; i++){
+      for(var prop in this.theta[i]){
+        if(this.theta[i].hasOwnProperty(prop)){
+          props = true;
+          str += prop + ' -> ' + this.theta[i][prop] + ', ';
+        }
+      }
     }
     return str.substring(0, str.length - 2) + '}';
 }
@@ -60,22 +63,62 @@ function VertexThetaPair(v, theta){
 	this.theta = theta;
 }
 
+//node, [{x:a},{y:b}]
 VertexThetaPair.prototype.equals = function(x){
-	//TODO
+  //TODO
     return (x instanceof VertexThetaPair)
       && (this.v === x.v || this.v.equals(x.v))
-      && (this.theta === x.theta || _.isEqual(this.theta, x.theta));
+      //&& true; //TODO Equality of array
+      && (this.theta === x.theta || this.equalTheta(this.theta, x.theta)); //also equal if subsumes?
+}
+
+VertexThetaPair.prototype.equalTheta = function(theta, otherTheta){
+    function iterate(theta, otherTheta){
+      var p;
+      for(var i = 0; i < theta.length; i++){
+        for(var prop in theta[i]){
+          if(theta[i].hasOwnProperty(prop)){
+            p = findProp(otherTheta, prop);
+            if(p){ //if property found, they need to match
+              if(!(p === theta[i][prop])){
+                return false;
+              }
+            }
+            else {//not found
+              return false;
+            }
+          }
+        }
+      }
+      return true;
+    }
+
+    function findProp(arr, prop){
+      for(var i = 0; i <  arr.length; i++){
+        for(var property in arr[i]){
+          if(arr[i].hasOwnProperty(property)){
+            if(property === prop) return arr[i][property];
+          }
+        }
+      }
+      return false;
+    }
+
+    return iterate(theta, otherTheta);
 }
 
 VertexThetaPair.prototype.toString = function(){
     var str = this.v.toString() + ' {';
     var props = false;
-    for(var prop in this.theta){
-    	if(this.theta.hasOwnProperty(prop)){
-    		props = true;
-    		str += prop + ' -> ' + this.theta[prop] + ', ';
-    	}
+    for(var i = 0; i < this.theta.length; i++){
+      for(var prop in this.theta[i]){
+        if(this.theta[i].hasOwnProperty(prop)){
+          props = true;
+          str += prop + ' -> ' + this.theta[i][prop] + ', ';
+        }
+      }
     }
+    
     str = props ?  str.substring(0, str.length - 2) : str;
     return  str + '}';
 }
