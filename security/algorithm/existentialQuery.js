@@ -1,5 +1,3 @@
-//TODO: MEMOIZATION & PRECOMPUTATION
-
 /*
  * G = States van JIPDA graph
  * P = Pattern (RPE)
@@ -46,15 +44,13 @@ ExistentialQuery.prototype.runNaive = function(){
 				for(var j = 0; j < this.P.length; j++){
 					tripleP = this.P[j];		
 					if(tripleP.from.equals(tripleW.s)){ //KLOPT DIT WEL????
-						theta = this.match(tripleG.edge,tripleP.edge); //theta = [[{x:a},{callee:sink}]]
-						//for(var property in theta){
+						theta = this.match(tripleG.edge,tripleP.edge); //theta = [[{x:a},{callee:sink}]]	
 						for(var k = 0; k < theta.length; k++){
 							theta2 = this.merge(tripleW.theta, theta[k]);
 							if(theta2){
 								tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
 								if(!this.contains(R, tripleTemp)){
 									W = this.union(W, [tripleTemp]);
-									//console.log(W.toString());
 								}
 							}
 						}//end for
@@ -159,6 +155,8 @@ ExistentialQuery.prototype.match = function(el, tl){
 		case 'fCall'		: 	_map = this.matchFCall(el, tl); 
 								break;
 		case 'wildcard'		: 	_map = []; 
+								break;
+		case 'nop'		: 	_map = []; 
 								break;
 		case 'dummy'		: 	_map = [];
 								break;

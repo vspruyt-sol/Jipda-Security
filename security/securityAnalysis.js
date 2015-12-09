@@ -90,7 +90,7 @@ function dummyGraph(){
 																	expression: {
 																		type: 'AssignExpression',
 																		left: {
-																			name: 'x'
+																			name: 'a'
 																		}
 																	}
 																}), 
@@ -123,15 +123,13 @@ function dummyGraph(){
 }
 
 function dummyLeak(){
-	// 1 -> assignFunc(a) -> 2
-	// 2 -> fCall(a) -> 3
-	// Should be 1 -> assignFunc('a') -> x, x -> wildcard('*') -> x1, x1 -> fCall(['a']) -> y
+	//  var eq = new ExistentialQuery(d1, d2, [d2[2].target], d1[2].from, d2[0].from);
 	return [
 		new GraphTriple(new DummyNode(1), 
 						new EdgeLabel('fCall', 	{argument: 'x', callee: 'callee'}), 
 						new DummyNode(2)),
 		new GraphTriple(new DummyNode(2), 
-						new EdgeLabel('assign', {leftName: 'x'}), 
+						new EdgeLabel('assign', {leftName: '_'}), 
 						new DummyNode(3)),
 		//new GraphTriple(new DummyNode(2), 
 		//				new EdgeLabel('wildcard', {}), 
@@ -145,6 +143,54 @@ function dummyLeak(){
 		new GraphTriple(new DummyNode(3), 
 						new EdgeLabel('fCall', 	{argument: 'x', callee: 'callee'}), 
 						new DummyNode(4))
+	];
+}
+
+function dummyStarTest(){ 
+	// var eq = new ExistentialQuery(d1, d2, [d2[4].target], d1[2].from, d2[0].from);
+	return [
+		new GraphTriple(new DummyNode(1), 
+						new EdgeLabel('wildcard', 	{}), 
+						new DummyNode(2)),
+		new GraphTriple(new DummyNode(2), 
+						new EdgeLabel('wildcard', 	{}), 
+						new DummyNode(2)),
+		new GraphTriple(new DummyNode(2), 
+						new EdgeLabel('assign', {leftName: 'x'}), 
+						new DummyNode(3)),
+		new GraphTriple(new DummyNode(1), 
+						new EdgeLabel('assign', {leftName: 'x'}), 
+						new DummyNode(3)),
+		new GraphTriple(new DummyNode(3), 
+						new EdgeLabel('fCall', 	{argument: 'x', callee: 'callee'}), 
+						new DummyNode(4)),
+	];
+}
+
+function dummyStarTest2(){ //same as dummyStarTest but other form
+	// var eq = new ExistentialQuery(d1, d2, [d2[4].target], d1[2].from, d2[0].from);
+	return [
+		new GraphTriple(new DummyNode(0), 
+						new EdgeLabel('nop', 	{}), 
+						new DummyNode(1)),
+		new GraphTriple(new DummyNode(2), 
+						new EdgeLabel('nop', 	{}), 
+						new DummyNode(3)),
+		new GraphTriple(new DummyNode(1), 
+						new EdgeLabel('wildcard', 	{}), 
+						new DummyNode(2)),
+		new GraphTriple(new DummyNode(3), 
+						new EdgeLabel('assign', {leftName: 'x'}), 
+						new DummyNode(4)),
+		new GraphTriple(new DummyNode(4), 
+						new EdgeLabel('fCall', 	{argument: 'x', callee: 'callee'}), 
+						new DummyNode(5)),
+		new GraphTriple(new DummyNode(2), 
+						new EdgeLabel('nop', 	{}), 
+						new DummyNode(1)),
+		new GraphTriple(new DummyNode(0), 
+						new EdgeLabel('nop', 	{}), 
+						new DummyNode(3)),
 	];
 }
 
