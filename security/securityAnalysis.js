@@ -46,7 +46,7 @@ function securityAnalysis(src){
 	//_markStates(prev, 'violation');
 	var d1 = dummyGraph();
 	var d2 = dummyLeak();
-	var eq = new ExistentialQuery(d1, d2, [d2[1].target], d1[2].from, d2[0].from);
+	var eq = new ExistentialQuery(d1, d2, [d2[2].target], d1[2].from, d2[0].from);
 
 	return states;
 }
@@ -77,16 +77,6 @@ function dummyGraph(){
 						new EdgeLabel('dummy', 		{}), 
 						new DummyNode(3)),
 		new GraphTriple(new DummyNode(3), 
-						new EdgeLabel('ExpressionStatement',	{
-																	expression: {
-																		type: 'AssignExpression',
-																		left: {
-																			name: 'a'
-																		}
-																	}
-																}), 
-						new DummyNode(4)),
-		new GraphTriple(new DummyNode(4), 
 						new EdgeLabel('CallExpression', 		{
 																	arguments: [{
 																		type: 'Literal',
@@ -94,8 +84,27 @@ function dummyGraph(){
 																	}],
 																	callee: {name: 'sink'}
 																}), 
+						new DummyNode(4)),
+		new GraphTriple(new DummyNode(4), 
+						new EdgeLabel('ExpressionStatement',	{
+																	expression: {
+																		type: 'AssignExpression',
+																		left: {
+																			name: 'x'
+																		}
+																	}
+																}), 
 						new DummyNode(5)),
-		new GraphTriple(new DummyNode(4), //simulate branching
+		new GraphTriple(new DummyNode(5), 
+						new EdgeLabel('CallExpression', 		{
+																	arguments: [{
+																		type: 'Literal',
+																		name: 'a'
+																	}],
+																	callee: {name: 'sink'}
+																}), 
+						new DummyNode(6)),
+		new GraphTriple(new DummyNode(5), 
 						new EdgeLabel('CallExpression', 		{
 																	arguments: [{
 																		type: 'Literal',
@@ -103,7 +112,13 @@ function dummyGraph(){
 																	}],
 																	callee: {name: 'sink2'}
 																}), 
-						new DummyNode(6)),
+						new DummyNode(7)),
+		new GraphTriple(new DummyNode(6), 
+						new EdgeLabel('dummy', 		{}), 
+						new DummyNode(8)),
+		new GraphTriple(new DummyNode(7), 
+						new EdgeLabel('dummy', 		{}), 
+						new DummyNode(8)),
 	];
 }
 
@@ -113,11 +128,23 @@ function dummyLeak(){
 	// Should be 1 -> assignFunc('a') -> x, x -> wildcard('*') -> x1, x1 -> fCall(['a']) -> y
 	return [
 		new GraphTriple(new DummyNode(1), 
-						new EdgeLabel('assign', {leftName: 'x'}), 
+						new EdgeLabel('fCall', 	{argument: 'x', callee: 'callee'}), 
 						new DummyNode(2)),
 		new GraphTriple(new DummyNode(2), 
+						new EdgeLabel('assign', {leftName: 'x'}), 
+						new DummyNode(3)),
+		//new GraphTriple(new DummyNode(2), 
+		//				new EdgeLabel('wildcard', {}), 
+		//				new DummyNode(3)),
+		//new GraphTriple(new DummyNode(1), 
+		//				new EdgeLabel('fCall', 	{argument: 'x', callee: 'callee'}), 
+		//				new DummyNode(3)),
+		//new GraphTriple(new DummyNode(2), 
+		//				new EdgeLabel('assign', {leftName: 'x'}), 
+		//				new DummyNode(2)),
+		new GraphTriple(new DummyNode(3), 
 						new EdgeLabel('fCall', 	{argument: 'x', callee: 'callee'}), 
-						new DummyNode(3))
+						new DummyNode(4))
 	];
 }
 

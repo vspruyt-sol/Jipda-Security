@@ -1,5 +1,3 @@
-//TODO: equality!
-
 //GraphTriple
 function GraphTriple(fromState, edgeLabel, toState, initial, final){
 	this.from = fromState;
@@ -40,7 +38,7 @@ WorklistTriple.prototype.equals = function(x){ //OK
     return (x instanceof WorklistTriple)
       && (this.v === x.v || this.v.equals(x.v))
       && (this.s === x.s || this.s.equals(x.s))
-      && (this.theta === x.theta || _.isEqual(this.theta, x.theta));
+      && (this.theta === x.theta || equalTheta(this.theta, x.theta));
 }
 
 WorklistTriple.prototype.toString = function(){ //OK
@@ -71,8 +69,68 @@ VertexThetaPair.prototype.equals = function(x){
       //&& true; //TODO Equality of array
       && (this.theta === x.theta || this.equalTheta(this.theta, x.theta)); //also equal if subsumes?
 }
+VertexThetaPair.prototype.toString = function(){
+    var str = this.v.toString() + ' {';
+    var props = false;
+    for(var i = 0; i < this.theta.length; i++){
+      for(var prop in this.theta[i]){
+        if(this.theta[i].hasOwnProperty(prop)){
+          props = true;
+          str += prop + ' -> ' + this.theta[i][prop] + ', ';
+        }
+      }
+    }
+    
+    str = props ?  str.substring(0, str.length - 2) : str;
+    return  str + '}';
+}
 
-VertexThetaPair.prototype.equalTheta = function(theta, otherTheta){
+//DUMMY NODE TO CHECK ALGORITHM
+function DummyNode(id){
+	this._id = id || -1;
+}
+
+DummyNode.prototype.equals = function(x){
+	return this._id === x._id;
+}
+
+DummyNode.prototype.toString = function(){
+	return this._id;
+}
+
+//Vertexpair for memoization
+function VertexPair(v, s){
+  this.v = v;
+  this.s = s;
+}
+
+VertexPair.prototype.equals = function(x){
+  
+  return (x instanceof VertexPair)
+      && (this.v === x.v || this.v.equals(x.v))
+      && (this.s === x.s || this.s.equals(x.s));
+}
+
+//Quintuple
+function Quintuple(vfrom, sfrom, vto, sto, theta){
+  this.vfrom = vfrom; 
+  this.sfrom = sfrom;
+  this.vto = vto;
+  this.sto = sto;
+  this.theta = theta;
+}
+
+Quintuple.prototype.equals = function(x){
+  return (x instanceof Quintuple)
+      && (this.vfrom === x.vfrom || this.vfrom.equals(x.vfrom))
+      && (this.sfrom === x.sfrom || this.sfrom.equals(x.sfrom))
+      && (this.vto === x.vto || this.vto.equals(x.vto))
+      && (this.sto === x.sto || this.sto.equals(x.sto))
+      && (this.theta === x.theta || equalTheta(this.theta, x.theta));
+}
+
+//UTILITIES
+var equalTheta = function(theta, otherTheta){
     function iterate(theta, otherTheta){
       var p;
       for(var i = 0; i < theta.length; i++){
@@ -106,36 +164,6 @@ VertexThetaPair.prototype.equalTheta = function(theta, otherTheta){
 
     return iterate(theta, otherTheta);
 }
-
-VertexThetaPair.prototype.toString = function(){
-    var str = this.v.toString() + ' {';
-    var props = false;
-    for(var i = 0; i < this.theta.length; i++){
-      for(var prop in this.theta[i]){
-        if(this.theta[i].hasOwnProperty(prop)){
-          props = true;
-          str += prop + ' -> ' + this.theta[i][prop] + ', ';
-        }
-      }
-    }
-    
-    str = props ?  str.substring(0, str.length - 2) : str;
-    return  str + '}';
-}
-
-//DUMMY NODE TO CHECK ALGORITHM
-function DummyNode(id){
-	this._id = id || -1;
-}
-
-DummyNode.prototype.equals = function(x){
-	return this._id === x._id;
-}
-
-DummyNode.prototype.toString = function(){
-	return this._id;
-}
-
 
 
 //ARRAY EQUALITY
