@@ -156,8 +156,6 @@ ExistentialQuery.prototype.match = function(el, tl){
 								break;
 		case 'wildcard'		: 	_map = []; 
 								break;
-		case 'nop'		: 	_map = []; 
-								break;
 		case 'dummy'		: 	_map = [];
 								break;
 		default:
@@ -186,7 +184,7 @@ ExistentialQuery.prototype.matchAssign = function(el, tl){
 	//leftName
 	var elInfo = el.info;
 	var tlInfo = tl.info;
-	var subst = [];
+	var subst = [{}];
 	var _map = {};
 	if(el.name === 'ExpressionStatement' && elInfo.expression.type === 'AssignExpression'){
 		if(!this.isWildCard(tlInfo.leftName)) {
@@ -213,7 +211,7 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 		}
 	return false;
 	}
-	var subst = [];
+	var subst = [{}];
 	var _map = {};
 	//Momenteel voor arguments enkel ondersteuning voor literals & single argument
 	if(el.name === 'CallExpression'){
