@@ -87,7 +87,7 @@ VertexThetaPair.prototype.toString = function(){
 
 //DUMMY NODE TO CHECK ALGORITHM
 function DummyNode(id){
-	this._id = id || -1;
+	this._id = id || 0;
 }
 
 DummyNode.prototype.equals = function(x){

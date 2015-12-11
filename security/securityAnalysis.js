@@ -109,29 +109,31 @@ function dummyGraph(){
 																}), 
 						new DummyNode(4)),
 		new GraphTriple(new DummyNode(3), 
-						new EdgeLabel('CallExpression', 		{
-																	arguments: [{
-																		type: 'Literal',
-																		name: 'a'
-																	}],
-																	callee: {name: 'sinkA'}
+						new EdgeLabel('ExpressionStatement',	{
+																	expression: {
+																		type: 'AssignExpression',
+																		left: {
+																			name: 'a'
+																		}
+																	}
 																}), 
 						new DummyNode(5)),
 		new GraphTriple(new DummyNode(4), 
-						new EdgeLabel('CallExpression', 		{
-																	arguments: [{
-																		type: 'Literal',
-																		name: 'a'
-																	}],
-																	callee: {name: 'sinkB'}
-																}),
+						new EdgeLabel('ExpressionStatement',	{
+																	expression: {
+																		type: 'AssignExpression',
+																		left: {
+																			name: 'a'
+																		}
+																	}
+																}), 
 						new DummyNode(5)),
 		new GraphTriple(new DummyNode(5), 
 						new EdgeLabel('ExpressionStatement',	{
 																	expression: {
 																		type: 'AssignExpression',
 																		left: {
-																			name: 'b'
+																			name: 'a'
 																		}
 																	}
 																}), 
@@ -149,7 +151,7 @@ function dummyLeak(){
 						new EdgeLabel('fCall', 	{argument: 'x', callee: 'callee'}), 
 						new DummyNode(3)),
 		new GraphTriple(new DummyNode(3), 
-						new EdgeLabel('fCall', 	{argument: 'x', callee: 'callee'}), 
+						new EdgeLabel('assign', {leftName: 'x'}), 
 						new DummyNode(4))
 	];
 }
@@ -157,10 +159,10 @@ function dummyLeak(){
 function dummyNFA(){ 
 	// var d1 = dummyGraph();
 	// var d2 = dummyNFA();
-	// var eq = new ExistentialQuery(d1, d2, [d2[6].target], d1[0].from, d2[0].from);
+	// var eq = new ExistentialQuery(d1, d2, [new DummyNode(5)], d1[0].from, d2[0].from);
 	// var z = eq.runNaive();
 	// z.toString();
-	// assign(y)*.fCall(y,callee)
+	// assign(y)*.fCall(y,callee).assign(y)
 	return [
 		new GraphTriple(new DummyNode(0), 
 						new EdgeLabel('nop', {}), 
@@ -173,39 +175,16 @@ function dummyNFA(){
 						new DummyNode(1)),
 		new GraphTriple(new DummyNode(2), 
 						new EdgeLabel('nop', {}), 
-						new DummyNode(3)), //end nop
+						new DummyNode(3)),
 		new GraphTriple(new DummyNode(1), 
-						new EdgeLabel('assign', 	{leftName : 'y'}), 
+						new EdgeLabel('assign', 	{leftName : 'x'}), 
 						new DummyNode(2)),
 		new GraphTriple(new DummyNode(3), 
-						new EdgeLabel('fCall', 		{argument: 'y', callee: 'callee'}), 
+						new EdgeLabel('fCall', 		{argument: 'x', callee: 'callee'}), 
 						new DummyNode(4)),
 		new GraphTriple(new DummyNode(4), 
-						new EdgeLabel('assign', 	{leftName: 'y'}), 
+						new EdgeLabel('assign', 	{leftName: 'x'}), 
 						new DummyNode(5)),
-	];
-}
-
-function dummyDFA(){ 
-	// var d1 = dummyGraph();
-	// var d2 = dummyNFA();
-	// var eq = new ExistentialQuery(d1, d2, [d2[3].target], d1[0].from, d2[0].from);
-	// var z = eq.runNaive();
-	// z.toString();
-	//assign(y)*.fCall(y,callee)
-	return [
-		new GraphTriple(new DummyNode(1), 
-						new EdgeLabel('assign', 	{leftName : 'y'}), 
-						new DummyNode(2)),
-		new GraphTriple(new DummyNode(2), 
-						new EdgeLabel('assign', 	{leftName : 'y'}), 
-						new DummyNode(2)),
-		new GraphTriple(new DummyNode(2), 
-						new EdgeLabel('fCall', {argument: 'y', callee: 'callee'}), 
-						new DummyNode(3)),
-		new GraphTriple(new DummyNode(1), 
-						new EdgeLabel('fCall', {argument: 'y', callee: 'callee'}), 
-						new DummyNode(3)),
 	];
 }
 

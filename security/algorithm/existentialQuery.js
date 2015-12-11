@@ -29,22 +29,33 @@ ExistentialQuery.prototype.runNaive = function(){
 				if(tripleP.from.equals(this.s0)){ //s0?
 					//CHECK NOP
 					theta = this.match(tripleG.edge,tripleP.edge);
-					if(tripleP.edge.name === 'nop'){
-						W = this.union(W, [new WorklistTriple(tripleG.from, tripleP.target, theta[0])]);
+					tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);
+					if(tripleP.edge.name === 'nop' && !this.contains(R, tripleTemp)){
+						W = this.union(W, [tripleTemp]);
+						console.log(tripleTemp.v);
+						console.log(tripleTemp.s);
+						console.log(tripleTemp.theta);
+						console.log('_____');
 					}
-					else{
+					//else{
 						for(var k = 0; k < theta.length; k++){
 							W = this.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
+							console.log(tripleG.target);
+							console.log(tripleP.target);
+							console.log(theta[k]);
+							console.log('_____');
 						}
-					}
+					//}
 				}
 			}
 		}
 	}
+	console.log('stop initial');
 	var E = [];
 	while(W.length > 0){
 		tripleW = W.pop();
 		R = this.union(R, [tripleW]);
+		console.log('new WorklistTriple');
 		for(var i = 0; i < this.G.length; i++){
 			tripleG = this.G[i];
 			if(tripleG.from.equals(tripleW.v)){ //KLOPT DIT WEL????
@@ -52,25 +63,37 @@ ExistentialQuery.prototype.runNaive = function(){
 					tripleP = this.P[j];		
 					if(tripleP.from.equals(tripleW.s)){ //KLOPT DIT WEL????
 						//CHECK NOP
-						theta = this.match(tripleG.edge,tripleP.edge); //theta = [[{x:a},{callee:sink}]]	
-						if(tripleP.edge.name === 'nop'){
-							W = this.union(W, [new WorklistTriple(tripleG.from, tripleP.target, theta[0])]);
+						theta = this.match(tripleG.edge,tripleP.edge); //theta = [[{x:a},{callee:sink}]]
+						tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);	
+						if(tripleP.edge.name === 'nop' && !this.contains(R, tripleTemp)){
+							console.log(tripleW.v);
+							console.log(tripleW.s);
+							console.log(tripleW.theta);
+							console.log('_____');
+							W = this.union(W, [tripleTemp]);
 						}
-						for(var k = 0; k < theta.length; k++){
-							theta2 = this.merge(tripleW.theta, theta[k]);
-							if(theta2){
-								tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
-								if(!this.contains(R, tripleTemp)){
-									W = this.union(W, [tripleTemp]);
+						//else{
+							for(var k = 0; k < theta.length; k++){
+								theta2 = this.merge(tripleW.theta, theta[k]);
+								if(theta2){
+									tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
+									if(!this.contains(R, tripleTemp)){
+										console.log(tripleW.v);
+										console.log(tripleW.s);
+										console.log(tripleW.theta);
+										console.log('_____');
+										W = this.union(W, [tripleTemp]);
+									}
 								}
-							}
-						}//end for
+							}//end for
+						//}
 					}
 				} //end for 
 			}
 		} //end for
+		
 		if(this.contains(this.F, tripleW.s)){
-			//TODO: unionMerge && equality theta's
+			console.log('added triple to E');
 			E = this.union(E, [new VertexThetaPair(tripleW.v, tripleW.theta)]);
 		}
 	} //end while
@@ -186,7 +209,6 @@ ExistentialQuery.prototype.match = function(el, tl){
 // MATCHING
 
 ExistentialQuery.prototype.isWildCard = function(x){
-	console.log(x + ' ' + (x==='_'));
 	return x && (x === '_'); 
 }
 
@@ -197,7 +219,7 @@ ExistentialQuery.prototype.matchAssign = function(el, tl){
 	//leftName
 	var elInfo = el.info;
 	var tlInfo = tl.info;
-	var subst = [{}];
+	var subst = [];
 	var _map = {};
 	if(el.name === 'ExpressionStatement' && elInfo.expression.type === 'AssignExpression'){
 		if(!this.isWildCard(tlInfo.leftName)) {
@@ -224,7 +246,7 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 		}
 	return false;
 	}
-	var subst = [{}];
+	var subst = [];
 	var _map = {};
 	//Momenteel voor arguments enkel ondersteuning voor literals & single argument
 	if(el.name === 'CallExpression'){
@@ -344,6 +366,7 @@ ExistentialQuery.prototype.merge = function(theta, otherTheta){
 		}
 	}*/
 	res = mergeIterate(theta, otherTheta);
+
 	return res;
 }
 
