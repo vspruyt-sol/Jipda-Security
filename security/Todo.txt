@@ -1,0 +1,9 @@
+TODO:
+- JIPDA graph omzetten met edge info
+- Algo negatie/grouping/or
+-> Negatie in algo, or in graph
+- Uitbreiden detection van edges
+- Regex
+- Regex -> automaton
+- SecurityPolicy(regex, ...)
+- (data flow)?

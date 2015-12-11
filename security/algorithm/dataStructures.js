@@ -67,7 +67,7 @@ VertexThetaPair.prototype.equals = function(x){
     return (x instanceof VertexThetaPair)
       && (this.v === x.v || this.v.equals(x.v))
       //&& true; //TODO Equality of array
-      && (this.theta === x.theta || this.equalTheta(this.theta, x.theta)); //also equal if subsumes?
+      && (this.theta === x.theta || equalTheta(this.theta, x.theta)); //also equal if subsumes?
 }
 VertexThetaPair.prototype.toString = function(){
     var str = this.v.toString() + ' {';

@@ -13,6 +13,7 @@ function ExistentialQuery(G, P, F, v0, s0){
 	this.s0 = s0;	
 }
 
+//HANDLE NOP?
 ExistentialQuery.prototype.runNaive = function(){
 	//used variables
 	var tripleG, tripleP, theta, theta2,
@@ -26,9 +27,15 @@ ExistentialQuery.prototype.runNaive = function(){
 			for(var j = 0; j < this.P.length; j++){
 				tripleP = this.P[j];
 				if(tripleP.from.equals(this.s0)){ //s0?
-					theta = this.match(tripleG.edge,tripleP.edge); 
-					for(var k = 0; k < theta.length; k++){
-						W = this.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
+					//CHECK NOP
+					theta = this.match(tripleG.edge,tripleP.edge);
+					if(tripleP.edge.name === 'nop'){
+						W = this.union(W, [new WorklistTriple(tripleG.from, tripleP.target, theta[0])]);
+					}
+					else{
+						for(var k = 0; k < theta.length; k++){
+							W = this.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
+						}
 					}
 				}
 			}
@@ -44,7 +51,11 @@ ExistentialQuery.prototype.runNaive = function(){
 				for(var j = 0; j < this.P.length; j++){
 					tripleP = this.P[j];		
 					if(tripleP.from.equals(tripleW.s)){ //KLOPT DIT WEL????
+						//CHECK NOP
 						theta = this.match(tripleG.edge,tripleP.edge); //theta = [[{x:a},{callee:sink}]]	
+						if(tripleP.edge.name === 'nop'){
+							W = this.union(W, [new WorklistTriple(tripleG.from, tripleP.target, theta[0])]);
+						}
 						for(var k = 0; k < theta.length; k++){
 							theta2 = this.merge(tripleW.theta, theta[k]);
 							if(theta2){
@@ -156,10 +167,12 @@ ExistentialQuery.prototype.match = function(el, tl){
 								break;
 		case 'wildcard'		: 	_map = []; 
 								break;
+		case 'nop'			: 	_map = []; 
+								break;
 		case 'dummy'		: 	_map = [];
 								break;
 		default:
-			throw "Can not handle 'tl.name'. Source: ExistentialQuery.match(el, tl)"
+			throw "Can not handle 'tl.name': " + tl.name + ". Source: ExistentialQuery.match(el, tl)"
 	}
 	//console.log(substitutions);
 	substitutions.push(_map);

@@ -45,3 +45,4 @@ Array.prototype.toString =
 load("securityAnalysis.js");
 load("algorithm/dataStructures.js");
 load("algorithm/existentialQuery.js");
+load("algorithm/regularPathExpression.js");
