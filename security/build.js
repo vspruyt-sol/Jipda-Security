@@ -2,7 +2,6 @@
 "use strong";
 
 
-load("algorithm/edgeLabel.js");
 load("../lib/esprima.js");
 
 let console = {log:print}

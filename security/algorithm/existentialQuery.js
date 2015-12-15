@@ -32,30 +32,20 @@ ExistentialQuery.prototype.runNaive = function(){
 					tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);
 					if(tripleP.edge.name === 'nop' && !this.contains(R, tripleTemp)){
 						W = this.union(W, [tripleTemp]);
-						console.log(tripleTemp.v);
-						console.log(tripleTemp.s);
-						console.log(tripleTemp.theta);
-						console.log('_____');
 					}
 					//else{
 						for(var k = 0; k < theta.length; k++){
 							W = this.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
-							console.log(tripleG.target);
-							console.log(tripleP.target);
-							console.log(theta[k]);
-							console.log('_____');
 						}
 					//}
 				}
 			}
 		}
 	}
-	console.log('stop initial');
 	var E = [];
 	while(W.length > 0){
 		tripleW = W.pop();
 		R = this.union(R, [tripleW]);
-		console.log('new WorklistTriple');
 		for(var i = 0; i < this.G.length; i++){
 			tripleG = this.G[i];
 			if(tripleG.from.equals(tripleW.v)){ //KLOPT DIT WEL????
@@ -66,10 +56,6 @@ ExistentialQuery.prototype.runNaive = function(){
 						theta = this.match(tripleG.edge,tripleP.edge); //theta = [[{x:a},{callee:sink}]]
 						tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);	
 						if(tripleP.edge.name === 'nop' && !this.contains(R, tripleTemp)){
-							console.log(tripleW.v);
-							console.log(tripleW.s);
-							console.log(tripleW.theta);
-							console.log('_____');
 							W = this.union(W, [tripleTemp]);
 						}
 						//else{
@@ -78,10 +64,6 @@ ExistentialQuery.prototype.runNaive = function(){
 								if(theta2){
 									tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
 									if(!this.contains(R, tripleTemp)){
-										console.log(tripleW.v);
-										console.log(tripleW.s);
-										console.log(tripleW.theta);
-										console.log('_____');
 										W = this.union(W, [tripleTemp]);
 									}
 								}
@@ -93,7 +75,6 @@ ExistentialQuery.prototype.runNaive = function(){
 		} //end for
 		
 		if(this.contains(this.F, tripleW.s)){
-			console.log('added triple to E');
 			E = this.union(E, [new VertexThetaPair(tripleW.v, tripleW.theta)]);
 		}
 	} //end while
@@ -217,11 +198,11 @@ ExistentialQuery.prototype.isWildCard = function(x){
 ExistentialQuery.prototype.matchAssign = function(el, tl){
 	//tl can contain fields for: 
 	//leftName
-	var elInfo = el.info;
-	var tlInfo = tl.info;
+	var elInfo = el.node;
+	var tlInfo = tl.state;
 	var subst = [];
 	var _map = {};
-	if(el.name === 'ExpressionStatement' && elInfo.expression.type === 'AssignExpression'){
+	if(elInfo && el.name === 'ExpressionStatement' && elInfo.expression.type === 'AssignExpression'){
 		if(!this.isWildCard(tlInfo.leftName)) {
 			//_map[tlInfo.leftName] = elInfo.expression.left.name;
 			var obj = {};
@@ -237,8 +218,9 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 	//tl can contain fields for: 
 	//argument
 	//callee
-	var elInfo = el.info;
-	var tlInfo = tl.info;
+	console.log(el);
+	var elInfo = el.node;
+	var tlInfo = tl.state;
 
 	var argumentFirstLiteral = function(args){
 		for(var i = 0; i < args.length; i++){
@@ -249,7 +231,7 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 	var subst = [];
 	var _map = {};
 	//Momenteel voor arguments enkel ondersteuning voor literals & single argument
-	if(el.name === 'CallExpression'){
+	if(elInfo && el.name === 'CallExpression'){
 		if (!this.isWildCard(tlInfo.argument)) {
 			var obj = {}; 
 			obj[tlInfo.argument] = argumentFirstLiteral(elInfo.arguments); 
@@ -263,7 +245,7 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 			//_map[tlInfo.callee] = elInfo.callee.name;
 		}
 	}
-	else if(el.name === 'ExpressionStatement' && elInfo.expression.type === 'CallExpression'){
+	else if(elInfo && el.name === 'ExpressionStatement' && elInfo.expression.type === 'CallExpression'){
 		if (!this.isWildCard(tlInfo.argument)) {
 			var obj = {}; 
 			obj[tlInfo.argument] = argumentFirstLiteral(elInfo.expression.arguments); 
@@ -277,7 +259,7 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 			//_map[tlInfo.callee] = elInfo.expression.callee.name;
 		}
 	}
-	else if(el.name === 'BlockStatement' && elInfo.body.length === 1 
+	else if(elInfo && el.name === 'BlockStatement' && elInfo.body.length === 1 
 			&& elInfo.body[0].type === 'ExpressionStatement' 
 			&& elInfo.body[0].expression.type === 'CallExpression'){
 

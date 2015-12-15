@@ -1,8 +1,26 @@
+//EdgeLabel
+function EdgeLabel(name, state)
+{
+  this.name = name || (state.node? state.node.type : '');
+  //Node to get more info
+  //this.node = node || false;
+  //store info
+  this.state = state;
+}
+
+EdgeLabel.prototype.equals = function (x)
+{
+    return  (x instanceof EdgeLabel)
+        && this.name === x.name
+        && this.state._id === x.state._id || this.state.equals(x.state);
+        //&& _.isEqual(this.info, x.info);
+}
+
 //GraphTriple
-function GraphTriple(fromState, edgeLabel, toState, initial, final){
-	this.from = fromState;
+function GraphTriple(fromNode, edgeLabel, toNode, initial, final){
+	this.from = fromNode;
 	this.edge = edgeLabel;
-	this.target = toState;
+	this.target = toNode;
 	this.initial = initial || false;
 	this.final = final || false;
 }
@@ -19,7 +37,7 @@ GraphTriple.prototype.toString = function(x){
 	var prefix = this.initial ? 'initial: ' : (this.final ? 'final: ' : '');
 	var fts = '(' + this.from._id + ')';
 	if(!this.final){
-		var elts = '--' + (this.edge ? this.edge.name : '') + '-->';
+		var elts = '--' + (this.edge.node ? this.edge.node.type : '') + '-->';
 		var tts = '(' + this.target._id + ')';
 		return prefix + fts + elts + tts;
 	}

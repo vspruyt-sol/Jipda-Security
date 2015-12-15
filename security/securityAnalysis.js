@@ -5,48 +5,8 @@ function securityAnalysis(src){
     var cesk = createCesk(ast);
     var system = cesk.explore(ast);
     generateStates(system.initial);
-    //for backward nodes
+
     graphToTriples(system);
-
-	//DEFINE SPECIFIC NODES
-	var variableDeclarations = findNodes(states, function(x){
-		return 	(x.node
-				&& x.node.type === 'VariableDeclaration');
-	});
-
-	var variableDeclarationsNoValues = findNodes(states, function(x){
-		return 	(x.node
-				&& x.node.type === 'VariableDeclaration'
-				&& !x.node.declarations[0].init);
-	});
-
-	var variableDeclarationsAlias = findNodes(states, function(x){
-		return 	(x.node && x.node.declarations && x.node.declarations[0].init
-				&& x.node.type === 'VariableDeclaration'
-				&& x.node.declarations[0].init.type === 'Identifier'
-				);
-	});
-
-	var functionCalls = findNodes(states, function(x){
-		return 	(x.node
-			&&  ((x.node.type === 'CallExpression')
-				||	(x.node.type === 'ExpressionStatement' && x.node.expression.type === 'CallExpression')
-				||	(x.node.type === 'BlockStatement' && x.node.body.length === 1 
-													  && x.node.body[0].type === 'ExpressionStatement' 
-													  && x.node.body[0].expression.type === 'CallExpression' )));
-	});
-	//END SPECIFIC NODES
-
-    //mark with css classes	
-	//var fws = followingNodes(variableDeclarations[2], system.initial);
-	//var prev = previousNodes(variableDeclarations[2]);
-	//var next = nextNodes(variableDeclarations[3]);
-	//_markStates(functionCalls, 'fCall'); 
-	//_markStates(variableDeclarationsAlias, 'vDecl');
-	//_markStates(prev, 'violation');
-	var d1 = dummyGraph();
-	var d2 = dummyLeak();
-	var eq = new ExistentialQuery(d1, d2, [d2[2].target], d1[2].from, d2[0].from);
 
 	return states;
 }
@@ -65,138 +25,18 @@ function createCesk(ast){
 
 //SETTING UP DATA
 
-function dummyGraph(){
-	// 1 -> assignFunc(a) -> 2
-	// 2 -> fCall(a) -> 3
-	// Should be 1 -> assignFunc('a') -> x, x -> wildcard('*') -> x1, x1 -> fCall(['a']) -> y
-	return [
-		new GraphTriple(new DummyNode(0), 
-						new EdgeLabel('ExpressionStatement',	{
-																	expression: {
-																		type: 'AssignExpression',
-																		left: {
-																			name: 'a'
-																		}
-																	}
-																}), 
-						new DummyNode(1)),
-		new GraphTriple(new DummyNode(1), 
-						new EdgeLabel('ExpressionStatement',	{
-																	expression: {
-																		type: 'AssignExpression',
-																		left: {
-																			name: 'a'
-																		}
-																	}
-																}), 
-						new DummyNode(2)),
-		new GraphTriple(new DummyNode(2), 
-						new EdgeLabel('CallExpression', 		{
-																	arguments: [{
-																		type: 'Literal',
-																		name: 'a'
-																	}],
-																	callee: {name: 'sink2'}
-																}), 
-						new DummyNode(3)),
-		new GraphTriple(new DummyNode(2), 
-						new EdgeLabel('CallExpression', 		{
-																	arguments: [{
-																		type: 'Literal',
-																		name: 'a'
-																	}],
-																	callee: {name: 'sink'}
-																}), 
-						new DummyNode(4)),
-		new GraphTriple(new DummyNode(3), 
-						new EdgeLabel('ExpressionStatement',	{
-																	expression: {
-																		type: 'AssignExpression',
-																		left: {
-																			name: 'a'
-																		}
-																	}
-																}), 
-						new DummyNode(5)),
-		new GraphTriple(new DummyNode(4), 
-						new EdgeLabel('ExpressionStatement',	{
-																	expression: {
-																		type: 'AssignExpression',
-																		left: {
-																			name: 'a'
-																		}
-																	}
-																}), 
-						new DummyNode(5)),
-		new GraphTriple(new DummyNode(5), 
-						new EdgeLabel('ExpressionStatement',	{
-																	expression: {
-																		type: 'AssignExpression',
-																		left: {
-																			name: 'a'
-																		}
-																	}
-																}), 
-						new DummyNode(6)),
-	];
-}
-
-function dummyLeak(){
-	//  var eq = new ExistentialQuery(d1, d2, [d2[2].target], d1[0].from, d2[0].from);
-	return [
-		new GraphTriple(new DummyNode(1), 
-						new EdgeLabel('assign', {leftName: 'x'}), 
-						new DummyNode(2)),
-		new GraphTriple(new DummyNode(2), 
-						new EdgeLabel('fCall', 	{argument: 'x', callee: 'callee'}), 
-						new DummyNode(3)),
-		new GraphTriple(new DummyNode(3), 
-						new EdgeLabel('assign', {leftName: 'x'}), 
-						new DummyNode(4))
-	];
-}
-
-function dummyNFA(){ 
-	// var d1 = dummyGraph();
-	// var d2 = dummyNFA();
-	// var eq = new ExistentialQuery(d1, d2, [new DummyNode(5)], d1[0].from, d2[0].from);
-	// var z = eq.runNaive();
-	// z.toString();
-	// assign(y)*.fCall(y,callee).assign(y)
-	return [
-		new GraphTriple(new DummyNode(0), 
-						new EdgeLabel('nop', {}), 
-						new DummyNode(1)),
-		new GraphTriple(new DummyNode(0), 
-						new EdgeLabel('nop', {}), 
-						new DummyNode(3)),
-		new GraphTriple(new DummyNode(2), 
-						new EdgeLabel('nop', {}), 
-						new DummyNode(1)),
-		new GraphTriple(new DummyNode(2), 
-						new EdgeLabel('nop', {}), 
-						new DummyNode(3)),
-		new GraphTriple(new DummyNode(1), 
-						new EdgeLabel('assign', 	{leftName : 'x'}), 
-						new DummyNode(2)),
-		new GraphTriple(new DummyNode(3), 
-						new EdgeLabel('fCall', 		{argument: 'x', callee: 'callee'}), 
-						new DummyNode(4)),
-		new GraphTriple(new DummyNode(4), 
-						new EdgeLabel('assign', 	{leftName: 'x'}), 
-						new DummyNode(5)),
-	];
-}
-
 function graphToTriples(g){
 	//initialization
 	tripleStore = [];
 	var doneList = [];
+	var t;
 
-	for (var i = 0; i < g.initial._successors.length; i++){
-		
-		tripleStore.push(new GraphTriple(g.initial, g.initial.node.edgelabel, g.initial._successors[i].state, true));
-	}
+	//initial node only has 1 successor
+	tripleStore.push(new GraphTriple(
+			new DummyNode(g.initial._id), 
+			g.initial, 
+			new DummyNode(g.initial._successors[0].state._id), true)
+	);
 
 	for(var j = 0; j < tripleStore.length; j++){
 		
@@ -209,21 +49,35 @@ function graphToTriples(g){
 		//avoid infinite loops
 		doneList.push(triple);		
 
-		var state = triple.target;
-		if(state){
-			if(state._successors.length > 0){	
-				for (var k = 0; k < state._successors.length; k++){
-					var t = new GraphTriple(state, (state.node ? state.node.edgelabel : false) , state._successors[k].state);
-					if(!containsTriple(tripleStore,t)){
-						tripleStore.push(t);
+		var state = triple.edge;
+		
+		
+			for (var k = 0; k < state._successors.length; k++){
+				var tState = state._successors[k].state;
+				if(tState._successors.length > 0){ 
+					for (var h = 0; h < tState._successors.length; h++){
+						t = new GraphTriple(
+								new DummyNode(tState._id), 
+								tState,
+								new DummyNode(tState._successors[h].state._id)
+							);
+						if(!containsTriple(tripleStore,t)){
+							tripleStore.push(t);
+						}
 					}
 				}
-			}
-			else {
-				tripleStore.push(new GraphTriple(state, new EdgeLabel('ResultState'), false, false, true));
-			}
-		}	
-		
+				// else{
+				// 	tripleStore.push(new GraphTriple(
+				// 						new DummyNode(tState._id),
+				// 						tState, 
+				// 						false, 
+				// 						false, 
+				// 						true
+				// 					)
+				// 	);
+				// }
+				
+			}		
 	}
 	return tripleStore;
 }
@@ -308,4 +162,45 @@ function previousNodes(id){
 	}
 
 	return pred;
+}
+
+
+//Navigation example
+function findNodesExample(){
+	//DEFINE SPECIFIC NODES
+	var variableDeclarations = findNodes(states, function(x){
+		return 	(x.node
+				&& x.node.type === 'VariableDeclaration');
+	});
+
+	var variableDeclarationsNoValues = findNodes(states, function(x){
+		return 	(x.node
+				&& x.node.type === 'VariableDeclaration'
+				&& !x.node.declarations[0].init);
+	});
+
+	var variableDeclarationsAlias = findNodes(states, function(x){
+		return 	(x.node && x.node.declarations && x.node.declarations[0].init
+				&& x.node.type === 'VariableDeclaration'
+				&& x.node.declarations[0].init.type === 'Identifier'
+				);
+	});
+
+	var functionCalls = findNodes(states, function(x){
+		return 	(x.node
+			&&  ((x.node.type === 'CallExpression')
+				||	(x.node.type === 'ExpressionStatement' && x.node.expression.type === 'CallExpression')
+				||	(x.node.type === 'BlockStatement' && x.node.body.length === 1 
+													  && x.node.body[0].type === 'ExpressionStatement' 
+													  && x.node.body[0].expression.type === 'CallExpression' )));
+	});
+	//END SPECIFIC NODES
+
+    //mark with css classes	
+	//var fws = followingNodes(variableDeclarations[2], system.initial);
+	//var prev = previousNodes(variableDeclarations[2]);
+	//var next = nextNodes(variableDeclarations[3]);
+	//_markStates(functionCalls, 'fCall'); 
+	//_markStates(variableDeclarationsAlias, 'vDecl');
+	//_markStates(prev, 'violation');
 }
