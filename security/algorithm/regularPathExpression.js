@@ -1,6 +1,4 @@
 function RegularPathExpression(){ 
-	this.expression = [];
-
 	//Index x represents edge with label 'x' in the NFA 
 	this._map = [];
 	//Check braces

@@ -30,10 +30,30 @@ html
   overflow: auto;
 }
 
+
+
 #editor .CodeMirror
 {
   resize: none;
-  height: 60%;
+  height: 40%;
+}
+
+.ui-p{
+  margin-top: 5px;
+}
+
+#input{
+  display: none;
+}
+
+#regex .codeMirror
+{
+  resize: none;
+  height: 40%;
+}
+
+#detect{
+  float: right;
 }
 
 #left a:link
@@ -59,6 +79,8 @@ html
 {
   max-height: 20%;  
   overflow: auto;
+  color: #e00702;
+  font-weight: bold;
 }
 
 #output pre
