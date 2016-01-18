@@ -54,8 +54,17 @@ ThompsonConstruction.prototype.catify = function(machines){
 }
 
 ThompsonConstruction.prototype.handleAlternation = function(machines){
+	machines = absorbLeftAlternation(machines);
+    return absorbRightAlternation(machines);
+}
+
+ThompsonConstruction.prototype.absorbLeftAlternation = function(machines){
 	//TODO
 }
+
+ThompsonConstruction.prototype.absorbRightAlternation = function(machines){
+	//TODO
+} 
 
 /**
  * HELPERS
@@ -63,6 +72,10 @@ ThompsonConstruction.prototype.handleAlternation = function(machines){
 
 //BEWARE: USE ONLY IF OBJECT HAS PROPERTIES THAT ONLY YOU HAVE DEFINED 
 //E.g. var x = {prop1: '1', prop2: '2'} would be fine.
-function keyAt = function(obj, idx){
+var keyAt = function(obj, idx){
 	return obj[Object.keys(obj)[idx]];
 }
+
+var clone = function(obj){
+	return JSON.parse(JSON.stringify(obj));
+} 
