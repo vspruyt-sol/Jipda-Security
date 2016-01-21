@@ -41,8 +41,60 @@ ThompsonConstruction.prototype.toNFA = function(){
     return new FiniteStateMachine(orig.acceptStates, orig.graph);
 }
 
+//TODO: Clean up escaped chars
 ThompsonConstruction.prototype.buildMachineStack = function(regex){
-	//TODO
+	//Regex is an array of RegexPart's
+	var skip = 0;
+    //var escaped = false;
+    var machines = [];
+    var regexPart, nextChar, succRegexPart, nextSuccChar, subExpression, nestingDepth, subGraph, charClass;
+    for(var i = 0; i < regex.length; i++){
+    	if(skip > 0){ //Advance pointer until past () group
+    		skip--;
+    		continue; //Next iteration
+    	}
+    	regexPart = regex[i];
+    	nextChar = regexPart.symbol; //TODO SYMBOL TABLE
+    	//if(escaped){
+    	//	switch(nextChar){
+    	//		case 'n': machines.push([CAT_MACHINE("\n"),     null]); break;
+    	//		default : machines.push([CAT_MACHINE(nextChar), null]); break;
+    	//	}
+    	//	escaped = false; 
+    	//	continue; //Next iteration
+    	//}
+
+    	switch(nextChar){
+    		case '*': machines.push([KLEENE_MACHINE(), 	[1,2]]); 		break;
+    		case '+': machines.push([PLUS_MACHINE(), 	[1,2]]); 		break;
+			case '|': machines.push([ALT_MACHINE(), 	[1,2,3,4]]);	break;
+    		
+    		case ')': throw 'Closed paren before opening it.'
+			case '(': subExpression = [];
+					  nestingDepth = 0;
+					  succRegexPart = regex[++i]; //Pointer incremented correctly?
+					  nextSuccChar = succRegexPart.symbol;
+					  while(nextSuccChar !== ')' && nestingDepth !== 0){
+					  	if(nextSuccChar === ')') nestingDepth -= 1;
+					  	if(nextSuccChar === '(') nestingDepth += 1;
+					  	subExpression.push(succRegexPart);
+					  }
+					  subGraph = toNFA(subExpression);
+					  skip = subExpression.length + 1;
+					  machines.push([subGraph, null]);
+    				  break;
+    		//THESE COULD BE ADDED TO SUPPORT CHARACTER CLASSES.
+    		//case ']': throw 'Closed bracket before opening it.'
+    		//case '[': charClass = getCharClass(); //ARGUMENT is range: regex[ii..-1] (SYMBOL, tot aan 0 dus)
+        	//		  machines.push([CAT_MACHINE(charClass), nil])
+        	//		  skip = charClassss.length - 1 + charClass.match(\\).length //Compensate for 2 backslashes counting as 1
+    		//case '\\':break; //TODO: do some escaping logic, not needed here.
+    		default:  machines.push([CAT_MACHINE(nextChar), null]);
+    				  break;
+    	}
+
+    }
+    return machines;
 }
 
 ThompsonConstruction.prototype.kleeneUp = function(machines){
@@ -64,7 +116,7 @@ ThompsonConstruction.prototype.absorbLeftAlternation = function(machines){
 
 ThompsonConstruction.prototype.absorbRightAlternation = function(machines){
 	//TODO
-} 
+}
 
 /**
  * HELPERS
