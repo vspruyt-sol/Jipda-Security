@@ -1,4 +1,5 @@
 TODO: 
 - Regex conversion
+- REPLACE EDGE HANDLELEFTALTERNATION!
 - Symbol table voor regex
 - Negatie

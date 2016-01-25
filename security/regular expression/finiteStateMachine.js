@@ -1,6 +1,8 @@
 function FiniteStateMachine(acceptStates, graph){
 	this.acceptStates = acceptStates;
 	this.graph = graph;
+
+	//TODO INITIALIZE
 }
 
 FiniteStateMachine.prototype.getNodeCount = function(){
@@ -13,6 +15,10 @@ FiniteStateMachine.prototype.impAttachGraph = function(){
 }
 
 FiniteStateMachine.prototype.deleteEdge = function(from, edge, to){
+	//TODO
+}
+
+FiniteStateMachine.prototype.replaceEdge = function(from, edge, to, graph){
 	//TODO
 }
 
