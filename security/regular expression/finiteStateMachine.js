@@ -8,7 +8,7 @@ FiniteStateMachine.prototype.getNodeCount = function(){
 	return this.getNodeNames().length;
 }
 
-FiniteStateMachine.getNodeNames = function(){
+FiniteStateMachine.prototype.getNodeNames = function(){
 	var nodes = [];
 	for (var key in this.graph){
 		nodes.push(key);
