@@ -1,6 +1,7 @@
-function FiniteStateMachine(acceptStates, graph){
+function FiniteStateMachine(acceptStates, graph, origin){
 	this.acceptStates = acceptStates || {};
 	this.graph = graph || {}; //TODO: Should I make a separate 'class' for node->edge->node connections?
+	this.origin = origin || 0;
 }
 
 FiniteStateMachine.prototype.getNodeCount = function(){
@@ -19,19 +20,32 @@ FiniteStateMachine.getNodeNames = function(){
 	//return nodes.getUnique();
 }
 
-FiniteStateMachine.prototype.impAttachGraph = function(attachPoint, fsm){
+FiniteStateMachine.prototype.attachGraph = function(attachPoint, fsm){
 	//TODO
-	my_node_count = get_node_count
-    graft = fsm.clone
-    graft.increment_node_labels(my_node_count-1) # prevent collisions
-    
-    graft_root_edges = graft.graph_hash.delete(graft.origin)
-    @graph_hash[attach_point] ||= Hash.new
-    @graph_hash[attach_point].merge!(graft_root_edges)
+	var nodeCount = this.getNodeCount();
+	//clone, since it might be reused
+	var fsmC = clone(fsm);
+	fsmC.incrementNodeLabels(nodeCount - 1);
 
-    @accept_states.merge!(graft.accept_states)
-    @graph_hash.merge!(graft.graph_hash)
-    get_node_count
+	var rootEdges = fsmC.graph[fsmC.origin]; // of form: {'label' : [toNodes]}
+	delete fsmC.graph[fsmC.origin];
+
+	if(!this.graph[attachPoint]) {
+		this.graph[attachPoint] = {};
+	}
+
+	//this part needs to be debugged
+	for(var k in rootEdges){
+		this.graph[attachPoint][k] = rootEdges[k];
+	}
+
+	for(var k in fsmC.acceptStates){
+		this.acceptStates[k] = fsmC.acceptStates[k];
+	}
+
+	for(var k in fsmC.graph){
+		this.graph[k] = fsmC.graph[k];
+	}
 }
 
 FiniteStateMachine.prototype.deleteEdge = function(from, label, to){
@@ -54,16 +68,22 @@ FiniteStateMachine.prototype.deleteEdge = function(from, label, to){
 }
 
 FiniteStateMachine.prototype.addEdge = function(from, label, to){
-	//TODO
-      @graph_hash[src] = Hash.new if @graph_hash[src].nil?
-      if @graph_hash[src][label].nil?
-        @graph_hash[src][label] = [dest]
-      else
-        if @graph_hash[src][label].class != Array
-          @graph_hash[src][label] = [@graph_hash[src][label]]
-        end
-        @graph_hash[src][label] << dest if !@graph_hash[src][label].include?(dest)
-      end
+	//new edge setup
+	if(!this.graph[from]){
+		this.graph[from] = {};
+	}
+
+	if(!this.graph[from][label]){ //if there is not already an edge with this label
+		this.graph[from][label] = [to];
+	}
+	else{ //if already an edge exists, we have to add the destination nodes
+		if(this.graph[from][label].constructor !== Array){ //Wrap in an array
+			this.graph[from][label] = [this.graph[from][label]];
+		}
+		if(!_.contains(this.graph[from][label], to)){
+			this.graph[from][label].push(to);
+		}
+	}
 }
 
 FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm){
@@ -76,7 +96,7 @@ FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm){
     }
 
     var offset = this.getNodeCount - 1;
-    impAttachGraph(from, graph);
+    attachGraph(from, graph);
 
     //for each of the edges pointing at the accept state of the graph
     //redirect them to point at dest
@@ -107,6 +127,33 @@ FiniteStateMachine.prototype.renumberNodes = function(){
 	}
 }
 
+FiniteStateMachine.prototype.incrementNodeLabels = function(amount){
+	var newGraph = {};
+	var newAcceptStates = {};
+	var newSubGraph, toNodes;
+	for(var key in this.graph){
+		newSubGraph = {};
+		for(var subkey in this.graph[key]){
+			toNodes = this.graph[key][subkey];
+			if(toNodes.constructor === Array){
+				newSubGraphkey][subkey] = toNodes.map(function(x){ return x + amount; });
+			}
+			else{
+				newSubGraph[key][subkey] = toNodes + amount;
+			}
+		}
+		newGraph[key + amount] = newSubGraph;
+	}
+
+	for(var acc in this.acceptStates){
+		newAcceptStates[acc + amount] = this.acceptStates[key];
+	}
+     
+    this.graph = newGraph;
+    this.acceptStates = newAcceptStates; 
+    this.origin += amount;
+}
+
 FiniteStateMachine.prototype.retargetEdges = function(oldTarget, newTarget){
 	var from, edge, label, to;
 	for(var key in this.graph){
@@ -116,8 +163,8 @@ FiniteStateMachine.prototype.retargetEdges = function(oldTarget, newTarget){
 			label = subkey;
 			to = edge[subkey];
 			if(_.include(to, oldTarget)){ //als edge naar oude target, vervang deze door nieuwe
-				addEdge(from, label, to);
-				deleteEdge(from, label, to);
+				addEdge(from, label, newTarget);
+				deleteEdge(from, label, newTarget);
 			}
 		}
 	}
@@ -191,4 +238,8 @@ var removeFromArray = function(arr, obj) {
 	    }
 	}
 }
+
+var clone = function(obj){
+	return JSON.parse(JSON.stringify(obj));
+} 
 

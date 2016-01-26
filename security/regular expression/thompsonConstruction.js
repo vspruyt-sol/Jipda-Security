@@ -27,7 +27,7 @@ ThompsonConstruction.prototype.toNFA = function(){
   	offset = orig.getNodeCount - 1;
   	acc = keyAt(orig.acceptStates, 0) || 0;	//Attachment point
 
-  	orig.impAttachGraph(acc, fsm);
+  	orig.attachGraph(acc, fsm);
 
   	for(var prop in orig.acceptStates) {
   	   	if(!m.acceptStates[prop - offset]){
@@ -79,7 +79,7 @@ ThompsonConstruction.prototype.buildMachineStack = function(regex){
 								  skip = subExpression.length + 1;
 								  machines.push([subGraph, null]);
 			  				  break;
-			  //case '-': succRegexPart = regex[++i]; //Negation
+			  //case '¬': succRegexPart = regex[++i]; //Negation
 				//				  nextSuccChar = succRegexPart.symbol;
 				//			  	skip = 1; //moet dit?
 				//				  machines.push([CAT_MACHINE('-' + nextSuccChar), null]);
@@ -128,7 +128,7 @@ ThompsonConstruction.prototype.catify = function(machines){
     	fsm = newMachines.pop()[0];
     	offset = fsm.getNodeCount() - 1;
     	acc = keyAt(fsm.acceptStates, 0) || 0;	//Attachment point
-    	fsm.impAttachGraph(acc, curMachine[0]);
+    	fsm.attachGraph(acc, curMachine[0]);
     	for(var prop in fsm.acceptStates) {
   	   	if(!curMachine[0].acceptStates[prop - offset]){
   	   		delete fsm.acceptStates[prop]; //remove the property
@@ -181,7 +181,3 @@ ThompsonConstruction.prototype.absorbRightAlternation = function(machines){
 var keyAt = function(obj, idx){
 	return obj[Object.keys(obj)[idx]];
 }
-
-var clone = function(obj){
-	return JSON.parse(JSON.stringify(obj));
-} 
