@@ -54,6 +54,11 @@ ThompsonConstruction.prototype.buildMachineStack = function(regex){
     	regexPart = regex[i];
     	nextChar = regexPart.symbol; //TODO SYMBOL TABLE
 
+
+    	console.log("nextChar: " + nextChar);
+    	console.log("machines: " + machines);
+
+    	//TODO: Nextchar is negation (e.g. -a)
     	switch(nextChar){
     		case '*': machines.push([KLEENE_MACHINE(), 	[1,2]]); 			break;
     		case '+': machines.push([PLUS_MACHINE(), 		[1,2]]); 			break;
@@ -65,13 +70,20 @@ ThompsonConstruction.prototype.buildMachineStack = function(regex){
 								  nextSuccChar = succRegexPart.symbol;
 								  while(nextSuccChar !== ')' && nestingDepth !== 0){
 								  	if(nextSuccChar === ')') nestingDepth -= 1;
-								  	if(nextSuccChar === '(') nestingDepth += 1;
-								  	subExpression.push(succRegexPart);
+								  	if(nextSuccChar === '(') nestingDepth += 1;					  		
+								  	subExpression.push(succRegexPart); //negation?
+								  	succRegexPart = regex[++i]; //Check if correct + possibly shorter
+								  	nextSuccChar = succRegexPart.symbol;
 								  }
 								  subGraph = toNFA(subExpression);
 								  skip = subExpression.length + 1;
 								  machines.push([subGraph, null]);
 			  				  break;
+			  //case '-': succRegexPart = regex[++i]; //Negation
+				//				  nextSuccChar = succRegexPart.symbol;
+				//			  	skip = 1; //moet dit?
+				//				  machines.push([CAT_MACHINE('-' + nextSuccChar), null]);
+    		//		  		break;
     		default:  machines.push([CAT_MACHINE(nextChar), null]);
     				  		break;
     	}

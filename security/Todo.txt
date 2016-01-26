@@ -1,5 +1,5 @@
 TODO: 
 - Regex conversion
-- REPLACE EDGE HANDLELEFTALTERNATION!
 - Symbol table voor regex
-- Negatie
+- Negatie in regex conversion
+- negatie in algoritme

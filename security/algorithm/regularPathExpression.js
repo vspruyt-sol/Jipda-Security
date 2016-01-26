@@ -51,7 +51,6 @@ RegularPathExpression.prototype.rBrace = function(obj){
 
 //or
 RegularPathExpression.prototype.or = function(obj){
-
 	this._map.push(new RegexPart('or', obj, '|'));
 	//Fluent API
 	return this;

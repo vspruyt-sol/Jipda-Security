@@ -2,8 +2,6 @@
 function EdgeLabel(name, state)
 {
   this.name = name || (state.node? state.node.type : '');
-  //Node to get more info
-  //this.node = node || false;
   //store info
   this.state = state;
 }
