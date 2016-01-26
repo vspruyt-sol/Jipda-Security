@@ -1,5 +1,4 @@
 TODO: 
-- Regex conversion
-- Symbol table voor regex
+- Find end of function 
 - Negatie in regex conversion
 - negatie in algoritme

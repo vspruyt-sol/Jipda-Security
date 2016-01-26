@@ -3,6 +3,7 @@ function RegularPathExpression(){
 	this._map = [];
 	//Check braces
 	this.depth = 0;
+	//symbol table, assigns a number to a RegexPart;
 }
 
 /**
@@ -13,14 +14,21 @@ function RegularPathExpression(){
 
 //Assignment
 RegularPathExpression.prototype.assign = function(obj){
-	this._map.push(new RegexPart('assign', obj));
+	this._map.push(new RegexPart('assign', obj, this._map.length));
 	//Fluent API
 	return this;
 }
 
 //Function calls
 RegularPathExpression.prototype.fCall = function(obj){
-	this._map.push(new RegexPart('fCall', obj));
+	this._map.push(new RegexPart('fCall', obj, this._map.length));
+	//Fluent API
+	return this;
+}
+
+//Function calls
+RegularPathExpression.prototype.ret = function(obj){
+	this._map.push(new RegexPart('return', obj, this._map.length));
 	//Fluent API
 	return this;
 }

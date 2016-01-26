@@ -90,6 +90,7 @@
 		try {
 			var rpe = eval('var rpe = new RegularPathExpression(); rpe.' + reg);
 			output.innerHTML = '';
+			console.log(rpe);
 		}
 		catch(err) {
 		    output.innerHTML = 'Can\'t parse regular path expression';
