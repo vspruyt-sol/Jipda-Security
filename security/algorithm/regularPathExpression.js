@@ -121,6 +121,8 @@ RegularPathExpression.prototype.toPrettyString = function(obj){
 RegularPathExpression.prototype.toNFA = function(){
 	if(this.depth !== 0) throw 'Not all braces are closed!'; 
 	//TODO: CALL CONVERSION ALGORITHM
+	var tsc = new ThompsonConstruction();
+	console.log(tsc.toNFA(this._map));
 }
 
 

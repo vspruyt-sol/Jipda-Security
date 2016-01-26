@@ -1,7 +1,8 @@
-function FiniteStateMachine(acceptStates, graph, origin){
+function FiniteStateMachine(acceptStates, graph, origin, type){
 	this.acceptStates = acceptStates || {};
 	this.graph = graph || {}; //TODO: Should I make a separate 'class' for node->edge->node connections?
 	this.origin = origin || 0;
+	this.tpe = type || ''; //debugging purposes
 }
 
 FiniteStateMachine.prototype.getNodeCount = function(){
@@ -16,25 +17,21 @@ FiniteStateMachine.prototype.getNodeNames = function(){
 			Array.prototype.push.apply(nodes, this.graph[key][subkey]);
 		}
 	}
-	return _.unique(nodes);
-	//return nodes.getUnique();
+	return nodes.getUnique().sort();
 }
 
 FiniteStateMachine.prototype.attachGraph = function(attachPoint, fsm){
-	//TODO
 	var nodeCount = this.getNodeCount();
 	//clone, since it might be reused
 	var fsmC = clone(fsm);
+	fsmC.incrementNodeLabels = this.incrementNodeLabels;
 	fsmC.incrementNodeLabels(nodeCount - 1);
-
 	var rootEdges = fsmC.graph[fsmC.origin]; // of form: {'label' : [toNodes]}
 	delete fsmC.graph[fsmC.origin];
-
 	if(!this.graph[attachPoint]) {
 		this.graph[attachPoint] = {};
 	}
 
-	//this part needs to be debugged
 	for(var k in rootEdges){
 		this.graph[attachPoint][k] = rootEdges[k];
 	}
@@ -46,6 +43,7 @@ FiniteStateMachine.prototype.attachGraph = function(attachPoint, fsm){
 	for(var k in fsmC.graph){
 		this.graph[k] = fsmC.graph[k];
 	}
+
 }
 
 FiniteStateMachine.prototype.deleteEdge = function(from, label, to){
@@ -88,35 +86,36 @@ FiniteStateMachine.prototype.addEdge = function(from, label, to){
 
 FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm){
 	if(!fsm.acceptStates || fsm.acceptStates === {}){
-		throw 'The fsm to be inserted doesn\'t have any accept states.');
+		throw 'The fsm to be inserted doesn\'t have any accept states.';
 	}
 
-	if (this.graph[src][label].constructor !== Array){
-		this.graph[src][label] = [this.graph[src][label]];
+	if (this.graph[from][label].constructor !== Array){
+		this.graph[from][label] = [this.graph[from][label]];
     }
 
-    var offset = this.getNodeCount - 1;
-    attachGraph(from, graph);
-
+    var offset = this.getNodeCount() - 1;
+    this.attachGraph(from, fsm);
     //for each of the edges pointing at the accept state of the graph
     //redirect them to point at dest
-    _.each(fsm.acceptStates, function(acc){
-    	retargetEdges(acc + offset, to);
-    	delete this.acceptStates[acc + offset];
-    });
+    for(var acc in fsm.acceptStates){ //ererything works fine untill here, verify if rest works as well!
+    	this.retargetEdges(parseInt(acc) + offset, to);
+    	delete this.acceptStates[parseInt(acc) + offset];
+    }
+    this.deleteEdge(from, label, to);
+    this.renumberNodes(); //Debugging until here (I think it works!)
 
-    deleteEdge(from, label, to);
-    renumberNodes();
+    return this; //(important!)
 }
 
 FiniteStateMachine.prototype.renumberNodes = function(){
-	//TODO
-	var nodes = getNodeNames();
+	//TODO BUGGED
+	var nodes = this.getNodeNames();
 	var n;
 	for(var i = 0; i < nodes.length; i++){
 		n = nodes[i];
-		if(n !== i){
-			retarget_edges(n, i);
+		//console.log('n: ' + n + ', i: ' + i);
+		if(parseInt(n) !== i){
+			this.retargetEdges(n, i);
 			if(this.acceptStates[n]){
 				this.acceptStates[i] = this.acceptStates[n];
 				delete this.acceptStates[n];
@@ -130,23 +129,25 @@ FiniteStateMachine.prototype.renumberNodes = function(){
 FiniteStateMachine.prototype.incrementNodeLabels = function(amount){
 	var newGraph = {};
 	var newAcceptStates = {};
-	var newSubGraph, toNodes;
+	var newSubGraph, toNodes, subGraph, value;
 	for(var key in this.graph){
+		subGraph = this.graph[key];
 		newSubGraph = {};
-		for(var subkey in this.graph[key]){
-			toNodes = this.graph[key][subkey];
-			if(toNodes.constructor === Array){
-				newSubGraphkey][subkey] = toNodes.map(function(x){ return x + amount; });
+		for(var subkey in subGraph){
+			value = subGraph[subkey];
+			if(value.constructor === Array){
+				newSubGraph[subkey] = value.map(function(x){ return x + amount; });
 			}
 			else{
-				newSubGraph[key][subkey] = toNodes + amount;
+				newSubGraph[subkey] = value + amount;
 			}
 		}
-		newGraph[key + amount] = newSubGraph;
+
+		newGraph[parseInt(key) + amount] = newSubGraph; //we have to cast for some reason
 	}
 
 	for(var acc in this.acceptStates){
-		newAcceptStates[acc + amount] = this.acceptStates[key];
+		newAcceptStates[parseInt(acc) + amount] = this.acceptStates[acc];
 	}
      
     this.graph = newGraph;
@@ -156,15 +157,13 @@ FiniteStateMachine.prototype.incrementNodeLabels = function(amount){
 
 FiniteStateMachine.prototype.retargetEdges = function(oldTarget, newTarget){
 	var from, edge, label, to;
-	for(var key in this.graph){
-		from = key;
+	for(var from in this.graph){
 		edge = this.graph[from];
-		for(var subkey in edge){
-			label = subkey;
-			to = edge[subkey];
+		for(var label in edge){
+			to = edge[label];
 			if(_.include(to, oldTarget)){ //als edge naar oude target, vervang deze door nieuwe
-				addEdge(from, label, newTarget);
-				deleteEdge(from, label, newTarget);
+				this.addEdge(from, label, newTarget);
+				this.deleteEdge(from, label, oldTarget);
 			}
 		}
 	}
@@ -178,7 +177,9 @@ var CAT_MACHINE = function(label){
  	var obj = {};
  	obj[label] = [1];
  	return new FiniteStateMachine(	{ 1 : 'end' },
- 									{ 0 : obj }	
+ 									{ 
+ 										0 : obj 
+ 									}, 0, 'Cat'
  								 );
 }
 
@@ -190,7 +191,7 @@ var ALT_MACHINE = function(){
  										2 : { 'lambda' : [5]   },
  										3 : { 0        : [4]   }, //PENDING
  										4 : { 'lambda' : [5]   }
- 									}	
+ 									}, 0, 'Alt'
  								 );
 }
 
@@ -200,7 +201,7 @@ var KLEENE_MACHINE = function(){
  										0 : { 'lambda' : [1,3] },
  										1 : { 0		   : [2]   }, //PENDING
  										2 : { 'lambda' : [1,3] }
- 									}	
+ 									}, 0, 'kleene'
  								 );
 }
 
@@ -210,7 +211,7 @@ var PLUS_MACHINE = function(){
  										0 : { 'lambda' : [1] },
  										1 : { 0		   : [2]   }, //PENDING
  										2 : { 'lambda' : [1,3] }
- 									}	
+ 									}, 0, 'plus'
  								 );
 }
 
@@ -239,7 +240,34 @@ var removeFromArray = function(arr, obj) {
 	}
 }
 
-var clone = function(obj){
-	return JSON.parse(JSON.stringify(obj));
-} 
+//https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
+function clone(objectToBeCloned) {
+
+  // Basis.
+  if (!(objectToBeCloned instanceof Object)) {
+    return objectToBeCloned;
+  }
+  var objectClone;
+  
+  // Filter out special objects.
+  var Constructor = objectToBeCloned.constructor;
+  switch (Constructor) {
+    // Implement other special objects here.
+    case RegExp:
+      objectClone = new Constructor(objectToBeCloned);
+      break;
+    case Date:
+      objectClone = new Constructor(objectToBeCloned.getTime());
+      break;
+    default:
+      objectClone = new Constructor();
+  }
+  
+  // Clone each property.
+  for (var prop in objectToBeCloned) {
+    objectClone[prop] = clone(objectToBeCloned[prop]);
+  }
+  
+  return objectClone;
+}
 
