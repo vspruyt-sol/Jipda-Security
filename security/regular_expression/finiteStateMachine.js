@@ -17,18 +17,22 @@ FiniteStateMachine.prototype.getNodeNames = function(){
 			Array.prototype.push.apply(nodes, this.graph[key][subkey]);
 		}
 	}
-	return nodes.getUnique().sort();
+	return nodes.getUnique().sort(function(a,b){ return a-b;});
 }
 
 FiniteStateMachine.prototype.attachGraph = function(attachPoint, fsm, debug){
 	var nodeCount = this.getNodeCount();
 	
-	//clone, since it might be reused
+	//clone, since it will be 'reused'
 	var fsmC = clone(fsm);
-	fsmC.incrementNodeLabels = this.incrementNodeLabels;
-	fsmC.incrementNodeLabels(nodeCount - 1);
-	var rootEdges = fsmC.graph[fsmC.origin]; // of form: {'label' : [toNodes]}
+
+	this.incrementNodeLabels.apply(fsmC, [nodeCount - 1]);
+	//fsmC.incrementNodeLabels = this.incrementNodeLabels;
+	//fsmC.incrementNodeLabels(nodeCount - 1);
+
+	var rootEdges = fsmC.graph[fsmC.origin];
 	delete fsmC.graph[fsmC.origin];
+
 	if(this.graph[attachPoint] === undefined) {
 		this.graph[attachPoint] = {};
 	}
@@ -37,13 +41,15 @@ FiniteStateMachine.prototype.attachGraph = function(attachPoint, fsm, debug){
 		this.graph[attachPoint][k] = rootEdges[k];
 	}
 
-	for(var k in fsmC.acceptStates){
-		this.acceptStates[k] = fsmC.acceptStates[k];
+	for(var j in fsmC.acceptStates){
+		this.acceptStates[j] = fsmC.acceptStates[j];
 	}
 
-	for(var k in fsmC.graph){
-		this.graph[k] = fsmC.graph[k];
+	for(var i in fsmC.graph){
+		this.graph[i] = fsmC.graph[i];
 	}
+
+	//return this.getNodeCount();
 }
 
 FiniteStateMachine.prototype.deleteEdge = function(from, label, to){
@@ -94,10 +100,12 @@ FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm, debug)
     }
 
     var offset = this.getNodeCount() - 1;
-    this.attachGraph(from, fsm);
+    this.attachGraph(from, fsm, debug);
+
     //for each of the edges pointing at the accept state of the graph
     //redirect them to point at dest
     for(var acc in fsm.acceptStates){
+    	console.log((parseInt(acc) + offset) + ' => ' + to);
     	this.retargetEdges(parseInt(acc) + offset, to);
     	delete this.acceptStates[parseInt(acc) + offset];
     }
@@ -105,14 +113,20 @@ FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm, debug)
     //this one gives some trouble if the first one is a cat followed by a kleene star
     this.deleteEdge(from, label, to); 
 
+    console.log('Check ut ut');
+
     this.renumberNodes();
+
+    console.log(JSON.stringify(this));
 
     return this;
 }
 
 FiniteStateMachine.prototype.renumberNodes = function(){
 	//TODO BUGGED
+
 	var nodes = this.getNodeNames();
+	console.log(JSON.stringify(nodes));
 	var n;
 	for(var i = 0; i < nodes.length; i++){
 		n = nodes[i];

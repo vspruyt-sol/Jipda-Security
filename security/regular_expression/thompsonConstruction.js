@@ -17,11 +17,10 @@ ThompsonConstruction.prototype.toNFA = function(regex){
 										) 
 
 	machines = this.buildMachineStack(regex);  	
-	machines = this.kleeneUp(machines); //deze doet nog ergens iets mis
+	machines = this.kleeneUp(machines); //Deze herpt om een (.|.) te absorben in een kleene 
+	//console.log(JSON.stringify(machines));
   	machines = this.catify(machines);
-  	console.log(JSON.stringify(machines));
   	machines = this.handleAlternation(machines);
-  	console.log(JSON.stringify(machines));
 
   	for(var i = 0; i < machines.length; i++){
   		curMachine = machines[i];
@@ -109,7 +108,7 @@ ThompsonConstruction.prototype.kleeneUp = function(machines){
 				newMachines.push([replaced, curMachine[1]]);
 			}
 			else{ // dealing with |
-				console.log('ALTERNATION IN KLEENEUP');
+				//console.log('ALTERNATION IN KLEENEUP');
 				newMachines.push([curMachine[0],curMachine[1]])
 			}
 		}
