@@ -20,15 +20,16 @@ FiniteStateMachine.prototype.getNodeNames = function(){
 	return nodes.getUnique().sort();
 }
 
-FiniteStateMachine.prototype.attachGraph = function(attachPoint, fsm){
+FiniteStateMachine.prototype.attachGraph = function(attachPoint, fsm, debug){
 	var nodeCount = this.getNodeCount();
+	
 	//clone, since it might be reused
 	var fsmC = clone(fsm);
 	fsmC.incrementNodeLabels = this.incrementNodeLabels;
 	fsmC.incrementNodeLabels(nodeCount - 1);
 	var rootEdges = fsmC.graph[fsmC.origin]; // of form: {'label' : [toNodes]}
 	delete fsmC.graph[fsmC.origin];
-	if(!this.graph[attachPoint]) {
+	if(this.graph[attachPoint] === undefined) {
 		this.graph[attachPoint] = {};
 	}
 
@@ -43,13 +44,12 @@ FiniteStateMachine.prototype.attachGraph = function(attachPoint, fsm){
 	for(var k in fsmC.graph){
 		this.graph[k] = fsmC.graph[k];
 	}
-
 }
 
 FiniteStateMachine.prototype.deleteEdge = function(from, label, to){
 	//Undefined handling
-	if(!this.graph[from]) return;
-	if(!this.graph[from][label]) return;
+	if(this.graph[from] === undefined) return;
+	if(this.graph[from][label] === undefined) return;
 
 	//If there exists an edge, delete it
 	//if(_.contains(this.graph[from][label], to)){
@@ -67,7 +67,7 @@ FiniteStateMachine.prototype.deleteEdge = function(from, label, to){
 
 FiniteStateMachine.prototype.addEdge = function(from, label, to){
 	//new edge setup
-	if(!this.graph[from]){
+	if(this.graph[from] === undefined){
 		this.graph[from] = {};
 	}
 
@@ -84,7 +84,7 @@ FiniteStateMachine.prototype.addEdge = function(from, label, to){
 	}
 }
 
-FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm){
+FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm, debug){
 	if(!fsm.acceptStates || fsm.acceptStates === {}){
 		throw 'The fsm to be inserted doesn\'t have any accept states.';
 	}
@@ -97,14 +97,17 @@ FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm){
     this.attachGraph(from, fsm);
     //for each of the edges pointing at the accept state of the graph
     //redirect them to point at dest
-    for(var acc in fsm.acceptStates){ //ererything works fine untill here, verify if rest works as well!
+    for(var acc in fsm.acceptStates){
     	this.retargetEdges(parseInt(acc) + offset, to);
     	delete this.acceptStates[parseInt(acc) + offset];
     }
-    this.deleteEdge(from, label, to);
-    this.renumberNodes(); //Debugging until here (I think it works!)
 
-    return this; //(important!)
+    //this one gives some trouble if the first one is a cat followed by a kleene star
+    this.deleteEdge(from, label, to); 
+
+    this.renumberNodes();
+
+    return this;
 }
 
 FiniteStateMachine.prototype.renumberNodes = function(){
@@ -113,10 +116,9 @@ FiniteStateMachine.prototype.renumberNodes = function(){
 	var n;
 	for(var i = 0; i < nodes.length; i++){
 		n = nodes[i];
-		//console.log('n: ' + n + ', i: ' + i);
 		if(parseInt(n) !== i){
 			this.retargetEdges(n, i);
-			if(this.acceptStates[n]){
+			if(this.acceptStates[n] !== undefined){
 				this.acceptStates[i] = this.acceptStates[n];
 				delete this.acceptStates[n];
 			} 

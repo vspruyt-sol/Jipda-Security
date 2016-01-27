@@ -14,21 +14,21 @@ function RegularPathExpression(){
 
 //Assignment
 RegularPathExpression.prototype.assign = function(obj){
-	this._map.push(new RegexPart('assign', obj, this._map.length));
+	this._map.push(new RegexPart('assign', obj, 'idx' + this._map.length));
 	//Fluent API
 	return this;
 }
 
 //Function calls
 RegularPathExpression.prototype.fCall = function(obj){
-	this._map.push(new RegexPart('fCall', obj, this._map.length));
+	this._map.push(new RegexPart('fCall', obj, 'idx' + this._map.length));
 	//Fluent API
 	return this;
 }
 
 //Function calls
 RegularPathExpression.prototype.ret = function(obj){
-	this._map.push(new RegexPart('return', obj, this._map.length));
+	this._map.push(new RegexPart('return', obj, 'idx' + this._map.length));
 	//Fluent API
 	return this;
 }
