@@ -3,7 +3,8 @@ function RegularPathExpression(){
 	this._map = [];
 	//Check braces
 	this.depth = 0;
-	//symbol table, assigns a number to a RegexPart;
+	//Contains the NFA with its graph triples
+	this.nfa = [];
 }
 
 /**
@@ -64,8 +65,6 @@ RegularPathExpression.prototype.or = function(obj){
 	return this;
 }
 
-
-
 //Wildcard
 RegularPathExpression.prototype.wildcard = function(obj){
 
@@ -120,11 +119,16 @@ RegularPathExpression.prototype.toPrettyString = function(obj){
  */
 RegularPathExpression.prototype.toNFA = function(){
 	if(this.depth !== 0) throw 'Not all braces are closed!'; 
-	//TODO: CALL CONVERSION ALGORITHM
 	var tsc = new ThompsonConstruction();
-	console.log(tsc.toNFA(this._map));
+	//returns a finite state machine, we need to convert it to array of graph triples, e.g.:
+	// new GraphTriple(new DummyNode(1), new EdgeLabel('assign', {leftName: 'x'}), new DummyNode(2))
+	var fsm = tsc.toNFA(this._map);
+	var nfa = new NFA();
+	//One way to make a nfa, from a FSM
+	nfa.fromFSM(fsm, this._map); //built so that NFA's don't depend on FSM's per sé.
+	//return the NFA
+	return nfa;
 }
-
 
 /**
  * -----------------------

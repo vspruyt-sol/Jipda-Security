@@ -8,9 +8,10 @@
 	<title>JIPDA</title>
 
 	<script type="text/javascript" src="../lib/esprima.js"></script>
-	<script type="text/javascript" src="algorithm/dataStructures.js"></script>
-	<script type="text/javascript" src="algorithm/existentialQuery.js"></script>
-	<script type="text/javascript" src="algorithm/regularPathExpression.js"></script>
+	<script type="text/javascript" src="query_algorithm/dataStructures.js"></script>
+	<script type="text/javascript" src="query_algorithm/existentialQuery.js"></script>
+	<script type="text/javascript" src="query_algorithm/regularPathExpression.js"></script>
+	<script type="text/javascript" src="query_algorithm/nfa.js"></script>
 	<script type="text/javascript" src="regular_expression/thompsonConstruction.js"></script>
 	<script type="text/javascript" src="regular_expression/finiteStateMachine.js"></script>
 	<script type="text/javascript" src="securityAnalysis.js"></script>
@@ -37,6 +38,7 @@
 	<script type="text/javascript" src="../lib/web/d3.min.js"></script>
 	<script type="text/javascript" src="../lib/web/dagre-d3.min.js"></script>
 	<script type="text/javascript" src="../lib/web/dagregraphs.js"></script>
+	<script type="text/javascript" src="../lib/web/nfagraphs.js"></script>
 	<script type="text/javascript" src="../lib/web/underscore/underscore.js"></script>	
 	<script type="text/javascript">
 	
@@ -87,26 +89,26 @@
 		var output = document.getElementById("output");
     	localStorage.securitySrc = src;
     	localStorage.regex = reg;
-		var augmentedStates = securityAnalysis(src);
-		//var rpe = eval('var rpe = new RegularPathExpression(); rpe.' + reg);
-		try {
-			var rpe = eval('var rpe = new RegularPathExpression(); rpe.' + reg);
-			output.innerHTML = '';
-			console.log(rpe);
+    	var secAn = new SecurityAnalysis(src, reg);
+
+    	//initialize everything
+    	secAn.initialize();
+
+		var g = createDagreGraph(secAn.states);
+    	drawDagreGraph(g, secAn.states, secAn.transitions);
+
+
+		
+		if(secAn.nfa){
+		//	var nf = createNFAGraph(secAn.nfa);
+		//	console.log(nf);
+    	//	drawNFAGraph(nf);
+    		secAn.detect();
 		}
-		catch(err) {
-		    output.innerHTML = 'Can\'t parse regular path expression';
+		else{
+
 		}
 		
-
-		/*ast = Ast.createAst(src, {loc:true});
-		var errors = $("#errors").is(":checked"); 
-    	var gc = true;
-	  	cesk = jsCesk({a:ag, l:lat, gc: gc, errors:errors});
-		system = cesk.explore(ast);
-		postComputeGraph(system.initial);*/
-		var g = createDagreGraph(augmentedStates);
-    	drawDagreGraph(g, augmentedStates, transitions);
 	}
 	
 	

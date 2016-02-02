@@ -1,4 +1,6 @@
 TODO: 
-- Find end of function 
+- Find end of functioncall (context ID is 1tje lager -> uit functie springen)
 - Negatie in regex conversion
-- negatie in algoritme
+- Negatie in algoritme
+- 'nop' -> 'lambda'
+- Testen

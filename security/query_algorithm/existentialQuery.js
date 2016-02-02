@@ -13,7 +13,7 @@ function ExistentialQuery(G, P, F, v0, s0){
 	this.s0 = s0;	
 }
 
-//HANDLE NOP?
+//HANDLE LAMBDA?
 ExistentialQuery.prototype.runNaive = function(){
 	//used variables
 	var tripleG, tripleP, theta, theta2,
@@ -23,14 +23,14 @@ ExistentialQuery.prototype.runNaive = function(){
 	var W = [];
 	for(var i = 0; i < this.G.length; i++){
 		tripleG = this.G[i];
-		if(tripleG.from.equals(this.v0)){ //v0?
+		if(tripleG.from.equals(this.v0)){ //Is de Jipda-node gelijk aan onze initial (Jipda-)node
 			for(var j = 0; j < this.P.length; j++){
-				tripleP = this.P[j];
-				if(tripleP.from.equals(this.s0)){ //s0?
-					//CHECK NOP
+				tripleP = this.P[j];	
+				if(tripleP.from.equals(this.s0)){ //Is de NFA-node gelijk aan de initial (NFA-)node
+					//CHECK LAMBDA
 					theta = this.match(tripleG.edge,tripleP.edge);
 					tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);
-					if(tripleP.edge.name === 'nop' && !this.contains(R, tripleTemp)){
+					if(tripleP.edge.name === 'lambda' && !this.contains(R, tripleTemp)){
 						W = this.union(W, [tripleTemp]);
 					}
 					//else{
@@ -50,12 +50,12 @@ ExistentialQuery.prototype.runNaive = function(){
 			tripleG = this.G[i];
 			if(tripleG.from.equals(tripleW.v)){ //KLOPT DIT WEL????
 				for(var j = 0; j < this.P.length; j++){
-					tripleP = this.P[j];		
+					tripleP = this.P[j];	
 					if(tripleP.from.equals(tripleW.s)){ //KLOPT DIT WEL????
-						//CHECK NOP
+						//CHECK LAMBDA
 						theta = this.match(tripleG.edge,tripleP.edge); //theta = [[{x:a},{callee:sink}]]
 						tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);	
-						if(tripleP.edge.name === 'nop' && !this.contains(R, tripleTemp)){
+						if(tripleP.edge.name === 'lambda' && !this.contains(R, tripleTemp)){
 							W = this.union(W, [tripleTemp]);
 						}
 						//else{
@@ -161,7 +161,7 @@ ExistentialQuery.prototype.match = function(el, tl){
 	//which takes a set of symbols as an implicit argument, be the set of minimal substitutions θ 
 	//such that el matches tl under θ. The resulting set has at most one element when tl contains 
 	//no negations but can be very large otherwise. For example, match(use(a),¬use(x)) is the set of 
-	//substitutions of the form {x 􏰀→ b}, where b is any symbol other than a.
+	//substitutions of the form {x → b}, where b is any symbol other than a.
 	var substitutions = [];
 	var _map = [];
 	switch(tl.name){
@@ -169,9 +169,9 @@ ExistentialQuery.prototype.match = function(el, tl){
 								break;
 		case 'fCall'		: 	_map = this.matchFCall(el, tl); 
 								break;
-		case 'wildcard'		: 	_map = []; 
+		case '_'			: 	_map = []; 
 								break;
-		case 'nop'			: 	_map = []; 
+		case 'lambda'		: 	_map = []; 
 								break;
 		case 'dummy'		: 	_map = [];
 								break;
@@ -218,9 +218,13 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 	//tl can contain fields for: 
 	//argument
 	//callee
+	console.log('Match fCall:');
 	console.log(el);
+	console.log(tl);
 	var elInfo = el.node;
 	var tlInfo = tl.state;
+	console.log('elInfo && el.name === \'ExpressionStatement\' && elInfo.expression.type === \'CallExpression\'');
+	console.log(elInfo && el.name === 'ExpressionStatement' && elInfo.expression.type === 'CallExpression');
 
 	var argumentFirstLiteral = function(args){
 		for(var i = 0; i < args.length; i++){

@@ -3,7 +3,7 @@ function EdgeLabel(name, state)
 {
   this.name = name || (state.node? state.node.type : '');
   //store info
-  this.state = state;
+  this.state = state || {};
 }
 
 EdgeLabel.prototype.equals = function (x)
@@ -85,6 +85,7 @@ VertexThetaPair.prototype.equals = function(x){
       //&& true; //TODO Equality of array
       && (this.theta === x.theta || equalTheta(this.theta, x.theta)); //also equal if subsumes?
 }
+
 VertexThetaPair.prototype.toString = function(){
     var str = this.v.toString() + ' {';
     var props = false;
@@ -120,8 +121,7 @@ function VertexPair(v, s){
   this.s = s;
 }
 
-VertexPair.prototype.equals = function(x){
-  
+VertexPair.prototype.equals = function(x){  
   return (x instanceof VertexPair)
       && (this.v === x.v || this.v.equals(x.v))
       && (this.s === x.s || this.s.equals(x.s));

@@ -1,21 +1,58 @@
-var states, transitions, tripleStore;
+function SecurityAnalysis(codeSrc, regexSrc){
+	//Jipda part
+	this.states = [];
+	this.transitions = [];
+	this.codeSrc = codeSrc;
+	//Query part
+	this.tripleStore = [];
+	//Regular path expressions part
+	this.regexSrc = regexSrc;
+	this.nfa = false;
+}
 
-function securityAnalysis(src){
-	var ast = Ast.createAst(src, {loc:true});
+SecurityAnalysis.prototype.initialize = function(){
+	//Jipda
+	var ast = Ast.createAst(this.codeSrc, {loc:true});
     var cesk = createCesk(ast);
     var system = cesk.explore(ast);
-    generateStates(system.initial);
+    this.generateStates(system.initial);
+    this.graphToTriples(system);
 
-    graphToTriples(system);
+    //regex
+    try {
+		var rpe = eval('var rpe = new RegularPathExpression(); rpe.' + this.regexSrc);
+		console.log(rpe);
+		this.nfa = rpe.toNFA();
+		console.log(this.nfa);
+		output.innerHTML = '';
+	}
+	catch(err) {
+		this.nfa = false;
+	    output.innerHTML = 'Can\'t parse regular path expression';
+	}
+}
 
-	return states;
+SecurityAnalysis.prototype.detect = function(){
+	/*
+	 * G = States van JIPDA graph
+	 * P = Pattern (RPE)
+	 * F = Final states
+	 * v0 = initial state van G
+	 * s0 = initial state van P
+	 */
+	 //new ExistentialQuery(d1, d2, [d2[2].target], d1[2].from, d2[0].from);
+	var eq = new ExistentialQuery(this.tripleStore, this.nfa.triples, this.nfa.acceptStates, this.tripleStore[5].from, this.nfa.startingNode);
+	//console.log(eq);
+	console.log(this.tripleStore);
+	console.log(this.nfa.triples);
+	//console.log(eq.runNaive());
 }
 
 //GRAPHICS
 function _markStates(ids, marker){
 	//var ids = _fromStateIds(triples);
-	for(var i = 0; i < states.length; i++){
-		if(ids.indexOf(states[i]._id) > -1) states[i].marker = marker;
+	for(var i = 0; i < this.states.length; i++){
+		if(ids.indexOf(this.states[i]._id) > -1) this.states[i].marker = marker;
 	}
 }
 
@@ -24,23 +61,22 @@ function createCesk(ast){
 }
 
 //SETTING UP DATA
-
-function graphToTriples(g){
+SecurityAnalysis.prototype.graphToTriples = function(g){
 	//initialization
-	tripleStore = [];
+	this.tripleStore = [];
 	var doneList = [];
 	var t;
 
 	//initial node only has 1 successor
-	tripleStore.push(new GraphTriple(
+	this.tripleStore.push(new GraphTriple(
 			new DummyNode(g.initial._id), 
 			g.initial, 
 			new DummyNode(g.initial._successors[0].state._id), true)
 	);
 
-	for(var j = 0; j < tripleStore.length; j++){
+	for(var j = 0; j < this.tripleStore.length; j++){
 		
-		var triple = tripleStore[j];
+		var triple = this.tripleStore[j];
 		//if we already treated the triple, don't do it again
 		if(containsTriple(doneList,triple)){
 			continue;
@@ -52,51 +88,40 @@ function graphToTriples(g){
 		var state = triple.edge;
 		
 		
-			for (var k = 0; k < state._successors.length; k++){
-				var tState = state._successors[k].state;
-				if(tState._successors.length > 0){ 
-					for (var h = 0; h < tState._successors.length; h++){
-						t = new GraphTriple(
-								new DummyNode(tState._id), 
-								tState,
-								new DummyNode(tState._successors[h].state._id)
-							);
-						if(!containsTriple(tripleStore,t)){
-							tripleStore.push(t);
-						}
+		for (var k = 0; k < state._successors.length; k++){
+			var tState = state._successors[k].state;
+			if(tState._successors.length > 0){ 
+				for (var h = 0; h < tState._successors.length; h++){
+					t = new GraphTriple(
+							new DummyNode(tState._id), 
+							tState,
+							new DummyNode(tState._successors[h].state._id)
+						);
+					if(!containsTriple(this.tripleStore,t)){
+						this.tripleStore.push(t);
 					}
 				}
-				// else{
-				// 	tripleStore.push(new GraphTriple(
-				// 						new DummyNode(tState._id),
-				// 						tState, 
-				// 						false, 
-				// 						false, 
-				// 						true
-				// 					)
-				// 	);
-				// }
-				
-			}		
+			}				
+		}		
 	}
-	return tripleStore;
+	return this.tripleStore;
 }
 
-function generateStates(initial){
-	states = [];
-	transitions = [];
+SecurityAnalysis.prototype.generateStates = function(initial){
+	this.states = [];
+	this.transitions = [];
 	var todo = [initial];
 	while (todo.length > 0){
 		var s = todo.pop();
-		states[s._id] = s;
+		this.states[s._id] = s;
 		s._successors.forEach(function (t){
 			if (isFinite(t._id))
 			{
 			  return;
 			}
-			t._id = transitions.push(t) - 1;
+			t._id = this.transitions.push(t) - 1;
 			todo.push(t.state);
-		});  
+		}, this);  
 	}
 }
 
@@ -128,7 +153,7 @@ function findNodes(g, check){
 
 function nextNodes(id){
 	var next = [id];
-	addSuccessors(states[id]);
+	addSuccessors(this.states[id]);
 	function addSuccessors(state){
 		var succs = state._successors || [];
 		//foreach successor add its successors
@@ -154,9 +179,9 @@ function previousNodes(id){
 
 	function findPredecessors(id){
 		var pred = [];
-		for(var i = 0; i < tripleStore.length; i++){
-			if(tripleStore[i].final) continue;
-			if(tripleStore[i].target._id === id) pred.push(tripleStore[i].from._id);
+		for(var i = 0; i < this.tripleStore.length; i++){
+			if(this.tripleStore[i].final) continue;
+			if(this.tripleStore[i].target._id === id) pred.push(this.tripleStore[i].from._id);
 		}
 		return pred;
 	}
@@ -168,25 +193,25 @@ function previousNodes(id){
 //Navigation example
 function findNodesExample(){
 	//DEFINE SPECIFIC NODES
-	var variableDeclarations = findNodes(states, function(x){
+	var variableDeclarations = findNodes(this.states, function(x){
 		return 	(x.node
 				&& x.node.type === 'VariableDeclaration');
 	});
 
-	var variableDeclarationsNoValues = findNodes(states, function(x){
+	var variableDeclarationsNoValues = findNodes(this.states, function(x){
 		return 	(x.node
 				&& x.node.type === 'VariableDeclaration'
 				&& !x.node.declarations[0].init);
 	});
 
-	var variableDeclarationsAlias = findNodes(states, function(x){
+	var variableDeclarationsAlias = findNodes(this.states, function(x){
 		return 	(x.node && x.node.declarations && x.node.declarations[0].init
 				&& x.node.type === 'VariableDeclaration'
 				&& x.node.declarations[0].init.type === 'Identifier'
 				);
 	});
 
-	var functionCalls = findNodes(states, function(x){
+	var functionCalls = findNodes(this.states, function(x){
 		return 	(x.node
 			&&  ((x.node.type === 'CallExpression')
 				||	(x.node.type === 'ExpressionStatement' && x.node.expression.type === 'CallExpression')

@@ -105,20 +105,13 @@ FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm, debug)
     //for each of the edges pointing at the accept state of the graph
     //redirect them to point at dest
     for(var acc in fsm.acceptStates){
-    	console.log((parseInt(acc) + offset) + ' => ' + to);
+    	//console.log((parseInt(acc) + offset) + ' => ' + to);
     	this.retargetEdges(parseInt(acc) + offset, to);
     	delete this.acceptStates[parseInt(acc) + offset];
     }
 
-    //this one gives some trouble if the first one is a cat followed by a kleene star
     this.deleteEdge(from, label, to); 
-
-    console.log('Check ut ut');
-
     this.renumberNodes();
-
-    console.log(JSON.stringify(this));
-
     return this;
 }
 
@@ -126,7 +119,7 @@ FiniteStateMachine.prototype.renumberNodes = function(){
 	//TODO BUGGED
 
 	var nodes = this.getNodeNames();
-	console.log(JSON.stringify(nodes));
+	//console.log(JSON.stringify(nodes));
 	var n;
 	for(var i = 0; i < nodes.length; i++){
 		n = nodes[i];
