@@ -28,8 +28,8 @@ ExistentialQuery.prototype.runNaive = function(){
 				if(tripleP.from.equals(this.s0)){ //Is de NFA-node gelijk aan de initial (NFA-)node
 					//CHECK LAMBDA
 					theta = this.match(tripleG.edge,tripleP.edge);
-					tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);
-					//if(tripleP.edge.name === 'lambda' && !this.contains(R, tripleTemp)){
+					//tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);
+					//if(tripleP.edge.name === 'lambda'){ //&& !this.contains(R, tripleTemp)){
 					//	W = this.union(W, [tripleTemp]);
 					//}
 					//else{
@@ -43,7 +43,8 @@ ExistentialQuery.prototype.runNaive = function(){
 	}
 	var E = [];
 	while(W.length > 0){
-		tripleW = W.pop();
+		//tripleW = W.pop();
+		tripleW = W.shift();
 		R = this.union(R, [tripleW]);
 		for(var i = 0; i < this.G.length; i++){
 			tripleG = this.G[i];
@@ -53,7 +54,7 @@ ExistentialQuery.prototype.runNaive = function(){
 					if(tripleP.from.equals(tripleW.s)){ //KLOPT DIT WEL????
 						//CHECK LAMBDA
 						theta = this.match(tripleG.edge,tripleP.edge); //theta = [[{x:a},{callee:sink}]]
-						tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);	
+						//tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);	
 						//if(tripleP.edge.name === 'lambda' && !this.contains(R, tripleTemp)){
 						//	W = this.union(W, [tripleTemp]);
 						//}
@@ -310,6 +311,10 @@ ExistentialQuery.prototype.merge = function(theta, otherTheta){
 	}
 	
 	return otherTheta;*/
+
+	//console.log(JSON.stringify(theta));
+	//console.log(JSON.stringify(otherTheta));
+
 	var res = [];
 	function mergeIterate(theta, otherTheta){
 		var p;
@@ -329,6 +334,8 @@ ExistentialQuery.prototype.merge = function(theta, otherTheta){
 				}
 			}
 		}
+		//console.log(JSON.stringify(otherTheta));
+		//console.log('----');
 		return otherTheta;
 	}
 

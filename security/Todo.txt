@@ -4,3 +4,8 @@ TODO:
 - Negatie in algoritme
 - Testen
 - STAR/PLUS uitvissen waarom niet werkt (lambda?)
+
+NOTES:
+- Kan [{x:'a'}, {x:'b'}] ?
+- Bij lambda moet je geen stap doen! (ELSE UIT COMMENTAAR? DENK OVER NA) (+ check bug als t door callee verander)
+- Ipv [{x:'a'}, {callee:'b'}] => [{x:'a', callee:'b'}] ??

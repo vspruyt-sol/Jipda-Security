@@ -44,15 +44,13 @@ SecurityAnalysis.prototype.detect = function(){
 	 */
 	 //new ExistentialQuery(d1, d2, [d2[2].target], d1[2].from, d2[0].from);
 	var eq = new ExistentialQuery(this.tripleStore, this.nfa.triples, this.nfa.acceptStates, this.tripleStore[0].from, this.nfa.startingNode);
-
+	
 	console.log(this.processQueryResult(eq.runNaive()));
 	
 }
 
 SecurityAnalysis.prototype.processQueryResult = function(queryResult){
 	var processed = [];
-	console.log('Alo?');
-	console.log(queryResult);
 	//1. Strip empty substitutions?
 	for(var i = 0; i < queryResult.length; i++){
 		if(queryResult[i].theta.length > 0) {
@@ -70,16 +68,13 @@ SecurityAnalysis.prototype.processQueryResult = function(queryResult){
 SecurityAnalysis.prototype.markQueryResult = function(results, marker){
 	//var ids = _fromStateIds(triples);
 	var ids = results.map(function(x){ return x.v._id; });
-	var idx, info;
-	for(var i = 0; i < this.states.length; i++){
-		idx = ids.indexOf(this.states[i]._id);
-		if(idx > -1) {
-			info = objToString(results[idx].theta);
-			this.states[i].marker = {
+	var info;
+	for(var i = 0; i < ids.length; i++){
+			info = this.states[ids[i]].marker ? this.states[ids[i]].marker.info + ' | '+ objToString(results[i].theta) : objToString(results[i].theta);
+			this.states[ids[i]].marker = {
 										'className'	: marker,
 										'info'		: info
 									 };
-		}
 	}
 }
 
@@ -165,10 +160,10 @@ function containsTriple(a, obj) {
 }
 
 function objToString(obj){
-	var str = '';
+	var str = '&nbsp;&nbsp;&nbsp;&nbsp;';
 	for(var i = 0; i < obj.length; i++){
 		for(var key in obj[i]){
-			str += '<b class="resultKey">' + key + '</b>' + ': ' + obj[i][key] + '.&nbsp;&nbsp;&nbsp;&nbsp;'; 
+			str += '<b class="resultKey">' + key + '</b>' + ': ' + obj[i][key] + '&nbsp;&nbsp;&nbsp;&nbsp;'; 
 		}
 	}
 	
