@@ -13,7 +13,6 @@ function ExistentialQuery(G, P, F, v0, s0){
 	this.s0 = s0;	
 }
 
-//HANDLE LAMBDA?
 ExistentialQuery.prototype.runNaive = function(){
 	//used variables
 	var tripleG, tripleP, theta, theta2,
@@ -30,9 +29,9 @@ ExistentialQuery.prototype.runNaive = function(){
 					//CHECK LAMBDA
 					theta = this.match(tripleG.edge,tripleP.edge);
 					tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);
-					if(tripleP.edge.name === 'lambda' && !this.contains(R, tripleTemp)){
-						W = this.union(W, [tripleTemp]);
-					}
+					//if(tripleP.edge.name === 'lambda' && !this.contains(R, tripleTemp)){
+					//	W = this.union(W, [tripleTemp]);
+					//}
 					//else{
 						for(var k = 0; k < theta.length; k++){
 							W = this.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
@@ -55,9 +54,9 @@ ExistentialQuery.prototype.runNaive = function(){
 						//CHECK LAMBDA
 						theta = this.match(tripleG.edge,tripleP.edge); //theta = [[{x:a},{callee:sink}]]
 						tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);	
-						if(tripleP.edge.name === 'lambda' && !this.contains(R, tripleTemp)){
-							W = this.union(W, [tripleTemp]);
-						}
+						//if(tripleP.edge.name === 'lambda' && !this.contains(R, tripleTemp)){
+						//	W = this.union(W, [tripleTemp]);
+						//}
 						//else{
 							for(var k = 0; k < theta.length; k++){
 								theta2 = this.merge(tripleW.theta, theta[k]);
@@ -178,7 +177,7 @@ ExistentialQuery.prototype.match = function(el, tl){
 		default:
 			throw "Can not handle 'tl.name': " + tl.name + ". Source: ExistentialQuery.match(el, tl)"
 	}
-	//console.log(substitutions);
+	//console.log(substitutions);	
 	substitutions.push(_map);
 	//if(!Object.keys(_map).lenght === 0)
 	//if(_.keys(_map).length > 0) {console.log('tet');substitutions.push(_map);}
@@ -190,7 +189,7 @@ ExistentialQuery.prototype.match = function(el, tl){
 // MATCHING
 
 ExistentialQuery.prototype.isWildCard = function(x){
-	return x && (x === '_'); 
+	return (x === undefined || (x === '_')); 
 }
 
 // TODO BLOCKSTATEMENTS MET 1 ELEMENT
@@ -198,11 +197,12 @@ ExistentialQuery.prototype.isWildCard = function(x){
 ExistentialQuery.prototype.matchAssign = function(el, tl){
 	//tl can contain fields for: 
 	//leftName
-	var elInfo = el.node;
+	var elInfo = el.node; //als deze niet bestaat dan hebben we Kont of iets dergelijks
 	var tlInfo = tl.state;
 	var subst = [];
 	var _map = {};
-	if(elInfo && el.name === 'ExpressionStatement' && elInfo.expression.type === 'AssignExpression'){
+
+	if(elInfo && elInfo.type === 'ExpressionStatement' && elInfo.expression.type === 'AssignExpression'){
 		if(!this.isWildCard(tlInfo.leftName)) {
 			//_map[tlInfo.leftName] = elInfo.expression.left.name;
 			var obj = {};
@@ -210,7 +210,20 @@ ExistentialQuery.prototype.matchAssign = function(el, tl){
 			subst.push(obj);
 		}
 	}
+	else if(elInfo && elInfo.type === 'VariableDeclaration' && elInfo.declarations.length > 0){
+		if(!this.isWildCard(tlInfo.leftName)) {
+			//_map[tlInfo.leftName] = elInfo.expression.left.name;
 
+			for(var i = 0; i < elInfo.declarations.length; i++){
+				if(elInfo.declarations[i].init && elInfo.declarations[i].init.type !== 'FunctionExpression'){ //check om te zien of er geassigned is
+					var obj = {};
+					obj[tlInfo.leftName] = elInfo.declarations[i].id.name;
+					subst.push(obj);
+				}
+			}
+			
+		}
+	}
 	return subst;
 }
 
@@ -218,27 +231,23 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 	//tl can contain fields for: 
 	//argument
 	//callee
-	console.log('Match fCall:');
-	console.log(el);
-	console.log(tl);
 	var elInfo = el.node;
 	var tlInfo = tl.state;
-	console.log('elInfo && el.name === \'ExpressionStatement\' && elInfo.expression.type === \'CallExpression\'');
-	console.log(elInfo && el.name === 'ExpressionStatement' && elInfo.expression.type === 'CallExpression');
-
-	var argumentFirstLiteral = function(args){
+	
+	var argumentFirst = function(args){
 		for(var i = 0; i < args.length; i++){
-			if(args[i].type === 'Literal') return args[i].name;
+			if(args[i].type === 'Literal' || args[i].type === 'Identifier') return args[i].name;
 		}
-	return false;
+		return false;
 	}
+
 	var subst = [];
 	var _map = {};
-	//Momenteel voor arguments enkel ondersteuning voor literals & single argument
-	if(elInfo && el.name === 'CallExpression'){
+	//Momenteel voor arguments enkel ondersteuning voor literals/identifiers & single argument
+	if(elInfo && elInfo.type === 'CallExpression'){
 		if (!this.isWildCard(tlInfo.argument)) {
 			var obj = {}; 
-			obj[tlInfo.argument] = argumentFirstLiteral(elInfo.arguments); 
+			obj[tlInfo.argument] = argumentFirst(elInfo.arguments); 
 			subst.push(obj);
 			//_map[tlInfo.argument] = argumentFirstLiteral(elInfo.arguments);
 		}
@@ -249,10 +258,10 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 			//_map[tlInfo.callee] = elInfo.callee.name;
 		}
 	}
-	else if(elInfo && el.name === 'ExpressionStatement' && elInfo.expression.type === 'CallExpression'){
+	else if(elInfo && elInfo.type === 'ExpressionStatement' && elInfo.expression.type === 'CallExpression'){
 		if (!this.isWildCard(tlInfo.argument)) {
 			var obj = {}; 
-			obj[tlInfo.argument] = argumentFirstLiteral(elInfo.expression.arguments); 
+			obj[tlInfo.argument] = argumentFirst(elInfo.expression.arguments); 
 			subst.push(obj);
 			//_map[tlInfo.argument] = argumentFirstLiteral(elInfo.expression.arguments);
 		}	
@@ -263,17 +272,16 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 			//_map[tlInfo.callee] = elInfo.expression.callee.name;
 		}
 	}
-	else if(elInfo && el.name === 'BlockStatement' && elInfo.body.length === 1 
+	else if(elInfo && elInfo.type === 'BlockStatement' && elInfo.body.length === 1 
 			&& elInfo.body[0].type === 'ExpressionStatement' 
 			&& elInfo.body[0].expression.type === 'CallExpression'){
-
 		if (!this.isWildCard(tlInfo.argument)) {
-			var obj = {}; 
-			obj[tlInfo.argument] = argumentFirstLiteral(elInfo.body[0].expression.arguments); 
+			var obj = {};
+			obj[tlInfo.argument] = argumentFirst(elInfo.body[0].expression.arguments); 
 			subst.push(obj);
 			//_map[tlInfo.argument] = argumentFirstLiteral(elInfo.body[0].expression.arguments);
 		}
-		if (!this.isWildCard(tlInfo.argument)) {
+		if (!this.isWildCard(tlInfo.callee)) {
 			var obj = {}; 
 			obj[tlInfo.callee] =  elInfo.body[0].expression.callee.name ;
 			subst.push(obj);
@@ -300,7 +308,7 @@ ExistentialQuery.prototype.merge = function(theta, otherTheta){
 	        }
 	    }
 	}
-
+	
 	return otherTheta;*/
 	var res = [];
 	function mergeIterate(theta, otherTheta){
@@ -309,21 +317,14 @@ ExistentialQuery.prototype.merge = function(theta, otherTheta){
 			for(var prop in theta[i]){ //only one prop...
 				if(theta[i].hasOwnProperty(prop)){
 					p = findProp(otherTheta, prop);
-					if(p){ //if property found, they need to match
-						//if(p === '_'){ //If wildcard
-							//Change otherTheta property
-						//	setProp(otherTheta, prop, theta[i][prop]);
-						//}
-						//else if(theta[i][prop] === '_'){ //If wildcard
-							//this is okay, otherTheta has correct value
-						//}
-						//else 
+					if(p){ 
 						if(!(p === theta[i][prop])){ //If not equal
 							return false;
 						}
 					}
 					else if(_.keys(theta[i]).length > 0){//not found
 						otherTheta.push(theta[i]);
+						//res.push(theta[i]);
 					}
 				}
 			}

@@ -8,9 +8,10 @@ function EdgeLabel(name, state)
 
 EdgeLabel.prototype.equals = function (x)
 {
+  console.log('WHEREVER I AM CALLED, I MUST BE CORRECTED (EVAL/KONT/...STATE vs EDGELABEL')
     return  (x instanceof EdgeLabel)
-        && this.name === x.name
-        && this.state._id === x.state._id || this.state.equals(x.state);
+        && this.name === x.name;
+        //&& this.state._id === x.state._id || this.state.equals(x.state);
         //&& _.isEqual(this.info, x.info);
 }
 

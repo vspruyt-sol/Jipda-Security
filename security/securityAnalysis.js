@@ -18,12 +18,14 @@ SecurityAnalysis.prototype.initialize = function(){
     this.generateStates(system.initial);
     this.graphToTriples(system);
 
+    console.log(this.states);
+
     //regex
     try {
 		var rpe = eval('var rpe = new RegularPathExpression(); rpe.' + this.regexSrc);
-		console.log(rpe);
+		//console.log(rpe);
 		this.nfa = rpe.toNFA();
-		console.log(this.nfa);
+		//console.log(this.nfa);
 		output.innerHTML = '';
 	}
 	catch(err) {
@@ -41,18 +43,43 @@ SecurityAnalysis.prototype.detect = function(){
 	 * s0 = initial state van P
 	 */
 	 //new ExistentialQuery(d1, d2, [d2[2].target], d1[2].from, d2[0].from);
-	var eq = new ExistentialQuery(this.tripleStore, this.nfa.triples, this.nfa.acceptStates, this.tripleStore[5].from, this.nfa.startingNode);
-	//console.log(eq);
-	console.log(this.tripleStore);
-	console.log(this.nfa.triples);
-	//console.log(eq.runNaive());
+	var eq = new ExistentialQuery(this.tripleStore, this.nfa.triples, this.nfa.acceptStates, this.tripleStore[0].from, this.nfa.startingNode);
+
+	console.log(this.processQueryResult(eq.runNaive()));
+	
+}
+
+SecurityAnalysis.prototype.processQueryResult = function(queryResult){
+	var processed = [];
+	console.log('Alo?');
+	console.log(queryResult);
+	//1. Strip empty substitutions?
+	for(var i = 0; i < queryResult.length; i++){
+		if(queryResult[i].theta.length > 0) {
+			processed.push(queryResult[i]);
+		}
+	}
+
+
+	this.markQueryResult(processed, 'violation');
+
+	return processed;
 }
 
 //GRAPHICS
-function _markStates(ids, marker){
+SecurityAnalysis.prototype.markQueryResult = function(results, marker){
 	//var ids = _fromStateIds(triples);
+	var ids = results.map(function(x){ return x.v._id; });
+	var idx, info;
 	for(var i = 0; i < this.states.length; i++){
-		if(ids.indexOf(this.states[i]._id) > -1) this.states[i].marker = marker;
+		idx = ids.indexOf(this.states[i]._id);
+		if(idx > -1) {
+			info = objToString(results[idx].theta);
+			this.states[i].marker = {
+										'className'	: marker,
+										'info'		: info
+									 };
+		}
 	}
 }
 
@@ -70,7 +97,7 @@ SecurityAnalysis.prototype.graphToTriples = function(g){
 	//initial node only has 1 successor
 	this.tripleStore.push(new GraphTriple(
 			new DummyNode(g.initial._id), 
-			g.initial, 
+			g.initial,
 			new DummyNode(g.initial._successors[0].state._id), true)
 	);
 
@@ -137,6 +164,16 @@ function containsTriple(a, obj) {
     return false;
 }
 
+function objToString(obj){
+	var str = '';
+	for(var i = 0; i < obj.length; i++){
+		for(var key in obj[i]){
+			str += '<b class="resultKey">' + key + '</b>' + ': ' + obj[i][key] + '.&nbsp;&nbsp;&nbsp;&nbsp;'; 
+		}
+	}
+	
+	return str;
+}
 
 
 //NAVIGATION

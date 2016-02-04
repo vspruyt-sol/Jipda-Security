@@ -85,7 +85,8 @@
 	function doIt2(){
 		//get source
 		var src = editor.getValue();	
-		var reg = regex.getValue();	
+		var reg = regex.getValue();
+		$('div#queryInfo').show();
 		var output = document.getElementById("output");
     	localStorage.securitySrc = src;
     	localStorage.regex = reg;
@@ -94,10 +95,6 @@
     	//initialize everything
     	secAn.initialize();
 
-		var g = createDagreGraph(secAn.states);
-    	drawDagreGraph(g, secAn.states, secAn.transitions);
-
-
 		
 		if(secAn.nfa){
 		//	var nf = createNFAGraph(secAn.nfa);
@@ -105,9 +102,9 @@
     	//	drawNFAGraph(nf);
     		secAn.detect();
 		}
-		else{
 
-		}
+		var g = createDagreGraph(secAn.states);
+    	drawDagreGraph(g, secAn.states, secAn.transitions);
 		
 	}
 	
@@ -194,6 +191,9 @@
 				</defs>	
 	    	<g transform="translate(20,20)"/>
 			</svg>
+		</div>
+		<div id="queryInfo" style="display: none;">
+			Hover over a marked node to see the substitutions.
 		</div>
 	</div>
 </body>

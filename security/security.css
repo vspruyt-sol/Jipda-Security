@@ -7,6 +7,20 @@ html
   font-family: 'Open Sans Condensed';
 }
 
+.resultKey{
+  font-size: 24px;
+}
+
+#graph{
+ height: 85%;
+}
+
+#queryInfo{
+  height: 15%;
+  border-top: 1px solid grey;
+  padding: 10px 0 10px 15px;
+}
+
 #left
 {
   float:left;

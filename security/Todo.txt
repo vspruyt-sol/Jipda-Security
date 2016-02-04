@@ -1,6 +1,6 @@
 TODO: 
-- Find end of functioncall (context ID is 1tje lager -> uit functie springen)
+- Find end of functioncall
 - Negatie in regex conversion
 - Negatie in algoritme
-- 'nop' -> 'lambda'
 - Testen
+- STAR/PLUS uitvissen waarom niet werkt (lambda?)

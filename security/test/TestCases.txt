@@ -1,0 +1,23 @@
+detect usage of variable before defining it
+
+var source = function(x){
+  return x;
+}
+
+var y = 4;
+var x = 2;
+if(x > 2){
+  source(y);
+}
+else{
+  source(t);
+}
+
+var t = 4;
+
+ wildcard().wildcard().wildcard().wildcard().wildcard().wildcard()
+.wildcard().wildcard().wildcard().wildcard().wildcard().wildcard()
+.fCall({callee: 'callee', argument: 'arg'})
+.wildcard().wildcard().wildcard()
+.assign({leftName:'arg'})
+-----------------------------------------
