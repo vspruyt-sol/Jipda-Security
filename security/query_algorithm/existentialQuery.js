@@ -28,6 +28,7 @@ ExistentialQuery.prototype.runNaive = function(){
 				if(tripleP.from.equals(this.s0)){ //Is de NFA-node gelijk aan de initial (NFA-)node
 					//CHECK LAMBDA
 					theta = this.match(tripleG.edge,tripleP.edge);
+					//console.log(theta);
 					//tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);
 					//if(tripleP.edge.name === 'lambda'){ //&& !this.contains(R, tripleTemp)){
 					//	W = this.union(W, [tripleTemp]);
@@ -41,6 +42,7 @@ ExistentialQuery.prototype.runNaive = function(){
 			}
 		}
 	}
+	//console.log(W);
 	var E = [];
 	while(W.length > 0){
 		//tripleW = W.pop();
@@ -171,14 +173,12 @@ ExistentialQuery.prototype.match = function(el, tl){
 								break;
 		case '_'			: 	_map = []; 
 								break;
-		case 'lambda'		: 	_map = []; 
-								break;
 		case 'dummy'		: 	_map = [];
 								break;
 		default:
 			throw "Can not handle 'tl.name': " + tl.name + ". Source: ExistentialQuery.match(el, tl)"
 	}
-	//console.log(substitutions);	
+	//console.log(substitutions);
 	substitutions.push(_map);
 	//if(!Object.keys(_map).lenght === 0)
 	//if(_.keys(_map).length > 0) {console.log('tet');substitutions.push(_map);}
@@ -239,7 +239,7 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 		for(var i = 0; i < args.length; i++){
 			if(args[i].type === 'Literal' || args[i].type === 'Identifier') return args[i].name;
 		}
-		return false;
+		return 'Todo: non-literal or non-identifier';
 	}
 
 	var subst = [];
