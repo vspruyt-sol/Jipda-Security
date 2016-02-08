@@ -21,3 +21,30 @@ var t = 4;
 .wildcard().wildcard().wildcard()
 .assign({leftName:'arg'})
 -----------------------------------------
+
+var test1 = [
+		new GraphTriple(new DummyNode(0), 
+						new EdgeLabel('fCall', {callee: 'callee', argument: 'x'}), 
+						new DummyNode(2)),
+		new GraphTriple(new DummyNode(0), 
+						new EdgeLabel('_', {}), 
+						new DummyNode(1)),
+		new GraphTriple(new DummyNode(1), 
+						new EdgeLabel('_', {}), 
+						new DummyNode(1)),
+		new GraphTriple(new DummyNode(1), 
+						new EdgeLabel('fCall', {callee: 'callee', argument: 'x'}), 
+						new DummyNode(2)),
+		new GraphTriple(new DummyNode(2), 
+						new EdgeLabel('assign', {leftName : 'y'}), 
+						new DummyNode(4)),
+		new GraphTriple(new DummyNode(2), 
+						new EdgeLabel('_', {}), 
+						new DummyNode(3)),
+		new GraphTriple(new DummyNode(3), 
+						new EdgeLabel('_', {}), 
+						new DummyNode(3)),
+		new GraphTriple(new DummyNode(3), 
+						new EdgeLabel('assign', {leftName : 'y'}), 
+						new DummyNode(4))
+		];

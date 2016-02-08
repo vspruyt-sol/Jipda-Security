@@ -179,7 +179,10 @@ ExistentialQuery.prototype.match = function(el, tl){
 			throw "Can not handle 'tl.name': " + tl.name + ". Source: ExistentialQuery.match(el, tl)"
 	}
 	//console.log(substitutions);
-	substitutions.push(_map);
+	if(_map){
+		substitutions.push(_map);
+	}
+	
 	//if(!Object.keys(_map).lenght === 0)
 	//if(_.keys(_map).length > 0) {console.log('tet');substitutions.push(_map);}
 	//console.log(_map);
@@ -225,7 +228,7 @@ ExistentialQuery.prototype.matchAssign = function(el, tl){
 			
 		}
 	}
-	return subst;
+	return (subst.length === 0 ? false : subst);
 }
 
 ExistentialQuery.prototype.matchFCall = function(el, tl){
@@ -290,7 +293,7 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 		}
 		//
 	}
-	return subst; //substitution
+	return (subst.length === 0 ? false : subst); //substitution
 }
 // END MATCHING
 
@@ -312,9 +315,6 @@ ExistentialQuery.prototype.merge = function(theta, otherTheta){
 	
 	return otherTheta;*/
 
-	//console.log(JSON.stringify(theta));
-	//console.log(JSON.stringify(otherTheta));
-
 	var res = [];
 	function mergeIterate(theta, otherTheta){
 		var p;
@@ -334,8 +334,6 @@ ExistentialQuery.prototype.merge = function(theta, otherTheta){
 				}
 			}
 		}
-		//console.log(JSON.stringify(otherTheta));
-		//console.log('----');
 		return otherTheta;
 	}
 

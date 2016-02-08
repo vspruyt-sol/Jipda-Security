@@ -35,35 +35,6 @@ SecurityAnalysis.prototype.initialize = function(){
 }
 
 //TEST GRAPHS
-//Assign, then fCall with it
-var test1 = [
-		new GraphTriple(new DummyNode(0), 
-						new EdgeLabel('assign', {leftName : 'x'}), 
-						new DummyNode(2)),
-		new GraphTriple(new DummyNode(0), 
-						new EdgeLabel('_', {}), 
-						new DummyNode(1)),
-		new GraphTriple(new DummyNode(1), 
-						new EdgeLabel('_', {}), 
-						new DummyNode(1)),
-		new GraphTriple(new DummyNode(1), 
-						new EdgeLabel('assign', {leftName : 'x'}), 
-						new DummyNode(2)),
-		new GraphTriple(new DummyNode(2), 
-						new EdgeLabel('fCall', {callee: 'callee', argument: 'x'}), 
-						new DummyNode(4)),
-		new GraphTriple(new DummyNode(2), 
-						new EdgeLabel('_', {}), 
-						new DummyNode(3)),
-		new GraphTriple(new DummyNode(3), 
-						new EdgeLabel('_', {}), 
-						new DummyNode(3)),
-		new GraphTriple(new DummyNode(3), 
-						new EdgeLabel('fCall', {callee: 'callee', argument: 'x'}), 
-						new DummyNode(4))
-		];
-
-
 SecurityAnalysis.prototype.detect = function(){
 	/*
 	 * G = States van JIPDA graph
@@ -72,11 +43,9 @@ SecurityAnalysis.prototype.detect = function(){
 	 * v0 = initial state van G
 	 * s0 = initial state van P
 	 */
-	 //new ExistentialQuery(d1, d2, [d2[2].target], d1[2].from, d2[0].from);
 	//var eq = new ExistentialQuery(this.tripleStore, this.nfa.triples, this.nfa.acceptStates, this.tripleStore[0].from, this.nfa.startingNode);
-	var eq = new ExistentialQuery(this.tripleStore, test1, [new DummyNode(4)], this.tripleStore[5].from, new DummyNode(0));
+	var eq = new ExistentialQuery(this.tripleStore, test1, [new DummyNode(4)], this.tripleStore[0].from, new DummyNode(0));
 	
-	console.log('ALLO');
 	console.log(this.processQueryResult(eq.runNaive()));
 	
 }
