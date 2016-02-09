@@ -20,6 +20,51 @@ FiniteStateMachine.prototype.getNodeNames = function(){
 	return nodes.getUnique().sort(function(a,b){ return a-b;});
 }
 
+FiniteStateMachine.prototype.getEdgeLabels = function(){
+	var labels = [];
+	for(var key in this.graph){
+		for(var lbl in this.graph[key]){
+			labels.push(lbl);
+		}
+	}
+	return flatten(labels).getUnique();
+}
+
+FiniteStateMachine.prototype.closureOf = function(nodeLabel){
+	var closure = flatten([nodeLabel]);
+	var changed = true;
+	var node, reachable, lambdaNode;
+	while(changed){
+		changed = false;
+		for(var i = 0; i < closure.length; i++){
+			node = closure[i];
+			if(this.graph[node] !== undefined && this.graph[node]['lambda'] !== undefined){
+				reachable = flatten([this.graph[node]['lambda']]);
+				for(var j = 0; j < reachable.length; j++){
+					lambdaNode = reachable[j];
+					if(closure.indexOf(lambdaNode) === -1){
+						closure.push(lambdaNode);
+						changed = true;
+					}
+				}
+			}
+		}
+	}
+	return closure;
+}
+
+//TODO: check datatypes
+FiniteStateMachine.prototype.acceptStateOfClosure = function(closure){
+	var state;
+	for(var i = 0; i < closure.length; i++){
+		state = closure[i];
+		if(this.acceptStates[state] !== undefined){
+			return this.acceptStates[state]; //GEEFT NIET JUIST TERUG?
+		}
+	}
+	return false;
+}
+
 FiniteStateMachine.prototype.attachGraph = function(attachPoint, fsm, debug){
 	var nodeCount = this.getNodeCount();
 	
@@ -249,6 +294,10 @@ var removeFromArray = function(arr, obj) {
 	}
 }
 
+var flatten = function(arr){
+	return [].concat.apply([], arr);
+}
+
 //https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 function clone(objectToBeCloned) {
 
@@ -279,4 +328,6 @@ function clone(objectToBeCloned) {
   
   return objectClone;
 }
+
+
 

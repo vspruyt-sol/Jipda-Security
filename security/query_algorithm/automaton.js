@@ -1,10 +1,10 @@
-function NFA(acceptStates, triples, startingNode){
+function Automaton(acceptStates, triples, startingNode){
 	this.acceptStates = acceptStates || [];
 	this.triples = triples || [];
 	this.startingNode = startingNode || 0;
 }
 
-NFA.prototype.fromFSM = function(fsm, table){
+Automaton.prototype.fromFSM = function(fsm, table){
 
 	var _lookupEdge = function(edgeName){
 		if(edgeName.indexOf('idx') < 0) return new EdgeLabel(edgeName, {});

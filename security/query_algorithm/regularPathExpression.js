@@ -123,11 +123,29 @@ RegularPathExpression.prototype.toNFA = function(){
 	//returns a finite state machine, we need to convert it to array of graph triples, e.g.:
 	// new GraphTriple(new DummyNode(1), new EdgeLabel('assign', {leftName: 'x'}), new DummyNode(2))
 	var fsm = tsc.toNFA(this._map);
-	var nfa = new NFA();
+	var nfa = new Automaton();
 	//One way to make a nfa, from a FSM
 	nfa.fromFSM(fsm, this._map); //built so that NFA's don't depend on FSM's per sé.
 	//return the NFA
 	return nfa;
+}
+
+RegularPathExpression.prototype.toDFA = function(){
+	if(this.depth !== 0) throw 'Not all braces are closed!'; 
+	
+	var tsc = new ThompsonConstruction();
+	var ssc = new SubsetConstruction();
+	
+	var nfa = tsc.toNFA(this._map);
+	var newFsm = ssc.toDFA(nfa);
+
+	var dfa = new Automaton();
+
+	dfa.fromFSM(newFsm, this._map);
+	//return the DFA
+	return dfa;
+
+
 }
 
 /**
