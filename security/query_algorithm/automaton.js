@@ -6,10 +6,11 @@ function Automaton(acceptStates, triples, startingNode){
 
 Automaton.prototype.fromFSM = function(fsm, table){
 	var _lookupEdge = function(edgeName){
+		var neg = edgeName.charAt(0) === '¬';
 		if(edgeName.indexOf('idx') < 0) return new EdgeLabel(edgeName, {});
-		var idx = (edgeName.charAt(0) === '¬') ? edgeName.substring(4, edgeName.length) : edgeName.substring(3, edgeName.length);
+		var idx = neg ? edgeName.substring(4, edgeName.length) : edgeName.substring(3, edgeName.length);
 		var regexPart = table[idx];
-		return new EdgeLabel(regexPart.name, regexPart.obj);
+		return new EdgeLabel(regexPart.name, regexPart.obj, neg);
 	}
 
 	//variables
@@ -38,7 +39,4 @@ Automaton.prototype.fromFSM = function(fsm, table){
 			}
 		}
 	}
-
-	console.log(this);
-
 }

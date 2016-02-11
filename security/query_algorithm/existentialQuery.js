@@ -34,7 +34,6 @@ ExistentialQuery.prototype.runNaive = function(){
 			}
 		}
 	}
-	//console.log(W);
 	var E = [];
 	while(W.length > 0){
 		tripleW = W.shift();
@@ -46,10 +45,17 @@ ExistentialQuery.prototype.runNaive = function(){
 					tripleP = this.P[j];	
 					if(tripleP.from.equals(tripleW.s)){ //KLOPT DIT WEL????
 						//CHECK LAMBDA
+						//UITCOMMENTEN VOOR NEGATIE
 						theta = this.match(tripleG.edge,tripleP.edge); //theta = [[{x:a},{callee:sink}]]
 						for(var k = 0; k < theta.length; k++){
 							theta2 = this.merge(tripleW.theta, theta[k]);
 							if(theta2){
+						
+						//komt in plaats
+						//theta2 = this.extensions(tripleW.theta, tripleP.edge); // [[{},{}],[{},{}]]
+						//for(var k = 0; k < theta2.length; k++){
+						//	if(this.match(tripleG.edge, tripleP.edge)){ //match(el, theta2(tl)) != {{}} KAN PROBLEMEN GEVEN
+						//einde komt in plaats
 								tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
 								if(!this.contains(R, tripleTemp)){
 									W = this.union(W, [tripleTemp]);
@@ -168,10 +174,9 @@ ExistentialQuery.prototype.match = function(el, tl){
 		substitutions.push(_map);
 	}
 	
-	//if(!Object.keys(_map).lenght === 0)
-	//if(_.keys(_map).length > 0) {console.log('tet');substitutions.push(_map);}
-	//console.log(_map);
-	//substitutions.push(_map);
+	//TODO
+	//Als Substitutions elementen bevat, dan matcht el tl onder theta
+	//M.a.w. moeten we {{}} returnen, anders returnen we {}
 	return substitutions; //substitution
 }
 

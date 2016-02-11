@@ -28,13 +28,12 @@ SecurityAnalysis.prototype.initialize = function(){
 		this.nfa = rpe.toNFA();
 		this.dfa = rpe.toDFA();
 		console.log(this.dfa);
-		//console.log(this.nfa);
 		output.innerHTML = '';
 	}
 	catch(err) {
 		this.nfa = false;
 		this.dfa = false;
-	    output.innerHTML = 'Something went wrong parsing the RPE. Check your syntax.';
+	    output.innerHTML = err;
 	}
 }
 

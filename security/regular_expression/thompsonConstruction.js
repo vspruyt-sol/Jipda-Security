@@ -1,8 +1,3 @@
-/**
- * Globals
- */
-//var PENDING = 0;
-
 function ThompsonConstruction(){
 }
 
@@ -46,6 +41,7 @@ ThompsonConstruction.prototype.buildMachineStack = function(regex){
 	//Regex is an array of RegexPart's
 	var skip = 0;
     var machines = [];
+    var negated = false;
     var regexPart, nextChar, succRegexPart, nextSuccChar, subExpression, nestingDepth, subGraph, ctr;
     for(var i = 0; i < regex.length; i++){
     	if(skip > 0){ //Advance pointer until past parentheses
@@ -61,7 +57,7 @@ ThompsonConstruction.prototype.buildMachineStack = function(regex){
     		case '*': machines.push([KLEENE_MACHINE(), 	[1,2]]); 		break;
     		case '+': machines.push([PLUS_MACHINE(), 	[1,2]]); 		break;
 			case '|': machines.push([ALT_MACHINE(), 	[1,2,3,4]]);	break;
-    		case ')': throw 'closed paren before opening it.'
+    		case ')': throw 'Closed paren before opening it.'
 			case '(': subExpression = [];
 					  nestingDepth = 0;
 					  ctr = i + 1;
@@ -75,16 +71,24 @@ ThompsonConstruction.prototype.buildMachineStack = function(regex){
 					  	succRegexPart = regex[ctr];
 					  	nextSuccChar = succRegexPart.symbol;
 					  }
-					  subGraph = this.toNFA(subExpression);
 					  skip = subExpression.length + 1;
+					  if(negated){
+					  	subExpression = modifyForNegation(subExpression);
+					  	if(!subExpression) throw 'Incorrect usage of negation. Correct usage: ¬a or ¬(a|b). These terms can be wrapped in multiple braces.'
+						negated = false;
+					  }
+					  subGraph = this.toNFA(subExpression);
 					  machines.push([subGraph, null]);
-  				  	  break;
-			  //case '¬': succRegexPart = regex[++i]; //Negation TODO (wat met ¬(a|b) bijvoorbeeld?) -> var negated;
-				//				  nextSuccChar = succRegexPart.symbol;
-				//			  	  skip = 1;
-				//				  machines.push([CAT_MACHINE('-' + nextSuccChar), null]);
-    		//		  		break;
-    		default:  machines.push([CAT_MACHINE(nextChar), null]);
+					  break;
+			case '¬': negated = true;
+			  		  break;
+    		default:  if(negated){
+    				  	machines.push([CAT_MACHINE('¬' + nextChar), null]);
+    				  	negated = false;
+    				  }
+    				  else{
+    				  	machines.push([CAT_MACHINE(nextChar), null]);
+    				  }
     				  break;
     	}
 
@@ -169,6 +173,58 @@ ThompsonConstruction.prototype.absorbLeftAlternation = function(machines){ //CON
 
 ThompsonConstruction.prototype.absorbRightAlternation = function(machines){
 	return this.absorbLeftAlternation(machines.reverse()).reverse()
+}
+/**
+ * Negation
+ */
+
+ //UGLY CODE ALERT
+var modifyForNegation = function(expression){
+	var negation = new RegexPart('not', undefined, '¬');
+	var foundOr = false;
+	var left = [];
+	var right = [];
+	var stripped = stripBraces(expression);
+
+	//something like ¬((((a))))
+	if (stripped.length === 1) return [negation, stripped[0]];
+
+	//something like ¬((((((a)|(b)))))
+	for(var i = 0; i < expression.length; i++){
+		if(expression[i].symbol === '|') {
+			foundOr = expression[i]; 
+			continue;
+		}
+		if(foundOr){
+			right.push(expression[i]);
+		}
+		else{
+			left.push(expression[i]);
+		}
+	}
+
+	//Found 'or', see of it is a valid negation
+	if (foundOr && left.length > 0 && right.length > 0){
+		left = stripBraces(left);
+		right = stripBraces(right);
+		//insert negation in front
+		left.unshift(negation);
+		left.push(foundOr);
+		left.push(negation);
+		left.push.apply(left, right);
+		return left.length === 5 ? left : false;
+	}
+	//Not an allowed negation
+	return false;
+
+}
+
+var stripBraces = function(expression){
+	if(expression.length < 2) return expression;
+	if(expression[0].symbol === '(' && expression[expression.length - 1].symbol === ')'){
+		return stripBraces(expression.slice(1,-1));
+	}
+	return expression;
 }
 
 /**

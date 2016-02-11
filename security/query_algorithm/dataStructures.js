@@ -1,16 +1,19 @@
 //EdgeLabel
-function EdgeLabel(name, state)
+function EdgeLabel(name, state, negated)
 {
   this.name = name || (state.node? state.node.type : '');
   //store info
   this.state = state || {};
+  this.negated = negated || false;
 }
 
 EdgeLabel.prototype.equals = function (x)
 {
+  //TODO
   console.log('WHEREVER I AM CALLED, I MUST BE CORRECTED (EVAL/KONT/...STATE vs EDGELABEL')
     return  (x instanceof EdgeLabel)
-        && this.name === x.name;
+        && this.name === x.name
+        && this.negated === x.negated;
         //&& this.state._id === x.state._id || this.state.equals(x.state);
         //&& _.isEqual(this.info, x.info);
 }
