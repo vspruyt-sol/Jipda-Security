@@ -26,7 +26,6 @@ SecurityAnalysis.prototype.initialize = function(){
 		var rpe = eval('var rpe = new RegularPathExpression(); rpe.' + this.regexSrc);
 		//console.log(rpe);
 		this.nfa = rpe.toNFA();
-		console.log("TEST HIERONDER");
 		this.dfa = rpe.toDFA();
 		console.log(this.dfa);
 		//console.log(this.nfa);
@@ -35,7 +34,7 @@ SecurityAnalysis.prototype.initialize = function(){
 	catch(err) {
 		this.nfa = false;
 		this.dfa = false;
-	    output.innerHTML = 'Can\'t parse regular path expression';
+	    output.innerHTML = 'Something went wrong parsing the RPE. Check your syntax.';
 	}
 }
 
@@ -48,7 +47,7 @@ SecurityAnalysis.prototype.detect = function(){
 	 * v0 = initial state van G
 	 * s0 = initial state van P
 	 */
-	var eq = new ExistentialQuery(this.tripleStore, this.ndfa.triples, this.dfa.acceptStates, this.tripleStore[0].from, this.dfa.startingNode);
+	var eq = new ExistentialQuery(this.tripleStore, this.dfa.triples, this.dfa.acceptStates, this.tripleStore[0].from, this.dfa.startingNode);
 	//var eq = new ExistentialQuery(this.tripleStore, test1, [new DummyNode(4)], this.tripleStore[0].from, new DummyNode(0));
 	
 	console.log(this.processQueryResult(eq.runNaive()));

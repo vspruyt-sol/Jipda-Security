@@ -26,18 +26,10 @@ ExistentialQuery.prototype.runNaive = function(){
 			for(var j = 0; j < this.P.length; j++){
 				tripleP = this.P[j];	
 				if(tripleP.from.equals(this.s0)){ //Is de NFA-node gelijk aan de initial (NFA-)node
-					//CHECK LAMBDA
 					theta = this.match(tripleG.edge,tripleP.edge);
-					//console.log(theta);
-					//tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);
-					//if(tripleP.edge.name === 'lambda'){ //&& !this.contains(R, tripleTemp)){
-					//	W = this.union(W, [tripleTemp]);
-					//}
-					//else{
-						for(var k = 0; k < theta.length; k++){
-							W = this.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
-						}
-					//}
+					for(var k = 0; k < theta.length; k++){
+						W = this.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
+					}
 				}
 			}
 		}
@@ -45,7 +37,6 @@ ExistentialQuery.prototype.runNaive = function(){
 	//console.log(W);
 	var E = [];
 	while(W.length > 0){
-		//tripleW = W.pop();
 		tripleW = W.shift();
 		R = this.union(R, [tripleW]);
 		for(var i = 0; i < this.G.length; i++){
@@ -56,21 +47,15 @@ ExistentialQuery.prototype.runNaive = function(){
 					if(tripleP.from.equals(tripleW.s)){ //KLOPT DIT WEL????
 						//CHECK LAMBDA
 						theta = this.match(tripleG.edge,tripleP.edge); //theta = [[{x:a},{callee:sink}]]
-						//tripleTemp = new WorklistTriple(tripleG.from, tripleP.target, theta[0]);	
-						//if(tripleP.edge.name === 'lambda' && !this.contains(R, tripleTemp)){
-						//	W = this.union(W, [tripleTemp]);
-						//}
-						//else{
-							for(var k = 0; k < theta.length; k++){
-								theta2 = this.merge(tripleW.theta, theta[k]);
-								if(theta2){
-									tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
-									if(!this.contains(R, tripleTemp)){
-										W = this.union(W, [tripleTemp]);
-									}
+						for(var k = 0; k < theta.length; k++){
+							theta2 = this.merge(tripleW.theta, theta[k]);
+							if(theta2){
+								tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
+								if(!this.contains(R, tripleTemp)){
+									W = this.union(W, [tripleTemp]);
 								}
-							}//end for
-						//}
+							}
+						}//end for		
 					}
 				} //end for 
 			}
@@ -83,7 +68,7 @@ ExistentialQuery.prototype.runNaive = function(){
 	return E;
 }
 
-
+//TODO BUGFIX
 ExistentialQuery.prototype.runMemo = function(){
 	//used variables
 	var tripleG, tripleP, pairWts, theta, pairTemp, quintupleMts, theta2;
@@ -111,7 +96,7 @@ ExistentialQuery.prototype.runMemo = function(){
 		}
 	}
 	while(Wts.length > 0){
-		pairWts = Wts.pop();
+		pairWts = Wts.shift();
 		Rts = this.union(Rts, [pairWts]);
 		for(var i = 0; i < this.G.length; i++){
 			tripleG = this.G[i];
@@ -191,13 +176,10 @@ ExistentialQuery.prototype.match = function(el, tl){
 }
 
 // MATCHING
-
 ExistentialQuery.prototype.isWildCard = function(x){
 	return (x === undefined || (x === '_')); 
 }
 
-// TODO BLOCKSTATEMENTS MET 1 ELEMENT
-// TODO CHECK FOR NOT/WILDCARDS
 ExistentialQuery.prototype.matchAssign = function(el, tl){
 	//tl can contain fields for: 
 	//leftName

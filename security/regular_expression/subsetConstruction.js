@@ -35,7 +35,7 @@ SubsetConstruction.prototype.toDFA = function(nfa){
 		if(_.keys(newGraph[state]).length === 0) delete newGraph[state];
 	}
 
-	return new FiniteStateMachine(newAcceptStates,newGraph, nfa.origin, 'DFA');
+	return this.cleanUpStates(new FiniteStateMachine(newAcceptStates,newGraph, nfa.origin, 'DFA'));
 }
 
 SubsetConstruction.prototype.cleanUpStates = function(nfa){
@@ -44,8 +44,40 @@ SubsetConstruction.prototype.cleanUpStates = function(nfa){
 	var newAcceptStates = {};
 	var tmp = {};
 	var count = -1;
+	var subGraph, toNode, newKey, label;
+
+	console.log(nfa);
+
+	//Number closures
+	for(var key in nfa.graph){
+		subGraph = nfa.graph[key];
+		if(tmp[key] === undefined) tmp[key] = ++count; //todo check correct increment
+		for(var edge in subGraph){
+			toNode = subGraph[edge];
+			if(tmp[toNode] === undefined) tmp[toNode] = ++count;			
+		}
+	}
 
 
+
+	//Replace closures with their new node numbers
+	for(var key in nfa.graph){
+		newKey = tmp[key];
+		newGraph[newKey] = {};
+		for(var edge in nfa.graph[key]){
+			toNode = nfa.graph[key][edge];
+			newGraph[newKey][edge] = tmp[toNode];
+		}
+	}
+
+	//Fill in accept states
+	for(var key in nfa.acceptStates){
+		label = nfa.acceptStates[key];
+		newAcceptStates[tmp[key]] = label;
+	}
+
+	//Return the cleaned up fsm
+	return new FiniteStateMachine(newAcceptStates, newGraph, 0, nfa.tpe);
 }
 
 var arrayContainsArray = function(multiArr, arr){

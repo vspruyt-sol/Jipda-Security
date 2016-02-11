@@ -5,7 +5,6 @@ function Automaton(acceptStates, triples, startingNode){
 }
 
 Automaton.prototype.fromFSM = function(fsm, table){
-
 	var _lookupEdge = function(edgeName){
 		if(edgeName.indexOf('idx') < 0) return new EdgeLabel(edgeName, {});
 		var idx = (edgeName.charAt(0) === '¬') ? edgeName.substring(4, edgeName.length) : edgeName.substring(3, edgeName.length);
@@ -28,7 +27,7 @@ Automaton.prototype.fromFSM = function(fsm, table){
 	for(var key in fsm.graph){
 		subgraph = fsm.graph[key];
 		for(var edge in subgraph){
-			toNodes = subgraph[edge];
+			toNodes = flatten([subgraph[edge]]);
 			label = _lookupEdge(edge); //TODO: looks up edge in table 'edge is idx0 (0 = number) or -idx0'
 			for(var i = 0; i < toNodes.length; i++){
 				this.triples.push(new GraphTriple(
@@ -39,5 +38,7 @@ Automaton.prototype.fromFSM = function(fsm, table){
 			}
 		}
 	}
+
+	console.log(this);
 
 }

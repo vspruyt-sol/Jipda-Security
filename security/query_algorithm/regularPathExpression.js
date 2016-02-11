@@ -140,8 +140,8 @@ RegularPathExpression.prototype.toDFA = function(){
 	var newFsm = ssc.toDFA(nfa);
 
 	var dfa = new Automaton();
-
 	dfa.fromFSM(newFsm, this._map);
+
 	//return the DFA
 	return dfa;
 
