@@ -28,7 +28,7 @@ RegularPathExpression.prototype.fCall = function(obj){
 }
 
 //Function calls
-RegularPathExpression.prototype.ret = function(obj){
+RegularPathExpression.prototype.return = function(obj){
 	this._map.push(new RegexPart('return', obj, 'idx' + this._map.length));
 	//Fluent API
 	return this;

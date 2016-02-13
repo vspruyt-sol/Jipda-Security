@@ -1,50 +1,48 @@
-detect usage of variable before defining it
-
-var source = function(x){
-  return x;
+var sink = function(y){
+  if(y){
+  	return sink();
+  }
+  else{
+  	return x + 3;
+  }
 }
 
-var y = 4;
+
+var a = 4;
 var x = 2;
 if(x > 2){
-  source(y);
+  sink(x);
 }
 else{
-  source(t);
+  sink(t);
 }
-
+var g = 5;
 var t = 4;
 
- wildcard().wildcard().wildcard().wildcard().wildcard().wildcard()
-.wildcard().wildcard().wildcard().wildcard().wildcard().wildcard()
-.fCall({callee: 'callee', argument: 'arg'})
-.wildcard().wildcard().wildcard()
-.assign({leftName:'arg'})
------------------------------------------
+wildcard().plus()
+.assign({leftName: 'x'})
+.wildcard().plus()
+.fCall({callee: 'function', argument:'assignedVar'})
+.wildcard().plus()
+.assign({leftName: 'assignedVar'});
 
-var test1 = [
-		new GraphTriple(new DummyNode(0), 
-						new EdgeLabel('fCall', {callee: 'callee', argument: 'x'}), 
-						new DummyNode(2)),
-		new GraphTriple(new DummyNode(0), 
-						new EdgeLabel('_', {}), 
-						new DummyNode(1)),
-		new GraphTriple(new DummyNode(1), 
-						new EdgeLabel('_', {}), 
-						new DummyNode(1)),
-		new GraphTriple(new DummyNode(1), 
-						new EdgeLabel('fCall', {callee: 'callee', argument: 'x'}), 
-						new DummyNode(2)),
-		new GraphTriple(new DummyNode(2), 
-						new EdgeLabel('assign', {leftName : 'y'}), 
-						new DummyNode(4)),
-		new GraphTriple(new DummyNode(2), 
-						new EdgeLabel('_', {}), 
-						new DummyNode(3)),
-		new GraphTriple(new DummyNode(3), 
-						new EdgeLabel('_', {}), 
-						new DummyNode(3)),
-		new GraphTriple(new DummyNode(3), 
-						new EdgeLabel('assign', {leftName : 'y'}), 
-						new DummyNode(4))
-		];
+
+
+
+--------------------------------
+
+var a = {}, b = 3, c = 5;
+
+a += b;
+a.c = b;
+a['e'] = c;
+var z = function(x){return x;};
+
+z(z);
+
+z(a);
+
+
+
+wildcard().plus()
+.assign({leftName:'target', rightName:'value', canBeFunction: true})

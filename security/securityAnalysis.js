@@ -57,9 +57,9 @@ SecurityAnalysis.prototype.processQueryResult = function(queryResult){
 	var processed = [];
 	//1. Strip empty substitutions?
 	for(var i = 0; i < queryResult.length; i++){
-		if(queryResult[i].theta.length > 0) {
+		//if(queryResult[i].theta.length > 0) {
 			processed.push(queryResult[i]);
-		}
+		//}
 	}
 
 
