@@ -1,4 +1,4 @@
-function SecurityAnalysis(codeSrc, regexSrc){
+function SecurityAnalysis(codeSrc, query){
 	//Jipda part
 	this.states = [];
 	this.transitions = [];
@@ -6,7 +6,7 @@ function SecurityAnalysis(codeSrc, regexSrc){
 	//Query part
 	this.tripleStore = [];
 	//Regular path expressions part
-	this.regexSrc = regexSrc;
+	this.query = query;
 	this.nfa = false;
 	this.dfa = false;
 }
@@ -20,19 +20,23 @@ SecurityAnalysis.prototype.initialize = function(){
     this.graphToTriples(system);
 
     console.log(this.states);
-
-    //regex
-    try {
-		var rpe = eval('var rpe = new RegularPathExpression(); rpe.' + this.regexSrc);
-		//console.log(rpe);
-		this.nfa = rpe.toNFA();
-		this.dfa = rpe.toDFA();
-		console.log(this.dfa);
-		output.innerHTML = '';
+    try{
+	    if(this.query.rpe){
+			var rpe = this.query.rpe;
+			//console.log(rpe);
+			this.nfa = rpe.toNFA();
+			this.dfa = rpe.toDFA();
+			console.log(this.dfa);
+			output.innerHTML = '';
+	    }
+	    else{
+			this.nfa = false;
+			this.dfa = false;
+			output.innerHTML = 'Could not parse regular path expression.';
+	    }
 	}
 	catch(err) {
-		this.nfa = false;
-		this.dfa = false;
+		
 	    output.innerHTML = err;
 	}
 }
@@ -46,10 +50,29 @@ SecurityAnalysis.prototype.detect = function(){
 	 * v0 = initial state van G
 	 * s0 = initial state van P
 	 */
-	var eq = new ExistentialQuery(this.tripleStore, this.dfa.triples, this.dfa.acceptStates, this.tripleStore[0].from, this.dfa.startingNode);
+	var query, result;
+	if(this.query.type === 'Existential'){
+		if(this.query.direction === 'Forward'){
+			query = new ExistentialQuery(this.tripleStore, this.dfa.triples, this.dfa.acceptStates, this.tripleStore[0].from, this.dfa.startingNode);
+		}
+		else{
+			//TODO: flip triples @&& check for single exit point (+ add entry from v0 to v0)
+			throw 'Todo: flip triples for backward query';
+		}
+		result = query.runNaive();
+	}
+	else{
+		if(this.query.direction === 'Forward'){
+			//Todo
+		}
+		else{
+			//TODO: flip triples @&& check for single exit point (+ add entry from v0 to v0)
+		}
+		throw 'Not yet implemented!'
+	}
 	//var eq = new ExistentialQuery(this.tripleStore, test1, [new DummyNode(4)], this.tripleStore[0].from, new DummyNode(0));
 	
-	console.log(this.processQueryResult(eq.runNaive()));
+	console.log(this.processQueryResult(result));
 	
 }
 
@@ -74,7 +97,7 @@ SecurityAnalysis.prototype.markQueryResult = function(results, marker){
 	var ids = results.map(function(x){ return x.v._id; });
 	var info;
 	for(var i = 0; i < ids.length; i++){
-			info = this.states[ids[i]].marker ? this.states[ids[i]].marker.info + ' | '+ objToString(results[i].theta) : objToString(results[i].theta);
+			info = this.states[ids[i]].marker ? this.states[ids[i]].marker.info + Utilities.objToString(results[i].theta) + '<br />' : Utilities.objToString(results[i].theta) + '<br />';
 			this.states[ids[i]].marker = {
 										'className'	: marker,
 										'info'		: info
@@ -104,7 +127,7 @@ SecurityAnalysis.prototype.graphToTriples = function(g){
 		
 		var triple = this.tripleStore[j];
 		//if we already treated the triple, don't do it again
-		if(containsTriple(doneList,triple)){
+		if(Utilities.containsTriple(doneList,triple)){
 			continue;
 		}
 
@@ -123,7 +146,7 @@ SecurityAnalysis.prototype.graphToTriples = function(g){
 							tState,
 							new DummyNode(tState._successors[h].state._id)
 						);
-					if(!containsTriple(this.tripleStore,t)){
+					if(!Utilities.containsTriple(this.tripleStore,t)){
 						this.tripleStore.push(t);
 					}
 				}
@@ -149,29 +172,6 @@ SecurityAnalysis.prototype.generateStates = function(initial){
 			todo.push(t.state);
 		}, this);  
 	}
-}
-
-
-//UTILITIES
-
-function containsTriple(a, obj) {
-    for (var i = 0; i < a.length; i++) {
-        if (a[i].equals(obj)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function objToString(obj){
-	var str = '&nbsp;&nbsp;&nbsp;&nbsp;';
-	for(var i = 0; i < obj.length; i++){
-		for(var key in obj[i]){
-			str += '<b class="resultKey">' + key + '</b>' + ': ' + obj[i][key] + '&nbsp;&nbsp;&nbsp;&nbsp;'; 
-		}
-	}
-	
-	return str;
 }
 
 
@@ -224,7 +224,6 @@ function previousNodes(id){
 
 	return pred;
 }
-
 
 //Navigation example
 function findNodesExample(){

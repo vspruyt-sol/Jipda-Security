@@ -46,3 +46,34 @@ z(a);
 
 wildcard().plus()
 .assign({leftName:'target', rightName:'value', canBeFunction: true})
+
+
+
+
+
+
+
+
+
+
+//ThisExpression
+//FunctionExpression
+//NewExpression
+//ForStatement
+//UpdateExpression
+//WhileStatement
+//Whiles (do)
+//If/else if/else
+
+var print = function(x){
+	return x;
+}
+
+var ctr = 10;
+
+do{
+  	print(ctr);
+	ctr--;
+}while(ctr != 0);
+
+print(1);

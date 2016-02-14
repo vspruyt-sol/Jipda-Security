@@ -19,6 +19,7 @@ html
   height: 15%;
   border-top: 1px solid grey;
   padding: 10px 0 10px 15px;
+  overflow: auto;
 }
 
 #left

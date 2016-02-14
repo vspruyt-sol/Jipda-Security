@@ -1,3 +1,16 @@
+function Query(rpe, type, direction){
+  try{
+    this.rpe = eval('var rpe = new RegularPathExpression(); rpe.' + rpe);
+  }
+  catch(err){
+    this.rpe = false;
+    console.log('Could not parse regular path expression');
+  }
+  
+  this.type = type;
+  this.direction = direction;
+}
+
 //EdgeLabel
 function EdgeLabel(name, state, negated)
 {

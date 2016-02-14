@@ -16,6 +16,7 @@
 	<script type="text/javascript" src="regular_expression/subsetConstruction.js"></script>
 	<script type="text/javascript" src="regular_expression/finiteStateMachine.js"></script>
 	<script type="text/javascript" src="securityAnalysis.js"></script>
+	<script type="text/javascript" src="../utilities.js"></script>
 	<script type="text/javascript" src="../common.js"></script>
 	<script type="text/javascript" src="../ast.js"></script>
 	<script type="text/javascript" src="../agc.js"></script>
@@ -87,11 +88,14 @@
 		//get source
 		var src = editor.getValue();	
 		var reg = regex.getValue();
+		var direction = $('#queryDirection').val();
+		var qtype = $('#queryType').val();
+		var query = new Query(reg, qtype, direction);
 		$('div#queryInfo').show();
 		var output = document.getElementById("output");
     	localStorage.securitySrc = src;
     	localStorage.regex = reg;
-    	var secAn = new SecurityAnalysis(src, reg);
+    	var secAn = new SecurityAnalysis(src, query);
 
     	//initialize everything
     	secAn.initialize();
@@ -103,6 +107,7 @@
 
 		var g = createDagreGraph(secAn.states);
     	drawDagreGraph(g, secAn.states, secAn.transitions);
+    	$('div#queryInfo').html('Hover over a marked node to see the substitutions.')
 		
 	}
 	
@@ -172,7 +177,18 @@
 		<div id="editor"></div>
 		<p class="ui-p">Regular expression:</p>
 		<div id="regex"></div>
-    
+	    <span>
+	      <select id="queryDirection" title="Query direction">
+	        <option value="Forward">Forward</option>
+	        <option value="Backward">Backward</option>
+	      </select>
+	    </span>
+        <span>
+	      <select id="queryType" title="Type query">
+	        <option value="Existential">Existential</option>
+	        <option value="Universal">Universal</option>
+	      </select>
+	    </span>
 		<button id="detect" name="detect" onClick="doIt2()">Detect</button>
 		<div id="meta">
 			<div id="output"></div>

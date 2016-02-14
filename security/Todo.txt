@@ -1,11 +1,9 @@
 TODO: 
-- Find end of functioncall
-- Negatie in regex conversion
-- Negatie in algoritme
-- Testen
-- STAR/PLUS uitvissen waarom niet werkt (lambda?)
-
-NOTES:
-- Kan [{x:'a'}, {x:'b'}] ?
-- Bij lambda moet je geen stap doen! (ELSE UIT COMMENTAAR? DENK OVER NA) (+ check bug als t door callee verander)
-- Ipv [{x:'a'}, {callee:'b'}] => [{x:'a', callee:'b'}] ??
+- Find end of functioncall (week van 15 - 21 feb) (max 1 dag)
+- Lookup stateinfo ipv nodeinfo (week van 15 - 21 feb) (max 1 dag om op te zetten)
+- Negatie (week van 23 - 28 feb) (hopelijk) (lang)
+- Universal query (week van 15 - 21 feb) (2-3 dagen)
+- Info uit esprima (week van 15 - 21 feb) (max 1 dag)
+- Backward query (week van 15 - 21 feb) (max 2 uur)
+- Refactoren? (Throughout project)
+- ... (later)

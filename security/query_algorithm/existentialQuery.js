@@ -104,7 +104,7 @@ ExistentialQuery.prototype.runMemo = function(){
 		}
 	}
 	while(Wts.length > 0){
-		pairWts = Wts.shift();
+		pairWts = Wts.pop();
 		Rts = this.union(Rts, [pairWts]);
 		for(var i = 0; i < this.G.length; i++){
 			tripleG = this.G[i];
@@ -217,6 +217,12 @@ ExistentialQuery.prototype.matchAssign = function(el, tl){
 			obj[tlInfo.rightName] = info.rightName;
 			subst.push(obj);
 		}
+		if(!this.isWildCard(tlInfo.location)) {
+			//_map[tlInfo.leftName] = elInfo.expression.left.name;
+			var obj = {};
+			obj[tlInfo.location] = info.location;
+			subst.push(obj);
+		}
 	}
 	else if(elInfo && elInfo.type === 'VariableDeclaration' && elInfo.declarations.length > 0){
 		info = LOOKUP_INFO[elInfo.type](elInfo);
@@ -233,6 +239,11 @@ ExistentialQuery.prototype.matchAssign = function(el, tl){
 					obj[tlInfo.rightName] = info.declarations[i].rightName;
 					subst.push(obj);
 				}
+				if(!this.isWildCard(tlInfo.location)) {
+					var obj = {};
+					obj[tlInfo.location] = info.declarations[i].location;
+					subst.push(obj);
+				}
 			}
 		}	
 	}
@@ -247,6 +258,11 @@ ExistentialQuery.prototype.matchAssign = function(el, tl){
 			if(!this.isWildCard(tlInfo.rightName)){
 				var obj = {};
 				obj[tlInfo.rightName] = info.rightName;
+				subst.push(obj);
+			}
+			if(!this.isWildCard(tlInfo.location)){
+				var obj = {};
+				obj[tlInfo.location] = info.location;
 				subst.push(obj);
 			}
 		}
@@ -339,13 +355,34 @@ ExistentialQuery.prototype.matchReturn = function(el, tl){
 	var subst = [];
 	var _map = {};
 	var info;
-
 	if(elInfo && elInfo.type === 'ReturnStatement'){		
 		info = LOOKUP_INFO[elInfo.type](elInfo);
 		if(!this.isWildCard(tlInfo.value)) {
 			//_map[tlInfo.leftName] = elInfo.expression.left.name;
 			var obj = {};
 			obj[tlInfo.value] = info.name;
+			subst.push(obj);
+		}
+		if(!this.isWildCard(tlInfo.location)) {
+			//_map[tlInfo.leftName] = elInfo.expression.left.name;
+			var obj = {};
+			obj[tlInfo.location] = info.location;
+			subst.push(obj);
+		}
+	}
+	else if(elInfo && elInfo.type === 'BlockStatement' && elInfo.body.length === 1 
+			&& elInfo.body[0].type === 'ReturnStatement'){
+		info = LOOKUP_INFO[elInfo.body[0].type](elInfo.body[0]);
+		if(!this.isWildCard(tlInfo.value)) {
+			//_map[tlInfo.leftName] = elInfo.expression.left.name;
+			var obj = {};
+			obj[tlInfo.value] = info.name;
+			subst.push(obj);
+		}
+		if(!this.isWildCard(tlInfo.location)) {
+			//_map[tlInfo.leftName] = elInfo.expression.left.name;
+			var obj = {};
+			obj[tlInfo.location] = info.location;
 			subst.push(obj);
 		}
 	}
@@ -428,6 +465,7 @@ ExistentialQuery.prototype.union = function(set, otherSet, debug){
     }
     if (debug) {
     	console.log(set);
+    	console.log(otherSet);
 	    console.log(result);
 	    console.log('****');
 	}
@@ -441,11 +479,18 @@ ExistentialQuery.prototype.removeTriple = function(set, triple){
 }
 
 ExistentialQuery.prototype.contains = function(set, elem){
+	//console.log(JSON.stringify(set));
+	//console.log(JSON.stringify(elem));
+	
 	for (var i = 0; i < set.length; i++) {
         if (set[i].equals(elem) || set[i] === elem) {
+        	//console.log(true);
+        	//console.log('----');
             return true;
         }
     }
+    //console.log(false);
+    //console.log('----');
     return false;
 }
 
@@ -461,6 +506,7 @@ JipdaInfo.assignmentExpression = function(exp){
 		leftName	: LOOKUP_INFO[exp.left.type](exp.left).name,
 		operator	: exp.operator,
 		rightName	: LOOKUP_INFO[exp.right.type](exp.right).name,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 
@@ -476,6 +522,7 @@ JipdaInfo.literal = function(exp){
 		name	: exp.raw,
 		raw		: exp.raw,
 		value	: exp.value,
+		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 
@@ -486,10 +533,13 @@ JipdaInfo.objectExpression = function(exp){
 		tmp +=  LOOKUP_INFO[exp.properties[i].type](exp.properties[i]).name + ', ';
 	}
 
-	tmp = tmp.slice(0, -2) + '}';
+	if (exp.properties.length > 0 )tmp = tmp.slice(0, -2);
+
+	tmp += '}';
 
 	return {
 		name	: tmp,
+		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 
@@ -500,10 +550,13 @@ JipdaInfo.arrayExpression = function(exp){
 		tmp += LOOKUP_INFO[exp.elements[i].type](exp.elements[i]).name + ', ';
 	}
 
-	tmp = tmp.slice(0, -2) + ']';
+	if (exp.elements.length > 0) tmp = tmp.slice(0, -2);
+
+	tmp += ']'
 
 	return {
 		name	: tmp,
+		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 
@@ -514,7 +567,8 @@ JipdaInfo.property = function(exp){
 		name	: k + ' : '+ v,
 		key 	: k,
 		value 	: v,
-		kind	: exp.kind
+		kind	: exp.kind,
+		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 
@@ -526,6 +580,7 @@ JipdaInfo.memberExpression = function(exp){
 		object	: o,
 		property: p,
 		name 	: o + '['+ p + ']',
+		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 
@@ -544,6 +599,7 @@ JipdaInfo.variableDeclaration = function(exp){
 	return {
 		name 		: tmp,
 		declarations: decls,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 
@@ -559,6 +615,7 @@ JipdaInfo.variableDeclarator = function(exp){
 		name 		: i.name + ' = ' + ini.name,
 		operator 	: '=',
 		isFunction 	: (exp.init && exp.init.type === 'FunctionExpression'),
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 
@@ -574,6 +631,7 @@ JipdaInfo.functionExpression = function(exp){
 		name 		: i.name,
 		id 			: i,
 		parameters 	: par,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 
@@ -594,7 +652,8 @@ JipdaInfo.callExpression = function(exp){
 		//name 		: tmp,
 		name 		: c.name,
 		arguments 	: args,
-		callee 		: c.name
+		callee 		: c,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 
@@ -604,6 +663,7 @@ JipdaInfo.returnStatement = function(exp){
 	return {
 		name 		: arg.name,
 		argument 	: arg,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 
@@ -616,6 +676,7 @@ JipdaInfo.binaryExpression = function(exp){
 		left 		: l,
 		right 		: r,
 		operator 	: exp.operator,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 
