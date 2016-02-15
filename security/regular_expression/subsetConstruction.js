@@ -21,13 +21,13 @@ SubsetConstruction.prototype.toDFA = function(nfa){
 				node = state[k];
 				if(nfaGraph[node] === undefined || nfaGraph[node][label] === undefined) continue;
 				closure = nfa.closureOf(nfaGraph[node][label]);
-				if(!arrayContainsArray(closuresThroughLabel, closure)) closuresThroughLabel.push(closure);
+				if(!Utilities.arrayContainsArray(closuresThroughLabel, closure)) closuresThroughLabel.push(closure);
 			}
 
 			if(closuresThroughLabel.length === 0) continue;
 			closuresThroughLabel = flatten(closuresThroughLabel); //flatten closures
 			newGraph[state][label] = closuresThroughLabel;
-			if(!arrayContainsArray(states, closuresThroughLabel)) states.push(closuresThroughLabel);
+			if(!Utilities.arrayContainsArray(states, closuresThroughLabel)) states.push(closuresThroughLabel);
 		}
 
 		tmp = nfa.acceptStateOfClosure(state);
@@ -80,23 +80,3 @@ SubsetConstruction.prototype.cleanUpStates = function(nfa){
 	return new FiniteStateMachine(newAcceptStates, newGraph, 0, nfa.tpe);
 }
 
-var arrayContainsArray = function(multiArr, arr){
-	var found = multiArr.find(function(elem){
-							return arraysEqual(elem, arr);
-						})
-	return found;
-}
-
-var arraysEqual = function(a, b) {
-  if (a === b) return true;
-  if (a == null || b == null) return false;
-  if (a.length != b.length) return false;
-
-  // If you don't care about the order of the elements inside
-  // the array, you should sort both arrays here.
-
-  for (var i = 0; i < a.length; ++i) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}

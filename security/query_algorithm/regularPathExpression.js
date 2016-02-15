@@ -27,7 +27,14 @@ RegularPathExpression.prototype.fCall = function(obj){
 	return this;
 }
 
-//Function calls
+//End of function calls
+RegularPathExpression.prototype.endFCall = function(obj){
+	this._map.push(new RegexPart('endFCall', obj, 'idx' + this._map.length));
+	//Fluent API
+	return this;
+}
+
+//Return statements
 RegularPathExpression.prototype.return = function(obj){
 	this._map.push(new RegexPart('return', obj, 'idx' + this._map.length));
 	//Fluent API
@@ -73,7 +80,7 @@ RegularPathExpression.prototype.wildcard = function(obj){
 	return this;
 }
 
-//Wildcard
+//Not
 RegularPathExpression.prototype.not = function(obj){
 
 	this._map.push(new RegexPart('not', obj, '¬'));
@@ -89,7 +96,26 @@ RegularPathExpression.prototype.star = function(obj){
 	return this;
 }
 
-//Star
+//Wildcard followed by Star
+RegularPathExpression.prototype.skipZeroOrMore = function(obj){
+
+	this._map.push(new RegexPart('wildcard', obj, '_'));
+	this._map.push(new RegexPart('star', obj, '*'));
+	//Fluent API
+	return this;
+}
+
+//Wildcard followed by Plus
+RegularPathExpression.prototype.skipOneOrMore = function(obj){
+
+	this._map.push(new RegexPart('wildcard', obj, '_'));
+	this._map.push(new RegexPart('plus', obj, '+'));
+	//Fluent API
+	return this;
+}
+
+
+//Plus
 RegularPathExpression.prototype.plus = function(obj){
 
 	this._map.push(new RegexPart('plus', obj, '+'));

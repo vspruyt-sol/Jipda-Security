@@ -49,6 +49,26 @@ wildcard().plus()
 
 
 
+------------------------------------
+
+var a = 4;
+var inc = function(){
+  a += 1;
+}
+
+inc(1);
+
+a = 5;
+
+var G = 3;
+
+
+wildcard().plus()
+.assign({rightName: 'right',leftName : 'left' ,
+         location:'funcAssignLoc', canBeFunction: true})
+.wildcard().star()
+.fCall({argument: 'arg', callee: 'callee'})
+
 
 
 

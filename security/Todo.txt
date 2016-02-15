@@ -1,6 +1,6 @@
 TODO: 
-- Find end of functioncall (week van 15 - 21 feb) (max 1 dag)
-- Lookup stateinfo ipv nodeinfo (week van 15 - 21 feb) (max 1 dag om op te zetten)
+- Find end of functioncall (week van 15 - 21 feb) (max 1 dag) CHECK
+- Lookup stateinfo ipv nodeinfo (week van 15 - 21 feb) (max 1 dag om op te zetten) CKECK
 - Negatie (week van 23 - 28 feb) (hopelijk) (lang)
 - Universal query (week van 15 - 21 feb) (2-3 dagen)
 - Info uit esprima (week van 15 - 21 feb) (max 1 dag)

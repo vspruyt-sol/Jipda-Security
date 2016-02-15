@@ -21,7 +21,7 @@ ThompsonConstruction.prototype.toNFA = function(regex){
   		curMachine = machines[i];
 	    m = curMachine[0];						
 	    offset = orig.getNodeCount() - 1;
-	  	acc = keyAt(orig.acceptStates, 0) || 0;	//Attachment point
+	  	acc = Utilities.keyAt(orig.acceptStates, 0) || 0;	//Attachment point
 
 	  	orig.attachGraph(acc, m);
 
@@ -131,7 +131,7 @@ ThompsonConstruction.prototype.catify = function(machines){
 	    else if(curMachine[1] == null && machines[i-1][1] == null){
 	    	fsm = newMachines.pop()[0];
 	    	offset = fsm.getNodeCount() - 1;
-	    	acc = keyAt(fsm.acceptStates, 0) || 0;	//Attachment point
+	    	acc = Utilities.keyAt(fsm.acceptStates, 0) || 0;	//Attachment point
 	    	fsm.attachGraph(acc, curMachine[0]);
 	    	for(var prop in fsm.acceptStates) {
 		  	   	if(curMachine[0].acceptStates[parseInt(prop) - offset] === undefined){
@@ -227,12 +227,3 @@ var stripBraces = function(expression){
 	return expression;
 }
 
-/**
- * HELPERS
- */
-
-//BEWARE: USE ONLY IF OBJECT HAS PROPERTIES THAT ONLY YOU HAVE DEFINED 
-//E.g. var x = {prop1: '1', prop2: '2'} would be fine.
-var keyAt = function(obj, idx){
-	return Object.keys(obj)[idx];
-}

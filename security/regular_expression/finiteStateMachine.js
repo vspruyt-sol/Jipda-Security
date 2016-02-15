@@ -269,35 +269,6 @@ var PLUS_MACHINE = function(){
  								 );
 }
 
-
-/**
- * Extend Array prototype for extra functionality
- *
- */
-Array.prototype.getUnique = function(){
-   var u = {}, a = [];
-   for(var i = 0, l = this.length; i < l; ++i){
-      if(u.hasOwnProperty(this[i])) {
-         continue;
-      }
-      a.push(this[i]);
-      u[this[i]] = 1;
-   }
-   return a;
-}
-
-var removeFromArray = function(arr, obj) {
-	for (var i = arr.length - 1; i>=0; i--) {
-	    if (arr[i] === obj) {
-	        arr.splice(i, 1);
-	    }
-	}
-}
-
-var flatten = function(arr){
-	return [].concat.apply([], arr);
-}
-
 //https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 function clone(objectToBeCloned) {
 
@@ -329,5 +300,6 @@ function clone(objectToBeCloned) {
   return objectClone;
 }
 
-
-
+var flatten = function(arr){
+	return [].concat.apply([], arr);
+}

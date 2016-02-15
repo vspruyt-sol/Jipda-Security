@@ -168,6 +168,8 @@ ExistentialQuery.prototype.match = function(el, tl){
 								break;
 		case 'fCall'		: 	_map = this.matchFCall(el, tl); 
 								break;
+		case 'endFCall'		: 	_map = this.matchEndFCall(el, tl); 
+								break;
 		case 'return'		: 	_map = this.matchReturn(el, tl); 
 								break;
 		case '_'			: 	_map = []; 
@@ -201,68 +203,78 @@ ExistentialQuery.prototype.matchAssign = function(el, tl){
 	var tlInfo = tl.state;
 	var subst = [];
 	var _map = {};
-	var info;
+	var info, nodeInfo, kontInfo;
 
 	if(elInfo && elInfo.type === 'ExpressionStatement' && elInfo.expression.type === 'AssignmentExpression'){		
-		info = LOOKUP_INFO[elInfo.expression.type](elInfo.expression);
+		info = JipdaInfo.lookup(elInfo.expression, el);
+		nodeInfo = info.nodeInfo;
+		kontInfo = info.kontInfo;
 		if(!this.isWildCard(tlInfo.leftName)) {
 			//_map[tlInfo.leftName] = elInfo.expression.left.name;
 			var obj = {};
-			obj[tlInfo.leftName] = info.leftName;
+			obj[tlInfo.leftName] = nodeInfo.leftName;
 			subst.push(obj);
 		}
 		if(!this.isWildCard(tlInfo.rightName)) {
 			//_map[tlInfo.leftName] = elInfo.expression.left.name;
 			var obj = {};
-			obj[tlInfo.rightName] = info.rightName;
+			obj[tlInfo.rightName] = nodeInfo.rightName;
 			subst.push(obj);
 		}
 		if(!this.isWildCard(tlInfo.location)) {
 			//_map[tlInfo.leftName] = elInfo.expression.left.name;
 			var obj = {};
-			obj[tlInfo.location] = info.location;
+			obj[tlInfo.location] = nodeInfo.location;
 			subst.push(obj);
 		}
 	}
 	else if(elInfo && elInfo.type === 'VariableDeclaration' && elInfo.declarations.length > 0){
-		info = LOOKUP_INFO[elInfo.type](elInfo);
+		info = JipdaInfo.lookup(elInfo, el);
+		nodeInfo = info.nodeInfo;
+		kontInfo = info.kontInfo;
+		console.log('variableDeclaration');
+		console.log(info);
 		//_map[tlInfo.leftName] = elInfo.expression.left.name;
-		for(var i = 0; i < info.declarations.length; i++){
-			if(!info.declarations[i].isFunction || (info.declarations[i].isFunction && tlInfo.canBeFunction)){ //check om te zien of er geassigned is
+		for(var i = 0; i < nodeInfo.declarations.length; i++){
+			if(!nodeInfo.declarations[i].isFunction || (nodeInfo.declarations[i].isFunction && tlInfo.canBeFunction)){ //check om te zien of er geassigned is
 				if(!this.isWildCard(tlInfo.leftName)) {
 					var obj = {};
-					obj[tlInfo.leftName] = info.declarations[i].leftName;
+					console.log(info);
+					console.log('declarations?');
+					obj[tlInfo.leftName] = nodeInfo.declarations[i].leftName;
 					subst.push(obj);
 				}
 				if(!this.isWildCard(tlInfo.rightName)) {
 					var obj = {};
-					obj[tlInfo.rightName] = info.declarations[i].rightName;
+					obj[tlInfo.rightName] = nodeInfo.declarations[i].rightName;
 					subst.push(obj);
 				}
 				if(!this.isWildCard(tlInfo.location)) {
 					var obj = {};
-					obj[tlInfo.location] = info.declarations[i].location;
+					obj[tlInfo.location] = nodeInfo.declarations[i].location;
 					subst.push(obj);
 				}
 			}
 		}	
 	}
 	else if(elInfo && elInfo.type === 'VariableDeclarator'){
-		info = LOOKUP_INFO[elInfo.type](elInfo);
-		if(!info.isFunction || (info.isFunction && tlInfo.canBeFunction)){
+		info = JipdaInfo.lookup(elInfo, el);
+		nodeInfo = info.nodeInfo;
+		kontInfo = info.kontInfo;
+		if(!nodeInfo.isFunction || (nodeInfo.isFunction && tlInfo.canBeFunction)){
 			if(!this.isWildCard(tlInfo.leftName)) {
 				var obj = {};
-				obj[tlInfo.leftName] = info.leftName;
+				obj[tlInfo.leftName] = nodeInfo.leftName;
 				subst.push(obj);
 			}
 			if(!this.isWildCard(tlInfo.rightName)){
 				var obj = {};
-				obj[tlInfo.rightName] = info.rightName;
+				obj[tlInfo.rightName] = nodeInfo.rightName;
 				subst.push(obj);
 			}
 			if(!this.isWildCard(tlInfo.location)){
 				var obj = {};
-				obj[tlInfo.location] = info.location;
+				obj[tlInfo.location] = nodeInfo.location;
 				subst.push(obj);
 			}
 		}
@@ -286,19 +298,21 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 
 	var subst = [];
 	var _map = {};
-	var info;
+	var info, nodeInfo, kontInfo;
 	//Momenteel voor arguments enkel ondersteuning voor literals/identifiers & single argument
 	if(elInfo && elInfo.type === 'CallExpression'){
-		info = LOOKUP_INFO[elInfo.type](elInfo);
+		info = JipdaInfo.lookup(elInfo, el);
+		nodeInfo = info.nodeInfo;
+		kontInfo = info.kontInfo;
 		if (!this.isWildCard(tlInfo.argument)) {
 			var obj = {}; 
-			obj[tlInfo.argument] = argumentFirst(elInfo.arguments); 
+			obj[tlInfo.argument] = argumentFirst(nodeInfo.arguments); 
 			subst.push(obj);
 			//_map[tlInfo.argument] = argumentFirstLiteral(elInfo.arguments);
 		}
 		if (!this.isWildCard(tlInfo.callee)){
 			var obj = {}; 
-			obj[tlInfo.callee] = elInfo.callee.name; 
+			obj[tlInfo.callee] = nodeInfo.callee.name; 
 			subst.push(obj);
 			//_map[tlInfo.callee] = elInfo.callee.name;
 		}
@@ -306,16 +320,18 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 		if (subst.length === 0) subst.push({});
 	}
 	else if(elInfo && elInfo.type === 'ExpressionStatement' && elInfo.expression.type === 'CallExpression'){
-		info = LOOKUP_INFO[elInfo.expression.type](elInfo.expression);
+		info = JipdaInfo.lookup(elInfo.expression, el);
+		nodeInfo = info.nodeInfo;
+		kontInfo = info.kontInfo;
 		if (!this.isWildCard(tlInfo.argument)) {
 			var obj = {}; 
-			obj[tlInfo.argument] = argumentFirst(elInfo.expression.arguments); 
+			obj[tlInfo.argument] = argumentFirst(nodeInfo.arguments); 
 			subst.push(obj);
 			//_map[tlInfo.argument] = argumentFirstLiteral(elInfo.expression.arguments);
 		}	
 		if (!this.isWildCard(tlInfo.callee)){
 			var obj = {}; 
-			obj[tlInfo.callee] = elInfo.expression.callee.name; 
+			obj[tlInfo.callee] = nodeInfo.callee.name; 
 			subst.push(obj);
 			//_map[tlInfo.callee] = elInfo.expression.callee.name;
 		}
@@ -326,16 +342,19 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 	else if(elInfo && elInfo.type === 'BlockStatement' && elInfo.body.length === 1 
 			&& elInfo.body[0].type === 'ExpressionStatement' 
 			&& elInfo.body[0].expression.type === 'CallExpression'){
-		info = LOOKUP_INFO[elInfo.body[0].expression.type](elInfo.body[0].expression);
+		info = JipdaInfo.lookup(elInfo.body[0].expression, el);
+		nodeInfo = info.nodeInfo;
+		kontInfo = info.kontInfo;
 		if (!this.isWildCard(tlInfo.argument)) {
 			var obj = {};
-			obj[tlInfo.argument] = argumentFirst(elInfo.body[0].expression.arguments); 
+			obj[tlInfo.argument] = argumentFirst(nodeInfo.arguments); 
 			subst.push(obj);
 			//_map[tlInfo.argument] = argumentFirstLiteral(elInfo.body[0].expression.arguments);
 		}
 		if (!this.isWildCard(tlInfo.callee)) {
 			var obj = {}; 
-			obj[tlInfo.callee] =  elInfo.body[0].expression.callee.name ;
+			console.log(info);
+			obj[tlInfo.callee] = nodeInfo.callee.name ;
 			subst.push(obj);
 			//_map[tlInfo.callee] = elInfo.body[0].expression.callee.name;
 		}
@@ -347,6 +366,38 @@ ExistentialQuery.prototype.matchFCall = function(el, tl){
 	return (subst.length === 0 ? false : subst); //substitution
 }
 
+ExistentialQuery.prototype.matchEndFCall = function(el, tl){
+
+	//End of function call can also be a return
+	var retRes = this.matchReturn(el, tl);
+	if(retRes) return retRes;
+
+	//search no further (small hack with constructor)
+	if(el.constructor.name !== 'KontState' || el.lkont.length != 0) return false;
+	var elKont = el.kont;
+	var tlInfo = tl.state;
+
+	var subst = [];
+	//var _map = {};
+	var info, nodeInfo, kontInfo;
+	if(elKont.ex.type === 'CallExpression'){
+		info = JipdaInfo.lookup(elKont, el);
+		nodeInfo = info.nodeInfo;
+		kontInfo = info.kontInfo;
+		if (!this.isWildCard(tlInfo.name)) {
+			var obj = {}; 
+			obj[tlInfo.name] = kontInfo.ex.name
+			subst.push(obj);
+			//_map[tlInfo.argument] = argumentFirstLiteral(elInfo.arguments);
+		}
+		//in order to be able to detect parameterless predicates
+		if (subst.length === 0) subst.push({});
+	}
+	
+	
+	return (subst.length === 0 ? false : subst); //substitution
+}
+
 ExistentialQuery.prototype.matchReturn = function(el, tl){
 	//tl can contain fields for: 
 	//leftName
@@ -354,35 +405,51 @@ ExistentialQuery.prototype.matchReturn = function(el, tl){
 	var tlInfo = tl.state;
 	var subst = [];
 	var _map = {};
-	var info;
-	if(elInfo && elInfo.type === 'ReturnStatement'){		
-		info = LOOKUP_INFO[elInfo.type](elInfo);
+	var info, nodeInfo, kontInfo;
+	if(elInfo && elInfo.type === 'ReturnStatement'){
+		info = JipdaInfo.lookup(elInfo, el);
+		nodeInfo = info.nodeInfo;
+		kontInfo = info.kontInfo;		
 		if(!this.isWildCard(tlInfo.value)) {
 			//_map[tlInfo.leftName] = elInfo.expression.left.name;
 			var obj = {};
-			obj[tlInfo.value] = info.name;
+			obj[tlInfo.value] = nodeInfo.name;
 			subst.push(obj);
 		}
 		if(!this.isWildCard(tlInfo.location)) {
 			//_map[tlInfo.leftName] = elInfo.expression.left.name;
 			var obj = {};
-			obj[tlInfo.location] = info.location;
+			obj[tlInfo.location] = nodeInfo.location;
+			subst.push(obj);
+		}
+		if(!this.isWildCard(tlInfo.name)) {
+			//_map[tlInfo.leftName] = elInfo.expression.left.name;
+			var obj = {};
+			obj[tlInfo.name] = kontInfo.ex.name;
 			subst.push(obj);
 		}
 	}
 	else if(elInfo && elInfo.type === 'BlockStatement' && elInfo.body.length === 1 
 			&& elInfo.body[0].type === 'ReturnStatement'){
-		info = LOOKUP_INFO[elInfo.body[0].type](elInfo.body[0]);
+		info = JipdaInfo.lookup(elInfo.body[0], el);
+		nodeInfo = info.nodeInfo;
+		kontInfo = info.kontInfo;
 		if(!this.isWildCard(tlInfo.value)) {
 			//_map[tlInfo.leftName] = elInfo.expression.left.name;
 			var obj = {};
-			obj[tlInfo.value] = info.name;
+			obj[tlInfo.value] = nodeInfo.name;
 			subst.push(obj);
 		}
 		if(!this.isWildCard(tlInfo.location)) {
 			//_map[tlInfo.leftName] = elInfo.expression.left.name;
 			var obj = {};
-			obj[tlInfo.location] = info.location;
+			obj[tlInfo.location] = nodeInfo.location;
+			subst.push(obj);
+		}
+		if(!this.isWildCard(tlInfo.name)) {
+			//_map[tlInfo.leftName] = elInfo.expression.left.name;
+			var obj = {};
+			obj[tlInfo.name] = kontInfo.ex.name;
 			subst.push(obj);
 		}
 	}
@@ -503,9 +570,9 @@ function JipdaInfo(){
 
 JipdaInfo.assignmentExpression = function(exp){
 	return {
-		leftName	: LOOKUP_INFO[exp.left.type](exp.left).name,
+		leftName	: JipdaInfo.lookup(exp.left).nodeInfo.name,
 		operator	: exp.operator,
-		rightName	: LOOKUP_INFO[exp.right.type](exp.right).name,
+		rightName	: JipdaInfo.lookup(exp.right).nodeInfo.name,
 		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
@@ -530,7 +597,7 @@ JipdaInfo.objectExpression = function(exp){
 	var tmp = '{';
 	//calculate name if nested
 	for(var i = 0; i < exp.properties.length; i++){
-		tmp +=  LOOKUP_INFO[exp.properties[i].type](exp.properties[i]).name + ', ';
+		tmp +=  JipdaInfo.lookup(exp.properties[i]).nodeInfo.name + ', ';
 	}
 
 	if (exp.properties.length > 0 )tmp = tmp.slice(0, -2);
@@ -547,7 +614,7 @@ JipdaInfo.arrayExpression = function(exp){
 	var tmp = '[';
 	//calculate name if nested
 	for(var i = 0; i < exp.elements.length; i++){
-		tmp += LOOKUP_INFO[exp.elements[i].type](exp.elements[i]).name + ', ';
+		tmp += JipdaInfo.lookup(exp.elements[i]).nodeInfo.name + ', ';
 	}
 
 	if (exp.elements.length > 0) tmp = tmp.slice(0, -2);
@@ -561,8 +628,8 @@ JipdaInfo.arrayExpression = function(exp){
 }
 
 JipdaInfo.property = function(exp){
-	var k = LOOKUP_INFO[exp.key.type](exp.key).name;
-	var v = LOOKUP_INFO[exp.value.type](exp.value).name;
+	var k = JipdaInfo.lookup(exp.key).nodeInfo.name;
+	var v = JipdaInfo.lookup(exp.value).nodeInfo.name;
 	return {
 		name	: k + ' : '+ v,
 		key 	: k,
@@ -573,8 +640,8 @@ JipdaInfo.property = function(exp){
 }
 
 JipdaInfo.memberExpression = function(exp){
-	var o = LOOKUP_INFO[exp.object.type](exp.object).name;
-	var p = LOOKUP_INFO[exp.property.type](exp.property).name;
+	var o = JipdaInfo.lookup(exp.object).nodeInfo.name;
+	var p = JipdaInfo.lookup(exp.property).nodeInfo.name;
 
 	return {
 		object	: o,
@@ -589,7 +656,7 @@ JipdaInfo.variableDeclaration = function(exp){
 	var tmp = '';
 	//calculate name if nested
 	for(var i = 0; i < exp.declarations.length; i++){
-		decl = LOOKUP_INFO[exp.declarations[i].type](exp.declarations[i]);
+		decl = JipdaInfo.lookup(exp.declarations[i]).nodeInfo;
 		tmp += decl.name + ', ';
 		decls.push(decl);
 	}
@@ -604,8 +671,8 @@ JipdaInfo.variableDeclaration = function(exp){
 }
 
 JipdaInfo.variableDeclarator = function(exp){
-	var i = LOOKUP_INFO[exp.id.type](exp.id);
-	var ini = LOOKUP_INFO[exp.init.type](exp.init);
+	var i = JipdaInfo.lookup(exp.id).nodeInfo;
+	var ini = JipdaInfo.lookup(exp.init).nodeInfo;
 
 	return {
 		id 			: i.name,
@@ -620,11 +687,11 @@ JipdaInfo.variableDeclarator = function(exp){
 }
 
 JipdaInfo.functionExpression = function(exp){
-	var i = exp.id ? LOOKUP_INFO[exp.id.type](exp.id) : { name : 'Lambda' };
+	var i = exp.id ? JipdaInfo.lookup(exp.id).nodeInfo : { name : 'Lambda' };
 	var par = [];
 
 	for(var j = 0; j < exp.params.length; j++){
-		par.push(LOOKUP_INFO[exp.params[j].type](exp.params[j]));
+		par.push(JipdaInfo.lookup(exp.params[j]).nodeInfo);
 	}
 
 	return {
@@ -636,13 +703,13 @@ JipdaInfo.functionExpression = function(exp){
 }
 
 JipdaInfo.callExpression = function(exp){
-	var c = LOOKUP_INFO[exp.callee.type](exp.callee);
+	var c = JipdaInfo.lookup(exp.callee).nodeInfo;
 	var tmp = c.name + '(';
 	var arg, args = [];
 	for(var i = 0; i < exp.arguments.length; i++){
 		arg = exp.arguments[i];
-		args.push(LOOKUP_INFO[arg.type](arg));
-		tmp += LOOKUP_INFO[arg.type](arg).name + ', ';
+		args.push(JipdaInfo.lookup(arg).nodeInfo);
+		tmp += JipdaInfo.lookup(arg).nodeInfo.name + ', ';
 	}
 
 	if (exp.arguments.length > 0) tmp = tmp.slice(0, -2);
@@ -658,7 +725,7 @@ JipdaInfo.callExpression = function(exp){
 }
 
 JipdaInfo.returnStatement = function(exp){
-	var arg = LOOKUP_INFO[exp.argument.type](exp.argument);
+	var arg = JipdaInfo.lookup(exp.argument).nodeInfo;
 
 	return {
 		name 		: arg.name,
@@ -668,8 +735,8 @@ JipdaInfo.returnStatement = function(exp){
 }
 
 JipdaInfo.binaryExpression = function(exp){
-	var l = LOOKUP_INFO[exp.left.type](exp.left);
-	var r = LOOKUP_INFO[exp.right.type](exp.right);
+	var l = JipdaInfo.lookup(exp.left).nodeInfo;
+	var r = JipdaInfo.lookup(exp.right).nodeInfo;
 
 	return {
 		name 		: l.name + ' ' + exp.operator + ' ' + r.name,
@@ -680,8 +747,44 @@ JipdaInfo.binaryExpression = function(exp){
 	}
 }
 
-JipdaInfo.lookup = function(exp){
-	//TODO
+JipdaInfo.expressionStatement = function(exp){
+	var ex = JipdaInfo.lookup(exp.expression).nodeInfo;
+
+	return {
+		name 		: ex.name,
+		expression	: ex,
+		location 	: ex.loc.start.line + ' - ' + ex.loc.end.line,
+	}
+}
+
+JipdaInfo.blockStatement = function(exp){
+	var elem, elems = [];
+	//calculate name if nested
+	for(var i = 0; i < exp.body.length; i++){
+		elems.push(JipdaInfo.lookup(exp.body[i]).nodeInfo);
+	}
+
+	return {
+		name 		: 'BlockStatement',
+		body		: elems,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.lookup = function(exp, el){
+	var nodeInfo = {};
+	var kontInfo = {};
+
+	var kont = el ? el.kont : false;
+	if(exp && exp.type) nodeInfo = LOOKUP_INFO[exp.type](exp);
+	if(kont){
+		if(kont.ex) kontInfo.ex = LOOKUP_INFO[kont.ex.type](kont.ex);
+	} 
+
+	return {
+		nodeInfo : nodeInfo,
+		kontInfo : kontInfo,
+	}
 }
 
 var LOOKUP_INFO = {
@@ -698,4 +801,6 @@ var LOOKUP_INFO = {
 	'CallExpression' 		: JipdaInfo.callExpression,
 	'ReturnStatement' 		: JipdaInfo.returnStatement,
 	'BinaryExpression' 		: JipdaInfo.binaryExpression,
+	'ExpressionStatement'	: JipdaInfo.expressionStatement,
+	'BlockStatement'		: JipdaInfo.blockStatement,
 };
