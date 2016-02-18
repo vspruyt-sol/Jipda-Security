@@ -59,7 +59,7 @@ ExistentialQuery.prototype.runNaive = function(){
 						//	if(this.match(tripleG.edge, tripleP.edge)){ //match(el, theta2(tl)) != {{}} KAN PROBLEMEN GEVEN
 						//einde komt in plaats
 								tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
-								if(!this.contains(R, tripleTemp)){
+								if(!contains(R, tripleTemp)){
 									W = this.union(W, [tripleTemp]);
 								}
 							}
@@ -69,7 +69,7 @@ ExistentialQuery.prototype.runNaive = function(){
 			}
 		} //end for
 		
-		if(this.contains(this.F, tripleW.s)){
+		if(contains(this.F, tripleW.s)){
 			E = this.union(E, [new VertexThetaPair(tripleW.v, tripleW.theta)]);
 		}
 	} //end while
@@ -115,7 +115,7 @@ ExistentialQuery.prototype.runMemo = function(){
 						theta = this.match(tripleG.edge,tripleP.edge);
 						for(var k = 0; k < theta.length; k++){
 							pairTemp = new VertexPair(tripleG.target, tripleP.target);
-							if(!this.contains(Rts, pairTemp)){
+							if(!contains(Rts, pairTemp)){
 								Wts = this.union(Wts, [pairTemp]);
 								Mts = this.union(Mts, [new Quintuple(tripleG.from, tripleP.from, tripleG.target, tripleP.target, theta[k])])
 							}
@@ -137,13 +137,13 @@ ExistentialQuery.prototype.runMemo = function(){
 				theta2 = this.merge(tripleW.theta, quintupleMts.theta);
 				if(theta2){
 					tripleTemp = new WorklistTriple(quintupleMts.vto, quintupleMts.sto, theta2);
-					if(!this.contains(R, tripleTemp)){
+					if(!contains(R, tripleTemp)){
 						W = this.union(W, [tripleTemp]);
 					}
 				}
 			}
 		}
-		if(this.contains(this.F, tripleW.s)){
+		if(contains(this.F, tripleW.s)){
 			E = this.union(E, [new VertexThetaPair(tripleW.v, tripleW.theta)]);
 		}
 	} //end while
@@ -164,6 +164,8 @@ ExistentialQuery.prototype.match = function(el, tl){
 	var substitutions = [];
 	var _map = [];
 	switch(tl.name){
+		case 'state'		: 	_map = this.matchState(el, tl);
+								break;
 		case 'assign'		: 	_map = this.matchAssign(el, tl);
 								break;
 		case 'fCall'		: 	_map = this.matchFCall(el, tl); 
@@ -196,6 +198,69 @@ ExistentialQuery.prototype.isWildCard = function(x){
 	return (x === undefined || (x === '_')); 
 }
 
+ExistentialQuery.prototype.matchState = function(el, tl){
+	var tlInfo = tl.state;
+	var subst = [];
+	var matchInfo, reified;
+
+	for(var key in tlInfo){
+		reified = mapStateKey(key, el);
+		if(!reified) return false;
+		matchInfo = this.matchRecursive(key, tlInfo[key], mapStateKey(key,el)); //pass along the corresponding statepart
+		if(matchInfo){
+			subst.push.apply(subst, matchInfo)
+		}
+		else{
+			return false;
+		}
+	}
+	console.log(subst);
+	return subst.length === 0 ? false : subst;
+}
+
+ExistentialQuery.prototype.matchRecursive = function(key, value, statePart, subs){
+	var reified, matchInfo, merged;
+	subs = subs || [];
+	if(value instanceof Array){
+		//TODO overloop alle elems (momenteel skip)?
+	}
+	else if(value instanceof Object) {
+		for(var k in value){
+			reified = mapStateKey(k, statePart);
+			if(!reified) return false;
+			matchInfo = this.matchRecursive(k, value[k], reified, subs);
+			if (matchInfo){
+				subs = this.merge(subs, matchInfo);
+				if(!subs) return false;
+			}
+			else{
+				return false;
+			}
+		}
+	}
+	else if(value.constructor.name === 'String'){ //assume it is a string
+		if(value.charAt(0) === '?'){ //it's a variable, store it
+			var obj = {};
+			obj[value] =  statePart;
+			subs.push(obj);
+		}
+		else{
+			if(value !== statePart) return false;
+		}
+	}
+	else{ //number or boolean
+		if(value !== statePart) return false;
+	}
+	return subs.length === 0 ? [{}] : subs;
+}
+
+//TEMP test function (maps keys to state keys)
+var mapStateKey = function(key, statePart){
+	//do some reifying
+	return statePart[key] ? statePart[key] : false;
+
+}
+
 ExistentialQuery.prototype.matchAssign = function(el, tl){
 	//tl can contain fields for: 
 	//leftName
@@ -221,6 +286,12 @@ ExistentialQuery.prototype.matchAssign = function(el, tl){
 			obj[tlInfo.rightName] = nodeInfo.rightName;
 			subst.push(obj);
 		}
+		if(!this.isWildCard(tlInfo.rightArgument) && nodeInfo.right.arguments) {
+			//_map[tlInfo.leftName] = elInfo.expression.left.name;
+			var obj = {};
+			obj[tlInfo.rightArgument] = nodeInfo.right.arguments[0].name;
+			subst.push(obj);
+		}
 		if(!this.isWildCard(tlInfo.location)) {
 			//_map[tlInfo.leftName] = elInfo.expression.left.name;
 			var obj = {};
@@ -232,8 +303,7 @@ ExistentialQuery.prototype.matchAssign = function(el, tl){
 		info = JipdaInfo.lookup(elInfo, el);
 		nodeInfo = info.nodeInfo;
 		kontInfo = info.kontInfo;
-		console.log('variableDeclaration');
-		console.log(info);
+		console.log(tlInfo);
 		//_map[tlInfo.leftName] = elInfo.expression.left.name;
 		for(var i = 0; i < nodeInfo.declarations.length; i++){
 			if(!nodeInfo.declarations[i].isFunction || (nodeInfo.declarations[i].isFunction && tlInfo.canBeFunction)){ //check om te zien of er geassigned is
@@ -247,6 +317,12 @@ ExistentialQuery.prototype.matchAssign = function(el, tl){
 				if(!this.isWildCard(tlInfo.rightName)) {
 					var obj = {};
 					obj[tlInfo.rightName] = nodeInfo.declarations[i].rightName;
+					subst.push(obj);
+				}
+				if(!this.isWildCard(tlInfo.rightArgument) && nodeInfo.declarations[i].right.arguments) {
+					//_map[tlInfo.leftName] = elInfo.expression.left.name;
+					var obj = {};
+					obj[tlInfo.rightArgument] = nodeInfo.declarations[i].right.arguments[0].name;
 					subst.push(obj);
 				}
 				if(!this.isWildCard(tlInfo.location)) {
@@ -270,6 +346,12 @@ ExistentialQuery.prototype.matchAssign = function(el, tl){
 			if(!this.isWildCard(tlInfo.rightName)){
 				var obj = {};
 				obj[tlInfo.rightName] = nodeInfo.rightName;
+				subst.push(obj);
+			}
+			if(!this.isWildCard(tlInfo.rightArgument) && nodeInfo.right.arguments) {
+				//_map[tlInfo.leftName] = elInfo.expression.left.name;
+				var obj = {};
+				obj[tlInfo.rightArgument] = nodeInfo.right.arguments[0].name;
 				subst.push(obj);
 			}
 			if(!this.isWildCard(tlInfo.location)){
@@ -373,7 +455,7 @@ ExistentialQuery.prototype.matchEndFCall = function(el, tl){
 	if(retRes) return retRes;
 
 	//search no further (small hack with constructor)
-	if(el.constructor.name !== 'KontState' || el.lkont.length != 0) return false;
+	if(el.constructor.name !== 'KontState' || el.lkont.length != 0) return false; 
 	var elKont = el.kont;
 	var tlInfo = tl.state;
 
@@ -483,7 +565,7 @@ ExistentialQuery.prototype.merge = function(theta, otherTheta){
 				if(theta[i].hasOwnProperty(prop)){
 					p = findProp(otherTheta, prop);
 					if(p){ 
-						if(!(p === theta[i][prop])){ //If not equal
+						if(!(_.isEqual(p,theta[i][prop]))){ //If not equal
 							return false;
 						}
 					}
@@ -501,7 +583,7 @@ ExistentialQuery.prototype.merge = function(theta, otherTheta){
 		for(var i = 0; i <  arr.length; i++){
 			for(var property in arr[i]){
 				if(arr[i].hasOwnProperty(property)){
-					if(property === prop) return arr[i][property];
+					if(_.isEqual(property,prop)) return arr[i][property];
 				}
 			}
 		}
@@ -526,7 +608,7 @@ ExistentialQuery.prototype.union = function(set, otherSet, debug){
 	var result = set.slice(0);
 	
 	for (var i = 0; i < otherSet.length; i++) {
-        if (!this.contains(result, otherSet[i])) {
+        if (!contains(result, otherSet[i])) {
             result.push(otherSet[i]);
         }
     }
@@ -545,19 +627,12 @@ ExistentialQuery.prototype.removeTriple = function(set, triple){
 	});
 }
 
-ExistentialQuery.prototype.contains = function(set, elem){
-	//console.log(JSON.stringify(set));
-	//console.log(JSON.stringify(elem));
-	
+var contains = function(set, elem){	
 	for (var i = 0; i < set.length; i++) {
-        if (set[i].equals(elem) || set[i] === elem) {
-        	//console.log(true);
-        	//console.log('----');
+        if (_.isEqual(set[i], elem) || set[i] === elem) {
             return true;
         }
     }
-    //console.log(false);
-    //console.log('----');
     return false;
 }
 
@@ -569,10 +644,14 @@ function JipdaInfo(){
 }
 
 JipdaInfo.assignmentExpression = function(exp){
+	var l = JipdaInfo.lookup(exp.left);
+	var r = JipdaInfo.lookup(exp.right);
 	return {
-		leftName	: JipdaInfo.lookup(exp.left).nodeInfo.name,
+		leftName	: l.nodeInfo.name,
+		left 		: l.nodeInfo,
 		operator	: exp.operator,
-		rightName	: JipdaInfo.lookup(exp.right).nodeInfo.name,
+		rightName	: r.nodeInfo.name,
+		right 		: r.nodeInfo,
 		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
@@ -678,7 +757,9 @@ JipdaInfo.variableDeclarator = function(exp){
 		id 			: i.name,
 		init 		: ini.name,
 		leftName	: i.name,
+		left 		: i,
 		rightName 	: ini.name,
+		right 		: ini,
 		name 		: i.name + ' = ' + ini.name,
 		operator 	: '=',
 		isFunction 	: (exp.init && exp.init.type === 'FunctionExpression'),

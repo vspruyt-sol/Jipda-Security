@@ -1,9 +1,21 @@
 TODO: 
-- Find end of functioncall (week van 15 - 21 feb) (max 1 dag) CHECK
-- Lookup stateinfo ipv nodeinfo (week van 15 - 21 feb) (max 1 dag om op te zetten) CKECK
-- Negatie (week van 23 - 28 feb) (hopelijk) (lang)
-- Universal query (week van 15 - 21 feb) (2-3 dagen)
-- Info uit esprima (week van 15 - 21 feb) (max 1 dag)
-- Backward query (week van 15 - 21 feb) (max 2 uur)
-- Refactoren? (Throughout project)
-- ... (later)
+
+- Negatie
+- Universal query (2-3 dagen)
+- Info uit esprima (max 1 dag)
+- Backward query (max 2 uur)
+
+- Refactoren? 
+- Abstractiemechanisme (queries definen, ander venster oproepen/gebruiken)
+- Counting (bvb hoeveel vars verwijzen naar bepaald adres) (operaties in het algemeen);
+- Macro-expansion of callstack
+- Reify van varnames
+- Piramide (lowlevel -> high level)
+
+
+CHECK:
+- state(?x)*state(?x)*state(?x)* ... hebben we match als we een graph hebben als  0-->0-->0--->0--->0 CHECK!
+																					  |<-------|
+- Matchen op state ipv values ook! CHECK
+
+

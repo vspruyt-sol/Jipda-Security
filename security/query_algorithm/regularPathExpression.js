@@ -13,6 +13,22 @@ function RegularPathExpression(){
  * ----------------
  */
 
+ RegularPathExpression.prototype.userDefined = function(obj){ //obj -> {left: '?left', right: '3'} bvb
+ 	//todo fill in params
+ 	var state = {};
+ 	this.state({
+ 		node: {	type: obj.type },
+ 		lkont: var2
+ 	})
+ }
+
+//State
+RegularPathExpression.prototype.state = function(obj){
+	this._map.push(new RegexPart('state', obj, 'idx' + this._map.length));
+	//Fluent API
+	return this;
+}
+
 //Assignment
 RegularPathExpression.prototype.assign = function(obj){
 	this._map.push(new RegexPart('assign', obj, 'idx' + this._map.length));
