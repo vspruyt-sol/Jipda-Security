@@ -214,7 +214,6 @@ ExistentialQuery.prototype.matchState = function(el, tl){
 			return false;
 		}
 	}
-	console.log(subst);
 	return subst.length === 0 ? false : subst;
 }
 
@@ -242,10 +241,14 @@ ExistentialQuery.prototype.matchRecursive = function(key, value, statePart, subs
 		if(value.charAt(0) === '?'){ //it's a variable, store it
 			var obj = {};
 			obj[value] =  statePart;
+			console.log('statePart');
+			console.log(JipdaInfo.lookup(statePart))
+			console.log(statePart);
 			subs.push(obj);
 		}
 		else{
-			if(value !== statePart) return false;
+			//TODO check wildcard
+			if(value !== '_' && value !== statePart) return false;
 		}
 	}
 	else{ //number or boolean
@@ -256,7 +259,7 @@ ExistentialQuery.prototype.matchRecursive = function(key, value, statePart, subs
 
 //TEMP test function (maps keys to state keys)
 var mapStateKey = function(key, statePart){
-	//do some reifying
+	//TODO:do some reifying
 	return statePart[key] ? statePart[key] : false;
 
 }
@@ -674,8 +677,10 @@ JipdaInfo.literal = function(exp){
 
 JipdaInfo.objectExpression = function(exp){
 	var tmp = '{';
+	var arr = [];
 	//calculate name if nested
 	for(var i = 0; i < exp.properties.length; i++){
+		arr.push(properties[i]);
 		tmp +=  JipdaInfo.lookup(exp.properties[i]).nodeInfo.name + ', ';
 	}
 
@@ -684,8 +689,9 @@ JipdaInfo.objectExpression = function(exp){
 	tmp += '}';
 
 	return {
-		name	: tmp,
-		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		name		: tmp,
+		properties 	: arr,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 
@@ -719,14 +725,19 @@ JipdaInfo.property = function(exp){
 }
 
 JipdaInfo.memberExpression = function(exp){
-	var o = JipdaInfo.lookup(exp.object).nodeInfo.name;
-	var p = JipdaInfo.lookup(exp.property).nodeInfo.name;
+	var prop = [];
+	var o = JipdaInfo.lookup(exp.object).nodeInfo;
+	var p = JipdaInfo.lookup(exp.property).nodeInfo;
+	
+	if(o.properties) prop.push.apply(prop, o.properties);
+	prop.push(p.name);
 
 	return {
-		object	: o,
-		property: p,
-		name 	: o + '['+ p + ']',
-		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		object	 	: o.name,
+		property 	: p.name,
+		properties 	: prop,
+		name 		: o.name + '['+ p.name + ']',
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 

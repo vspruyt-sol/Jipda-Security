@@ -8,9 +8,10 @@ TODO:
 - Refactoren? 
 - Abstractiemechanisme (queries definen, ander venster oproepen/gebruiken)
 - Counting (bvb hoeveel vars verwijzen naar bepaald adres) (operaties in het algemeen);
-- Macro-expansion of callstack
+- Macro-expansion of callstack (? moet dit dan wel);
 - Reify van varnames
 - Piramide (lowlevel -> high level)
+- Recursieve match Arrays????????
 
 
 CHECK:
@@ -19,3 +20,4 @@ CHECK:
 - Matchen op state ipv values ook! CHECK
 
 
+checken voor prototype poisoning -> ?left.name ofzo
