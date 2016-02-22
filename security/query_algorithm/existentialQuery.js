@@ -198,21 +198,77 @@ ExistentialQuery.prototype.isWildCard = function(x){
 	return (x === undefined || (x === '_')); 
 }
 
+ExistentialQuery.prototype.verifyConditions = function(table, conds){
+	var f, args, subst = [];
+	for(var key in conds){
+		f = conds[key][0];
+		args = conds[key][1];
+		//1. find variables and resolve them, (check type of variable!)
+		//2. call function with arguments
+		//3. do some checks of course
+		//4. if condition isn't met, remove array from table
+		//5. return updated table
+	}
+
+	return subst;
+}
+
+ExistentialQuery.prototype.addExtraProperties = function(table, props){
+	var toLookup, propString, subSubs, accessors, lookupInfo, lookedUp;
+	var matches = true;
+	var subst = [];
+	for(var key in props){ //TODO: CAN BE FUNCTIONS AS WELL INSTEAD OF ACCESSORS!
+		propString = props[key];
+		toLookup = propString.split('.')[0];
+		accessors = propString.split('.').slice(1);
+		for(var i = 0; i < table.length; i++){
+			subSubs = table[i];
+			if(subSubs[toLookup]) lookedUp = subSubs[toLookup] //lookup variable
+			if(subSubs[key]){ //variable already defined
+				break; 
+			}
+			if(lookedUp){ //not already defined and found in table
+				var obj = {};
+				lookupInfo = JipdaInfo.lookup(lookedUp); //expression matching on val
+				if(lookupInfo){
+					lookupInfo = lookupInfo.nodeInfo;
+					for(var g = 0; g < accessors.length; g++){
+						if(lookupInfo) lookupInfo = lookupInfo[accessors[g]];
+					}
+					obj[key] = lookupInfo;
+				}
+				if(obj[key]) table.push(obj);
+			}
+			lookedUp = false;
+		}
+	}
+
+	return table;
+}
+
 ExistentialQuery.prototype.matchState = function(el, tl){
 	var tlInfo = tl.state;
 	var subst = [];
 	var matchInfo, reified;
 
 	for(var key in tlInfo){
-		reified = mapStateKey(key, el);
-		if(!reified) return false;
-		matchInfo = this.matchRecursive(key, tlInfo[key], mapStateKey(key,el)); //pass along the corresponding statepart
-		if(matchInfo){
-			subst.push.apply(subst, matchInfo)
+		if(key === 'conditions') {
+			subst = this.verifyConditions(subst, tlInfo[key]);
+		}
+		else if(key === 'properties') {
+			subst = this.addExtraProperties(subst, tlInfo[key]);
 		}
 		else{
-			return false;
-		}
+			reified = mapStateKey(key, el);
+			if(!reified) return false;
+			matchInfo = this.matchRecursive(key, tlInfo[key], mapStateKey(key,el)); //pass along the corresponding statepart
+			if(matchInfo){
+				subst.push.apply(subst, matchInfo)
+			}
+			else{
+				return false;
+			}
+		}	
 	}
 	return subst.length === 0 ? false : subst;
 }
@@ -241,9 +297,6 @@ ExistentialQuery.prototype.matchRecursive = function(key, value, statePart, subs
 		if(value.charAt(0) === '?'){ //it's a variable, store it
 			var obj = {};
 			obj[value] =  statePart;
-			console.log('statePart');
-			console.log(JipdaInfo.lookup(statePart))
-			console.log(statePart);
 			subs.push(obj);
 		}
 		else{
@@ -261,7 +314,6 @@ ExistentialQuery.prototype.matchRecursive = function(key, value, statePart, subs
 var mapStateKey = function(key, statePart){
 	//TODO:do some reifying
 	return statePart[key] ? statePart[key] : false;
-
 }
 
 ExistentialQuery.prototype.matchAssign = function(el, tl){
@@ -732,9 +784,12 @@ JipdaInfo.memberExpression = function(exp){
 	if(o.properties) prop.push.apply(prop, o.properties);
 	prop.push(p.name);
 
+	//TODO VALUE?
 	return {
-		object	 	: o.name,
-		property 	: p.name,
+		object	 	: o,
+		objectName 	: o.name,
+		propertyName: p.name,
+		property 	: p,
 		properties 	: prop,
 		name 		: o.name + '['+ p.name + ']',
 		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
@@ -864,6 +919,9 @@ JipdaInfo.blockStatement = function(exp){
 }
 
 JipdaInfo.lookup = function(exp, el){
+	//if we lookup something that isn't a node
+	if(!el && exp && !exp.type) return false;
+
 	var nodeInfo = {};
 	var kontInfo = {};
 

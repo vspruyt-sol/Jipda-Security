@@ -13,31 +13,30 @@ function RegularPathExpression(){
  * -----------------------
  */
 
- RegularPathExpression.prototype.udAssign = function(obj){ //obj -> {left: '?left', right: '3'} bvb
- 	//todo fill in params
- 	var s = {};
- 	//make vars optional
- 	if(obj['left']) 		setupStateChain(s, ['node','expression','left'] , obj['left']);
- 	if(obj['right']) 		setupStateChain(s, ['node','expression','right'], obj['right']);
 
- 	return this.state(s);
- }
 
-  RegularPathExpression.prototype.udFindAlias = function(obj){ //obj -> {aliasFor: '?a', alias: '?alias'}
- 	//todo fill in params
- 	var s1 = {};
- 	//make vars optional
- 	if(obj['aliasFor']) setupStateChain(s1, ['node','expression','left','name'] , obj['aliasFor']);
+RegularPathExpression.prototype.udAssign = function(obj){ //obj -> {left: '?left', right: '3'} bvb
+	//todo fill in params
+	var s = {};
+	//make vars optional
+	if(obj['left']) 		setupStateChain(s, ['node','expression','left'], obj['left']);
+	if(obj['right']) 		setupStateChain(s, ['node','expression','right'], obj['right']);
 
- 	var s2 = {};
- 	if(obj['aliasFor']) setupStateChain(s2, ['node','expression','right','name'] , obj['aliasFor']);
- 	console.log(s2);
- 	if(obj['alias']) 	setupStateChain(s2, ['node','expression','left','name'], obj['alias']);
+	return this.state(s);
+}
 
- 	console.log(s2);
+RegularPathExpression.prototype.udFindAlias = function(obj){ //obj -> {aliasFor: '?a', alias: '?alias'}
+	//todo fill in params
+	var s1 = {};
+	//make vars optional
+	if(obj['aliasFor']) setupStateChain(s1, ['node','expression','left','name'], obj['aliasFor']);
 
- 	return this.state(s1).wildcard().star().state(s2);
- }
+	var s2 = {};
+	if(obj['aliasFor']) setupStateChain(s2, ['node','expression','right','name'], obj['aliasFor']);
+	if(obj['alias']) 	setupStateChain(s2, ['node','expression','left','name'], obj['alias']);
+
+	return this.state(s1).skipZeroOrMore().state(s2);
+}
 
 /**
  * ----------------
@@ -238,16 +237,32 @@ RegexPart.prototype.toString = function(){
  * -------
  */
 
- var setupStateChain = function(obj, chain, val){
- 	var cur = obj;
- 	for(var i = 0; i < chain.length; i++){
- 		if(i === chain.length - 1){
- 			cur[chain[i]] = val;
- 		}
- 		else{
- 			if(!cur[chain[i]]) cur[chain[i]] = {};
- 			cur = cur[chain[i]];
- 		}
- 		
- 	}
- }
+var setupStateChain = function(obj, chain, val){
+	var cur = obj;
+	for(var i = 0; i < chain.length; i++){
+		if(i === chain.length - 1){
+			cur[chain[i]] = val;
+		}
+		else{
+			if(!cur[chain[i]]) cur[chain[i]] = {};
+			cur = cur[chain[i]];
+		}
+		
+	}
+}
+
+//Builtin functions for conditions
+var cond = function(f){
+	var args = Array.prototype.slice.call(arguments, 1);
+
+	//lookup function
+	var found = conditions[f];
+	if(!found) throw 'function ' + f + ' is not a valid function';
+	return [found, args];
+}
+
+var conditions = {
+	equals 		: _.isEqual,
+	contains 	: contains, //defined in existentialQuery
+
+}

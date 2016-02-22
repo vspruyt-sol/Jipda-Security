@@ -4,7 +4,7 @@ function Query(rpe, type, direction){
   }
   catch(err){
     this.rpe = false;
-    console.log('Could not parse regular path expression');
+    console.log(err);
   }
   
   this.type = type;
