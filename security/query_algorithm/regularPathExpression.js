@@ -251,18 +251,34 @@ var setupStateChain = function(obj, chain, val){
 	}
 }
 
+//Builtin functions for properties
+var prop = function(f){
+	var args = Array.prototype.slice.call(arguments, 1);
+
+	//lookup function
+	var found = queryFunctions.properties[f];
+	if(!found) throw 'function ' + f + ' is not a valid function';
+	return [found, args];
+}
+
 //Builtin functions for conditions
 var cond = function(f){
 	var args = Array.prototype.slice.call(arguments, 1);
 
 	//lookup function
-	var found = conditions[f];
+	var found = queryFunctions.conditions[f];
 	if(!found) throw 'function ' + f + ' is not a valid function';
 	return [found, args];
 }
 
-var conditions = {
-	equals 		: _.isEqual,
-	contains 	: contains, //defined in existentialQuery
-
+var queryFunctions = {
+	conditions : {
+				equals 		: _.isEqual,
+				contains 	: contains, 
+				testTrue 	: function(){return true;},
+				testFalse 	: function(){return false;}
+				},
+	properties : {
+				test 		: function(a){ return 'TODO'; },
+				}
 }

@@ -6,7 +6,6 @@ TODO:
 - Backward query (max 2 uur)
 
 - Refactoren? 
-- Abstractiemechanisme (queries definen, ander venster oproepen/gebruiken)
 - Counting (bvb hoeveel vars verwijzen naar bepaald adres) (operaties in het algemeen);
 - Macro-expansion of callstack (? moet dit dan wel);
 - Reify van varnames
@@ -19,5 +18,4 @@ CHECK:
 																					  |<-------|
 - Matchen op state ipv values ook! CHECK
 
-
-checken voor prototype poisoning -> ?left.name ofzo
+- Abstractiemechanisme (queries definen, ander venster oproepen/gebruiken) CHECK

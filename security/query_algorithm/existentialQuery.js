@@ -198,6 +198,17 @@ ExistentialQuery.prototype.isWildCard = function(x){
 	return (x === undefined || (x === '_')); 
 }
 
+var isResolvableVariable = function(x){
+	return (typeof x === 'string' && x.charAt(0) === '?');
+}
+
+ExistentialQuery.prototype.resolveVariable = function(varName, table){
+	for(var i = 0; i < table.length; i++){
+		if(table[i][varName]) return table[i][varName];
+	}
+	return false;
+}
+
 ExistentialQuery.prototype.verifyConditions = function(table, conds){
 	var f, args, subst = [];
 	for(var key in conds){
@@ -206,7 +217,7 @@ ExistentialQuery.prototype.verifyConditions = function(table, conds){
 		//1. find variables and resolve them, (check type of variable!)
 		//2. call function with arguments
 		//3. do some checks of course
-		//4. if condition isn't met, remove array from table
+		//4. if condition isn't met, return []
 		//5. return updated table
 	}
 
@@ -214,35 +225,54 @@ ExistentialQuery.prototype.verifyConditions = function(table, conds){
 }
 
 ExistentialQuery.prototype.addExtraProperties = function(table, props){
-	var toLookup, propString, subSubs, accessors, lookupInfo, lookedUp;
+	var toLookup, propString, subSubs, accessors, lookupInfo, lookedUp, func, args, resolvedArg, res;
 	var matches = true;
 	var subst = [];
-	for(var key in props){ //TODO: CAN BE FUNCTIONS AS WELL INSTEAD OF ACCESSORS!
+	var resolvedArgs = [];
+	for(var key in props){
 		propString = props[key];
-		toLookup = propString.split('.')[0];
-		accessors = propString.split('.').slice(1);
-		for(var i = 0; i < table.length; i++){
-			subSubs = table[i];
-			if(subSubs[toLookup]) lookedUp = subSubs[toLookup] //lookup variable
-			if(subSubs[key]){ //variable already defined
-				break; 
-			}
-			if(lookedUp){ //not already defined and found in table
-				var obj = {};
-				lookupInfo = JipdaInfo.lookup(lookedUp); //expression matching on val
-				if(lookupInfo){
-					lookupInfo = lookupInfo.nodeInfo;
-					for(var g = 0; g < accessors.length; g++){
-						if(lookupInfo) lookupInfo = lookupInfo[accessors[g]];
-					}
-					obj[key] = lookupInfo;
+		if(propString instanceof Array){ //[function, [arguments]]
+			func = propString[0];
+			args = propString[1];
+			for(var i = 0; i < args.length; i++){
+				if(isResolvableVariable(args[i])){
+					resolvedArg = this.resolveVariable(args[i], table);
 				}
-				if(obj[key]) table.push(obj);
+				else{
+					resolvedArg = args[i];
+				}
+				resolvedArgs.push(resolvedArg);
 			}
-			lookedUp = false;
+			res = func.apply(this, resolvedArgs);
+			var obj = {};
+			obj[key] = res;
+			table.push(obj);
+		}
+		else{
+			toLookup = propString.split('.')[0];
+			accessors = propString.split('.').slice(1);
+			for(var i = 0; i < table.length; i++){
+				subSubs = table[i];
+				if(subSubs[toLookup]) lookedUp = subSubs[toLookup] //lookup variable
+				if(subSubs[key]){ //variable already defined
+					break; 
+				}
+				if(lookedUp){ //not already defined and found in table
+					var obj = {};
+					lookupInfo = JipdaInfo.lookup(lookedUp); //expression matching on val
+					if(lookupInfo){
+						lookupInfo = lookupInfo.nodeInfo;
+						for(var g = 0; g < accessors.length; g++){
+							if(lookupInfo) lookupInfo = lookupInfo[accessors[g]];
+						}
+						obj[key] = lookupInfo;
+					}
+					if(obj[key]) table.push(obj);
+				}
+				lookedUp = false;
+			}
 		}
 	}
-
 	return table;
 }
 
@@ -263,6 +293,8 @@ ExistentialQuery.prototype.matchState = function(el, tl){
 			if(!reified) return false;
 			matchInfo = this.matchRecursive(key, tlInfo[key], mapStateKey(key,el)); //pass along the corresponding statepart
 			if(matchInfo){
+				console.log('matchInfo');
+				console.log(matchInfo);
 				subst.push.apply(subst, matchInfo)
 			}
 			else{
