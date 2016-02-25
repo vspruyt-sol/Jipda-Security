@@ -59,7 +59,6 @@ Utilities.removeFromArray = function(arr, obj) {
 }
 
 
-
 /**
  * Extend Array prototype for extra functionality
  *
@@ -76,4 +75,8 @@ Array.prototype.getUnique = function(){
    return a;
 }
 
+Utilities.myEqual = function(a,b){
+  //Todo ignore tag!
+  return _.isEqual(a,b);
+}
 

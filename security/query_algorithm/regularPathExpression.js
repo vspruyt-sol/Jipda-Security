@@ -5,6 +5,8 @@ function RegularPathExpression(){
 	this.depth = 0;
 	//Contains the NFA with its graph triples
 	this.nfa = [];
+	//temporal fix
+	this.uid = 0;
 }
 
 /**
@@ -36,6 +38,43 @@ RegularPathExpression.prototype.udFindAlias = function(obj){ //obj -> {aliasFor:
 	if(obj['alias']) 	setupStateChain(s2, ['node','expression','left','name'], obj['alias']);
 
 	return this.state(s1).skipZeroOrMore().state(s2);
+}
+
+RegularPathExpression.prototype.udFCall = function(obj){
+	var s1 = {};
+	var objName = obj.name || this.getTmpVar('objName');
+	var objNode = obj.node || this.getTmpVar('objNode');
+	var objArguments = obj.arguments || this.getTmpVar('objArguments');
+	var calleeName = this.getTmpVar('calleeName');
+
+	//Basic function call
+	setupStateChain(s1, ['node','expression','callee'], objNode);
+	setupStateChain(s1, ['node','expression','arguments'], objArguments);
+	
+	//Object Name
+	if(objName){
+		if(objName.charAt(0) === '?'){
+			setupProperty(s1, objName, objNode + '.name');
+		}
+		else{
+			setupProperty(s1, calleeName , objNode + '.name');
+			setupCondition(	s1, 
+							'equals',
+							calleeName,
+							objName);
+		}
+	}
+	return this.state(s1);
+}
+
+RegularPathExpression.prototype.udOpenClosedFile = function(obj){
+
+	return 	this	.udFCall({name: 'close'})
+					.not()
+					.lBrace()
+					.udFCall({name: 'open'})
+					.rBrace().star()
+					.udFCall({name: 'access'})
 }
 
 /**
@@ -175,6 +214,14 @@ RegularPathExpression.prototype.toPrettyString = function(obj){
 	return this._map.map(function(x){ return x.toString() + '\n'; }).join('.');
 }
 
+RegularPathExpression.prototype.getUid = function(){
+	return this.uid++;
+}
+
+RegularPathExpression.prototype.getTmpVar = function(name){
+	return '?__tmp__' + name + this.uid++;
+}
+
 
 /**
  * -------------
@@ -251,6 +298,20 @@ var setupStateChain = function(obj, chain, val){
 	}
 }
 
+var setupProperty = function(obj, left, right){
+	var prop = {};
+	if(!obj.properties) obj.properties = {};
+	obj.properties[left] = right;
+}
+
+var setupCondition = function(obj, f){
+	var args = Array.prototype.slice.call(arguments, 2);
+	var fArgs = Array.prototype.concat.apply([], [f, args])
+	if(!obj.conditions) obj.conditions = {};
+	var idx = Object.keys(obj).length;
+	obj.conditions[idx] = cond.apply(this,fArgs);	
+}
+
 //Builtin functions for properties
 var prop = function(f){
 	var args = Array.prototype.slice.call(arguments, 1);
@@ -273,12 +334,14 @@ var cond = function(f){
 
 var queryFunctions = {
 	conditions : {
-				equals 		: _.isEqual,
+				equals 		: Utilities.myEqual,
 				contains 	: contains, 
 				testTrue 	: function(){return true;},
 				testFalse 	: function(){return false;}
 				},
 	properties : {
-				test 		: function(a){ return 'TODO'; },
+				identity 		: function(a){ return a; },
+				length			: function(a){ return a.length; },
+				at 				: function(a,idx){ return a[idx]; },
 				}
 }

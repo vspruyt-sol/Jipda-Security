@@ -1,4 +1,5 @@
-var EMPTY_SET_NEGATION = [[{}]];
+var STOP_NEGATION 		= [];
+var CONTINUE_NEGATION 	= [[{}]];
 
 /*
  * G = States van JIPDA graph
@@ -64,6 +65,68 @@ ExistentialQuery.prototype.runNaive = function(){
 								}
 							}
 						}//end for		
+					}
+				} //end for 
+			}
+		} //end for
+		
+		if(contains(this.F, tripleW.s)){
+			E = this.union(E, [new VertexThetaPair(tripleW.v, tripleW.theta)]);
+		}
+	} //end while
+	return E;
+}
+
+ExistentialQuery.prototype.runNaiveWithNegation = function(){
+	//used variables
+	var tripleG, tripleP, theta, theta2,
+		tripleW, tripleTemp;
+	//start algorithm
+	var R = [];
+	var W = [];
+	for(var i = 0; i < this.G.length; i++){
+		tripleG = this.G[i];
+		if(tripleG.from.equals(this.v0)){ //Is de Jipda-node gelijk aan onze initial (Jipda-)node
+			for(var j = 0; j < this.P.length; j++){
+				tripleP = this.P[j];	
+				if(tripleP.from.equals(this.s0)){ //Is de NFA-node gelijk aan de initial (NFA-)node
+					theta = this.match(tripleG.edge,tripleP.edge);
+					for(var k = 0; k < theta.length; k++){
+						W = this.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
+					}
+				}
+			}
+		}
+	}
+	var E = [];
+	while(W.length > 0){
+		tripleW = W.shift();
+		R = this.union(R, [tripleW]);
+		for(var i = 0; i < this.G.length; i++){
+			tripleG = this.G[i];
+			if(tripleG.from.equals(tripleW.v)){ //KLOPT DIT WEL????
+				for(var j = 0; j < this.P.length; j++){
+					tripleP = this.P[j];	
+					if(tripleP.from.equals(tripleW.s)){
+						//if tripleP.edge.negated && allBound(tripleP.edge, tripleW.theta)
+						//theta2 = this.extensions()
+						//doe 'modified' matching (als ok return je lege substitutie!)
+						//if(!tripleP.edge.negated){
+							theta = this.match(tripleG.edge,tripleP.edge);
+							for(var k = 0; k < theta.length; k++){
+								theta2 = this.merge(tripleW.theta, theta[k]);
+								if(theta2){
+									tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
+									if(!contains(R, tripleTemp)){
+										W = this.union(W, [tripleTemp]);
+									}
+								}
+							}//end for
+						//}//if !negated
+						//else{
+							//if all are bound
+
+						//}			
 					}
 				} //end for 
 			}
@@ -186,11 +249,10 @@ ExistentialQuery.prototype.match = function(el, tl){
 	//Als Substitutions elementen bevat, dan matcht el tl onder theta
 	//M.a.w. moeten we {{}} returnen, anders returnen we {}
 	if(_map){
-		if(tl.negated) return EMPTY_SET_NEGATION;
+		if(tl.negated) return [];
 		substitutions.push(_map);
-
 	}
-	return tl.negated ? [[]] : substitutions; //substitution	
+	return tl.negated ? [[{}]] : substitutions; //substitution	
 }
 
 // MATCHING
@@ -210,33 +272,40 @@ ExistentialQuery.prototype.resolveVariable = function(varName, table){
 }
 
 ExistentialQuery.prototype.verifyConditions = function(table, conds){
-	var f, args, subst = [];
+	var func, args, resolvedArg, resolvedArgs = [];
 	for(var key in conds){
-		f = conds[key][0];
+		func = conds[key][0];
 		args = conds[key][1];
-		//1. find variables and resolve them, (check type of variable!)
-		//2. call function with arguments
-		//3. do some checks of course
-		//4. if condition isn't met, return []
-		//5. return updated table
+		for(var i = 0; i < args.length; i++){
+			if(isResolvableVariable(args[i])){
+				resolvedArg = this.resolveVariable(args[i], table);
+				if(!resolvedArg) throw 'could not resolve argument ' + args[i];
+			}
+			else{
+				resolvedArg = args[i];
+			}
+			resolvedArgs.push(resolvedArg);
+		}
+		res = func.apply(this, resolvedArgs);
+		if(!res) return [];
 	}
-
-	return subst;
+	return table;
 }
 
 ExistentialQuery.prototype.addExtraProperties = function(table, props){
 	var toLookup, propString, subSubs, accessors, lookupInfo, lookedUp, func, args, resolvedArg, res;
 	var matches = true;
-	var subst = [];
 	var resolvedArgs = [];
 	for(var key in props){
 		propString = props[key];
 		if(propString instanceof Array){ //[function, [arguments]]
+			resolvedArgs = [];
 			func = propString[0];
 			args = propString[1];
 			for(var i = 0; i < args.length; i++){
 				if(isResolvableVariable(args[i])){
 					resolvedArg = this.resolveVariable(args[i], table);
+					if(!resolvedArg) throw 'could not resolve argument ' + args[i];
 				}
 				else{
 					resolvedArg = args[i];
@@ -255,19 +324,20 @@ ExistentialQuery.prototype.addExtraProperties = function(table, props){
 				subSubs = table[i];
 				if(subSubs[toLookup]) lookedUp = subSubs[toLookup] //lookup variable
 				if(subSubs[key]){ //variable already defined
+					//throw 'Substitution for ' + key + ' already exists.'
 					break; 
 				}
 				if(lookedUp){ //not already defined and found in table
 					var obj = {};
-					lookupInfo = JipdaInfo.lookup(lookedUp); //expression matching on val
+					lookupInfo = JipdaInfo.getInfo(lookedUp); //expression matching on val
 					if(lookupInfo){
-						lookupInfo = lookupInfo.nodeInfo;
 						for(var g = 0; g < accessors.length; g++){
 							if(lookupInfo) lookupInfo = lookupInfo[accessors[g]];
 						}
 						obj[key] = lookupInfo;
 					}
 					if(obj[key]) table.push(obj);
+					
 				}
 				lookedUp = false;
 			}
@@ -293,8 +363,6 @@ ExistentialQuery.prototype.matchState = function(el, tl){
 			if(!reified) return false;
 			matchInfo = this.matchRecursive(key, tlInfo[key], mapStateKey(key,el)); //pass along the corresponding statepart
 			if(matchInfo){
-				console.log('matchInfo');
-				console.log(matchInfo);
 				subst.push.apply(subst, matchInfo)
 			}
 			else{
@@ -652,7 +720,9 @@ ExistentialQuery.prototype.merge = function(theta, otherTheta){
 				if(theta[i].hasOwnProperty(prop)){
 					p = findProp(otherTheta, prop);
 					if(p){ 
-						if(!(_.isEqual(p,theta[i][prop]))){ //If not equal
+						if(!(Utilities.myEqual(p,theta[i][prop]))){ //If not equal
+							console.log('Not equal');
+							console.log(p, theta[i][prop]);
 							return false;
 						}
 					}
@@ -670,7 +740,7 @@ ExistentialQuery.prototype.merge = function(theta, otherTheta){
 		for(var i = 0; i <  arr.length; i++){
 			for(var property in arr[i]){
 				if(arr[i].hasOwnProperty(property)){
-					if(_.isEqual(property,prop)) return arr[i][property];
+					if(Utilities.myEqual(property,prop)) return arr[i][property];
 				}
 			}
 		}
@@ -716,273 +786,9 @@ ExistentialQuery.prototype.removeTriple = function(set, triple){
 
 var contains = function(set, elem){	
 	for (var i = 0; i < set.length; i++) {
-        if (_.isEqual(set[i], elem) || set[i] === elem) {
+        if (Utilities.myEqual(set[i], elem) || set[i] === elem) {
             return true;
         }
     }
     return false;
 }
-
-/**
- * EXTRACT INFO FROM JIPDA
- */
-
-function JipdaInfo(){
-}
-
-JipdaInfo.assignmentExpression = function(exp){
-	var l = JipdaInfo.lookup(exp.left);
-	var r = JipdaInfo.lookup(exp.right);
-	return {
-		leftName	: l.nodeInfo.name,
-		left 		: l.nodeInfo,
-		operator	: exp.operator,
-		rightName	: r.nodeInfo.name,
-		right 		: r.nodeInfo,
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
-	}
-}
-
-JipdaInfo.identifier = function(exp){
-	return {
-		name 	: exp.name,
-		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
-	}
-}
-
-JipdaInfo.literal = function(exp){
-	return {
-		name	: exp.raw,
-		raw		: exp.raw,
-		value	: exp.value,
-		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
-	}
-}
-
-JipdaInfo.objectExpression = function(exp){
-	var tmp = '{';
-	var arr = [];
-	//calculate name if nested
-	for(var i = 0; i < exp.properties.length; i++){
-		arr.push(properties[i]);
-		tmp +=  JipdaInfo.lookup(exp.properties[i]).nodeInfo.name + ', ';
-	}
-
-	if (exp.properties.length > 0 )tmp = tmp.slice(0, -2);
-
-	tmp += '}';
-
-	return {
-		name		: tmp,
-		properties 	: arr,
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
-	}
-}
-
-JipdaInfo.arrayExpression = function(exp){
-	var tmp = '[';
-	//calculate name if nested
-	for(var i = 0; i < exp.elements.length; i++){
-		tmp += JipdaInfo.lookup(exp.elements[i]).nodeInfo.name + ', ';
-	}
-
-	if (exp.elements.length > 0) tmp = tmp.slice(0, -2);
-
-	tmp += ']'
-
-	return {
-		name	: tmp,
-		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
-	}
-}
-
-JipdaInfo.property = function(exp){
-	var k = JipdaInfo.lookup(exp.key).nodeInfo.name;
-	var v = JipdaInfo.lookup(exp.value).nodeInfo.name;
-	return {
-		name	: k + ' : '+ v,
-		key 	: k,
-		value 	: v,
-		kind	: exp.kind,
-		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
-	}
-}
-
-JipdaInfo.memberExpression = function(exp){
-	var prop = [];
-	var o = JipdaInfo.lookup(exp.object).nodeInfo;
-	var p = JipdaInfo.lookup(exp.property).nodeInfo;
-	
-	if(o.properties) prop.push.apply(prop, o.properties);
-	prop.push(p.name);
-
-	//TODO VALUE?
-	return {
-		object	 	: o,
-		objectName 	: o.name,
-		propertyName: p.name,
-		property 	: p,
-		properties 	: prop,
-		name 		: o.name + '['+ p.name + ']',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
-	}
-}
-
-JipdaInfo.variableDeclaration = function(exp){
-	var decl, decls = [];
-	var tmp = '';
-	//calculate name if nested
-	for(var i = 0; i < exp.declarations.length; i++){
-		decl = JipdaInfo.lookup(exp.declarations[i]).nodeInfo;
-		tmp += decl.name + ', ';
-		decls.push(decl);
-	}
-
-	tmp = tmp.slice(0, -2);
-
-	return {
-		name 		: tmp,
-		declarations: decls,
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
-	}
-}
-
-JipdaInfo.variableDeclarator = function(exp){
-	var i = JipdaInfo.lookup(exp.id).nodeInfo;
-	var ini = JipdaInfo.lookup(exp.init).nodeInfo;
-
-	return {
-		id 			: i.name,
-		init 		: ini.name,
-		leftName	: i.name,
-		left 		: i,
-		rightName 	: ini.name,
-		right 		: ini,
-		name 		: i.name + ' = ' + ini.name,
-		operator 	: '=',
-		isFunction 	: (exp.init && exp.init.type === 'FunctionExpression'),
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
-	}
-}
-
-JipdaInfo.functionExpression = function(exp){
-	var i = exp.id ? JipdaInfo.lookup(exp.id).nodeInfo : { name : 'Lambda' };
-	var par = [];
-
-	for(var j = 0; j < exp.params.length; j++){
-		par.push(JipdaInfo.lookup(exp.params[j]).nodeInfo);
-	}
-
-	return {
-		name 		: i.name,
-		id 			: i,
-		parameters 	: par,
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
-	}
-}
-
-JipdaInfo.callExpression = function(exp){
-	var c = JipdaInfo.lookup(exp.callee).nodeInfo;
-	var tmp = c.name + '(';
-	var arg, args = [];
-	for(var i = 0; i < exp.arguments.length; i++){
-		arg = exp.arguments[i];
-		args.push(JipdaInfo.lookup(arg).nodeInfo);
-		tmp += JipdaInfo.lookup(arg).nodeInfo.name + ', ';
-	}
-
-	if (exp.arguments.length > 0) tmp = tmp.slice(0, -2);
-	tmp +=  ')';
-
-	return {
-		//name 		: tmp,
-		name 		: c.name,
-		arguments 	: args,
-		callee 		: c,
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
-	}
-}
-
-JipdaInfo.returnStatement = function(exp){
-	var arg = JipdaInfo.lookup(exp.argument).nodeInfo;
-
-	return {
-		name 		: arg.name,
-		argument 	: arg,
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
-	}
-}
-
-JipdaInfo.binaryExpression = function(exp){
-	var l = JipdaInfo.lookup(exp.left).nodeInfo;
-	var r = JipdaInfo.lookup(exp.right).nodeInfo;
-
-	return {
-		name 		: l.name + ' ' + exp.operator + ' ' + r.name,
-		left 		: l,
-		right 		: r,
-		operator 	: exp.operator,
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
-	}
-}
-
-JipdaInfo.expressionStatement = function(exp){
-	var ex = JipdaInfo.lookup(exp.expression).nodeInfo;
-
-	return {
-		name 		: ex.name,
-		expression	: ex,
-		location 	: ex.loc.start.line + ' - ' + ex.loc.end.line,
-	}
-}
-
-JipdaInfo.blockStatement = function(exp){
-	var elem, elems = [];
-	//calculate name if nested
-	for(var i = 0; i < exp.body.length; i++){
-		elems.push(JipdaInfo.lookup(exp.body[i]).nodeInfo);
-	}
-
-	return {
-		name 		: 'BlockStatement',
-		body		: elems,
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
-	}
-}
-
-JipdaInfo.lookup = function(exp, el){
-	//if we lookup something that isn't a node
-	if(!el && exp && !exp.type) return false;
-
-	var nodeInfo = {};
-	var kontInfo = {};
-
-	var kont = el ? el.kont : false;
-	if(exp && exp.type) nodeInfo = LOOKUP_INFO[exp.type](exp);
-	if(kont){
-		if(kont.ex) kontInfo.ex = LOOKUP_INFO[kont.ex.type](kont.ex);
-	} 
-
-	return {
-		nodeInfo : nodeInfo,
-		kontInfo : kontInfo,
-	}
-}
-
-var LOOKUP_INFO = {
-	'AssignmentExpression' 	: JipdaInfo.assignmentExpression,
-	'Identifier'			: JipdaInfo.identifier,
-	'Literal'				: JipdaInfo.literal,
-	'ObjectExpression'		: JipdaInfo.objectExpression,
-	'ArrayExpression'		: JipdaInfo.arrayExpression,
-	'Property'				: JipdaInfo.property,
-	'MemberExpression'		: JipdaInfo.memberExpression,
-	'VariableDeclaration'	: JipdaInfo.variableDeclaration,
-	'VariableDeclarator'	: JipdaInfo.variableDeclarator,
-	'FunctionExpression' 	: JipdaInfo.functionExpression,
-	'CallExpression' 		: JipdaInfo.callExpression,
-	'ReturnStatement' 		: JipdaInfo.returnStatement,
-	'BinaryExpression' 		: JipdaInfo.binaryExpression,
-	'ExpressionStatement'	: JipdaInfo.expressionStatement,
-	'BlockStatement'		: JipdaInfo.blockStatement,
-};

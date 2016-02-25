@@ -4,14 +4,13 @@ TODO:
 - Universal query (2-3 dagen)
 - Info uit esprima (max 1 dag)
 - Backward query (max 2 uur)
+- U bij conditions, properties?
 
-- Refactoren? 
 - Counting (bvb hoeveel vars verwijzen naar bepaald adres) (operaties in het algemeen);
-- Macro-expansion of callstack (? moet dit dan wel);
 - Reify van varnames
 - Piramide (lowlevel -> high level)
 - Recursieve match Arrays????????
-
+- Ignoretag
 
 CHECK:
 - state(?x)*state(?x)*state(?x)* ... hebben we match als we een graph hebben als  0-->0-->0--->0--->0 CHECK!

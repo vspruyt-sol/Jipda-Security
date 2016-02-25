@@ -1,0 +1,61 @@
+G.skipZeroOrMore()
+.state({
+  node: {
+    type: 'ExpressionStatement',
+    expression: {
+      left : '?left', 
+      right: '?right'
+    }
+  },
+  properties:
+  {
+    '?leftTest' : '?left.object',
+    '?llll'		: '?leftTest.name',
+    '?rightTest': prop('identity', '?llll')
+  },
+})
+
+
+
+G.skipZeroOrMore()
+.state({
+  node: {
+    declarations: '?decs'
+  },
+  properties:
+  {
+    '?decsAt'     : prop('at','?decs', 0),
+    '?decs' : prop('length','?decs'),
+  },
+})
+
+
+
+
+
+G.skipZeroOrMore()
+.state({
+  node: {
+    declarations: '?decs'
+  },
+  properties:
+  {
+    '?decsAt'     : prop('at','?decs', 0),
+    '?decsAtName' : '?decsAt.id.name',
+  },
+})
+.skipZeroOrMore()
+.state({
+  node: {
+    type: 'ExpressionStatement',
+    expression: {
+      left : '?left', 
+      right: '?right'
+    }
+  },
+  properties:
+  {
+    '?leftName'  : '?left.object.name',
+    '?decsAtName': '?right.name',
+  },
+})

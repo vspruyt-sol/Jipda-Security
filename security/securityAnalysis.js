@@ -59,7 +59,7 @@ SecurityAnalysis.prototype.detect = function(){
 			//TODO: flip triples @&& check for single exit point (+ add entry from v0 to v0)
 			throw 'Todo: flip triples for backward query';
 		}
-		result = query.runNaive();
+		result = query.runNaiveWithNegation();
 	}
 	else{
 		if(this.query.direction === 'Forward'){
@@ -78,11 +78,22 @@ SecurityAnalysis.prototype.detect = function(){
 
 SecurityAnalysis.prototype.processQueryResult = function(queryResult){
 	var processed = [];
+	var subs;
 	//1. Strip empty substitutions?
 	for(var i = 0; i < queryResult.length; i++){
-		//if(queryResult[i].theta.length > 0) {
-			processed.push(queryResult[i]);
-		//}
+		for(var j = 0; j < queryResult[i].theta.length; j++){
+			subs = queryResult[i].theta[j];
+			for(var key in subs){
+				console.log(key);
+				if(key.lastIndexOf('?__tmp__') === 0) {
+					delete queryResult[i].theta[j];
+				}
+			}
+		}
+		
+		
+		
+		processed.push(queryResult[i]);
 	}
 
 
