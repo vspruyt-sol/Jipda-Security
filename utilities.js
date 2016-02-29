@@ -76,7 +76,18 @@ Array.prototype.getUnique = function(){
 }
 
 Utilities.myEqual = function(a,b){
-  //Todo ignore tag!
-  return _.isEqual(a,b);
+  //TODO: Klopt niet, arrays kunnen ook nodes bevatten en dus niet _.isEqual gebruiken
+  if(typeof a !== typeof b) return false;
+  if(a.tag){
+    for(var key in a){
+      if(key === 'tag' || key === 'loc') continue;
+      if(!Utilities.myEqual(a[key],b[key])) return false;
+    }
+    return true;
+  }
+  else{
+    return _.isEqual(a,b);
+  }
+  
 }
 

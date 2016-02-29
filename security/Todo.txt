@@ -1,16 +1,13 @@
 TODO: 
-
-- Negatie
 - Universal query (2-3 dagen)
 - Info uit esprima (max 1 dag)
 - Backward query (max 2 uur)
-- U bij conditions, properties?
 
 - Counting (bvb hoeveel vars verwijzen naar bepaald adres) (operaties in het algemeen);
 - Reify van varnames
 - Piramide (lowlevel -> high level)
 - Recursieve match Arrays????????
-- Ignoretag
+- Ignore tag
 
 CHECK:
 - state(?x)*state(?x)*state(?x)* ... hebben we match als we een graph hebben als  0-->0-->0--->0--->0 CHECK!
@@ -18,3 +15,5 @@ CHECK:
 - Matchen op state ipv values ook! CHECK
 
 - Abstractiemechanisme (queries definen, ander venster oproepen/gebruiken) CHECK
+
+- Negatie (CHECK VOOR REEDS GEBONDEN VARIABELEN)

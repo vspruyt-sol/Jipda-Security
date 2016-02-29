@@ -1,6 +1,3 @@
-var STOP_NEGATION 		= [];
-var CONTINUE_NEGATION 	= [[{}]];
-
 /*
  * G = States van JIPDA graph
  * P = Pattern (RPE)
@@ -272,6 +269,10 @@ ExistentialQuery.prototype.resolveVariable = function(varName, table){
 }
 
 ExistentialQuery.prototype.verifyConditions = function(table, conds){
+
+	//als er iets foutgelopen is is de tabel leeg:
+	if(table.length === 0) return [];
+
 	var func, args, resolvedArg, resolvedArgs = [];
 	for(var key in conds){
 		func = conds[key][0];
@@ -336,7 +337,12 @@ ExistentialQuery.prototype.addExtraProperties = function(table, props){
 						}
 						obj[key] = lookupInfo;
 					}
-					if(obj[key]) table.push(obj);
+					if(obj[key]){
+						table.push(obj);
+					} 
+					else{
+						return [];
+					}
 					
 				}
 				lookedUp = false;

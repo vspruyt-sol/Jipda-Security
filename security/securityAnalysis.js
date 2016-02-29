@@ -50,14 +50,31 @@ SecurityAnalysis.prototype.detect = function(){
 	 * v0 = initial state van G
 	 * s0 = initial state van P
 	 */
-	var query, result;
+	var query, result, startNode;
 	if(this.query.type === 'Existential'){
 		if(this.query.direction === 'Forward'){
-			query = new ExistentialQuery(this.tripleStore, this.dfa.triples, this.dfa.acceptStates, this.tripleStore[0].from, this.dfa.startingNode);
+			startNode = this.tripleStore.filter(function(x){ return (x.initial === true); })[0];
+			query = new ExistentialQuery(this.tripleStore, this.dfa.triples, this.dfa.acceptStates, startNode.from, this.dfa.startingNode);
 		}
 		else{
-			//TODO: flip triples @&& check for single exit point (+ add entry from v0 to v0)
-			throw 'Todo: flip triples for backward query';
+			//Check if we have only 1 endpoint
+			if(this.tripleStore.filter(function(x){ return (x.final === true); }).length !== 1){
+				throw 'Can\'t perform backward query! There are multiple endpoints in the JIPDA graph.'
+			}
+			//lets flip them
+			var flipped = this.tripleStore.map(
+				function(x){
+					var obj = new GraphTriple(); 
+					obj.from = x.target; 
+					obj.target = x.from; 
+					obj.initial = x.final; 
+					obj.final = x.initial, 
+					obj.edge = x.edge; 
+					return obj;
+				});
+			startNode = flipped.filter(function(x){ return (x.initial === true); })[0];
+			query = new ExistentialQuery(flipped, this.dfa.triples, this.dfa.acceptStates, startNode.from, this.dfa.startingNode);
+		
 		}
 		result = query.runNaiveWithNegation();
 	}
@@ -155,7 +172,9 @@ SecurityAnalysis.prototype.graphToTriples = function(g){
 					t = new GraphTriple(
 							new DummyNode(tState._id), 
 							tState,
-							new DummyNode(tState._successors[h].state._id)
+							new DummyNode(tState._successors[h].state._id),
+							false, 
+							tState._successors[h].state._successors.length === 0 //final
 						);
 					if(!Utilities.containsTriple(this.tripleStore,t)){
 						this.tripleStore.push(t);
