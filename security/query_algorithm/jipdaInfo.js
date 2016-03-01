@@ -406,7 +406,7 @@ JipdaInfo.postfixExpression = function(exp){
 	var arg = JipdaInfo.getInfo(exp.argument);
 
 	return {
-		name 		: 'new ' + c.name + '(' + arguments + ')',
+		name 		: arg.name + op,
 		argument 	: arg,
 		operator 	: op,
 		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
@@ -517,7 +517,7 @@ JipdaInfo.unaryExpression = function(exp){
 	var arg = JipdaInfo.getInfo(exp.argument);
 
 	return {
-		name 		: op.name + arg.name,
+		name 		: op + arg.name,
 		argument 	: arg,
 		operator 	: op,
 		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,

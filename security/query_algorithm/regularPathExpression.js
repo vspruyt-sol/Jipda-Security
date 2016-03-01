@@ -29,43 +29,64 @@ RegularPathExpression.prototype.udAssign = function(obj){ //left, right
 	return this.state(s);
 }
 
-RegularPathExpression.prototype.udFCall = function(obj){ //name, node, arguments
+RegularPathExpression.prototype.udFCall = function(obj){ //name, callee, arguments, argName (eerste arg);
+	obj = obj || {};
 	var s1 = {};
-	var objName = obj.name || this.getTmpVar('objName');
-	var objNode = obj.node || this.getTmpVar('objNode');
-	var objArguments = obj.arguments || this.getTmpVar('objArguments');
-	var calleeName = this.getTmpVar('calleeName');
+
+	var objName 	=	obj.name || this.getTmpVar('objName'); //naam van de functie
+	var objCallee 	= 	obj.callee || this.getTmpVar('objNode'); //de callee node
+	var objArguments= 	obj.arguments || this.getTmpVar('objArguments'); //de arguments node
+	var firstArg 	= 	this.getTmpVar('firstArg');
+	var firstArgName= 	obj.argName || this.getTmpVar('firstArgName'); //if user wants to know first argument name
+	var calleeName 	= 	this.getTmpVar('calleeName'); //tmp var for matching
+	var argName 	=	this.getTmpVar('argName');
 
 	//Basic function call
-	setupStateChain(s1, ['node','expression','callee'], objNode);
+	setupStateChain(s1, ['node','expression','callee'], objCallee);
 	setupStateChain(s1, ['node','expression','arguments'], objArguments);
 	
-	//Object Name matching (user specifies what values he wants to match literals on)
-	if(objName.charAt(0) === '?'){
-		setupProperty(s1, objName, objNode + '.name');
+	//get first argument
+	try{
+		setupProperty(s1, firstArg, prop('at', objArguments, 0)); //tmp eerste arg
+		if(firstArgName.charAt(0) === '?'){
+			setupProperty(s1, firstArgName, firstArg + '.name'); //tmp als niet geweten moet worden, anders vast
+		}
+		else{
+			setupProperty(s1, argName , firstArg + '.name');
+			setupFilter(	s1, 
+							'equals',
+							argName,
+							firstArgName);
+		}	
+		//Obj name
+		if(objName.charAt(0) === '?'){
+			setupProperty(s1, objName, objCallee + '.name');
+		}
+		else{
+			setupProperty(s1, calleeName , objCallee + '.name');
+			setupFilter(	s1, 
+							'equals',
+							calleeName,
+							objName);
+		}
 	}
-	else{
-		setupProperty(s1, calleeName , objNode + '.name');
-		setupCondition(	s1, 
-						'equals',
-						calleeName,
-						objName);
+	catch(e){ //optional, just to catch errors
+		console.log(e);
 	}
 
 	return this.state(s1);
 }
 
 RegularPathExpression.prototype.udOpenClosedFile = function(obj){
-
+	obj = obj || {};
 	var fileName = obj.name || this.getTmpVar('objName');
 
-	return 	this	.udFCall({name: 'close'})
+	return 	this	.udFCall({name: 'close', argName: fileName})
 					.not()
 					.lBrace()
 					.udFCall({name: 'open'})
 					.rBrace().star()
-					.udFCall({name: 'access', argument: '?arg'});
-					//als array equality werkt: .udFCall({name: 'access', arguments: '?arg'})
+					.udFCall({name: 'access', argName: fileName});
 }
 
 /**
@@ -295,12 +316,11 @@ var setupProperty = function(obj, left, right){
 	obj.properties[left] = right;
 }
 
-var setupCondition = function(obj, f){
+var setupFilter = function(obj, f){
 	var args = Array.prototype.slice.call(arguments, 2);
 	var fArgs = Array.prototype.concat.apply([], [f, args])
-	if(!obj.conditions) obj.conditions = {};
-	var idx = Object.keys(obj).length;
-	obj.conditions[idx] = cond.apply(this,fArgs);	
+	if(!obj.filters) obj.filters = [];
+	obj.filters.push(cond.apply(this,fArgs));	
 }
 
 //Builtin functions for properties
@@ -325,7 +345,7 @@ var cond = function(f){
 
 var queryFunctions = {
 	conditions : { //filters
-				equals 		: Utilities.myEqual,
+				equals 		: _.isEqual,
 				contains 	: contains, 
 				testTrue 	: function(){return true;},
 				testFalse 	: function(){return false;}

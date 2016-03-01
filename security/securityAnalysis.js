@@ -101,7 +101,6 @@ SecurityAnalysis.prototype.processQueryResult = function(queryResult){
 		for(var j = 0; j < queryResult[i].theta.length; j++){
 			subs = queryResult[i].theta[j];
 			for(var key in subs){
-				console.log(key);
 				if(key.lastIndexOf('?__tmp__') === 0) {
 					delete queryResult[i].theta[j];
 				}

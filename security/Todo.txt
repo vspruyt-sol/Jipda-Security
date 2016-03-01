@@ -1,13 +1,10 @@
 TODO: 
 - Universal query (2-3 dagen)
-- Info uit esprima (max 1 dag)
-- Backward query (max 2 uur)
-
 - Counting (bvb hoeveel vars verwijzen naar bepaald adres) (operaties in het algemeen);
 - Reify van varnames
-- Piramide (lowlevel -> high level)
-- Recursieve match Arrays????????
-- Ignore tag
+- abstractie voor of vast of var
+- RECURSIE
+
 
 CHECK:
 - state(?x)*state(?x)*state(?x)* ... hebben we match als we een graph hebben als  0-->0-->0--->0--->0 CHECK!
@@ -17,3 +14,9 @@ CHECK:
 - Abstractiemechanisme (queries definen, ander venster oproepen/gebruiken) CHECK
 
 - Negatie (CHECK VOOR REEDS GEBONDEN VARIABELEN)
+
+- Info uit esprima (max 1 dag) CHECK
+
+- Backward query (max 2 uur) CHECK
+
+- Delete temps bij match  CHECK
