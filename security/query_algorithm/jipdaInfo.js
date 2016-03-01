@@ -5,6 +5,34 @@
 function JipdaInfo(){
 }
 
+//here for backwards supportability
+JipdaInfo.lookup = function(exp, el){
+	//if we lookup something that isn't a node
+	if(!el && exp && !exp.type) return false;
+
+	var nodeInfo = {};
+	var kontInfo = {};
+
+	var kont = el ? el.kont : false;
+	if(exp && exp.type) nodeInfo = LOOKUP_INFO[exp.type](exp);
+	if(kont){
+		if(kont.ex) kontInfo.ex = LOOKUP_INFO[kont.ex.type](kont.ex);
+	} 
+
+	return {
+		nodeInfo : nodeInfo,
+		kontInfo : kontInfo,
+	}
+}
+
+JipdaInfo.getInfo = function(exp){
+	//if we lookup something that isn't a node
+	if(!exp || (exp && !exp.type)) return exp;
+	var nodeInfo = {};
+	nodeInfo = LOOKUP_INFO[exp.type](exp);
+	return nodeInfo;
+}
+
 JipdaInfo.assignmentExpression = function(exp){
 	var l = JipdaInfo.getInfo(exp.left);
 	var r = JipdaInfo.getInfo(exp.right);
@@ -142,16 +170,25 @@ JipdaInfo.variableDeclarator = function(exp){
 
 JipdaInfo.functionExpression = function(exp){
 	var i = exp.id ? JipdaInfo.getInfo(exp.id) : { name : 'Lambda' };
+	var body = JipdaInfo.getInfo(exp.body);
 	var par = [];
+	var def = [];
 
 	for(var j = 0; j < exp.params.length; j++){
 		par.push(JipdaInfo.getInfo(exp.params[j]));
 	}
 
+	for(var k = 0; k < exp.defaults.length; k++){
+		def.push(JipdaInfo.getInfo(exp.defaults[k]));
+	}
+
 	return {
+		//defaults en body!
 		name 		: i.name,
 		id 			: i,
 		parameters 	: par,
+		defaults 	: def,
+		body 		: body,
 		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
@@ -225,32 +262,290 @@ JipdaInfo.blockStatement = function(exp){
 	}
 }
 
-//here for backward support
-JipdaInfo.lookup = function(exp, el){
-	//if we lookup something that isn't a node
-	if(!el && exp && !exp.type) return false;
-
-	var nodeInfo = {};
-	var kontInfo = {};
-
-	var kont = el ? el.kont : false;
-	if(exp && exp.type) nodeInfo = LOOKUP_INFO[exp.type](exp);
-	if(kont){
-		if(kont.ex) kontInfo.ex = LOOKUP_INFO[kont.ex.type](kont.ex);
-	} 
+JipdaInfo.breakStatement = function(exp){
+	var lbl = JipdaInfo.getInfo(exp.label);
 
 	return {
-		nodeInfo : nodeInfo,
-		kontInfo : kontInfo,
+		name 		: lbl,
+		label		: lbl,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
 	}
 }
 
-JipdaInfo.getInfo = function(exp){
-	//if we lookup something that isn't a node
-	if(!exp || (exp && !exp.type)) return exp;
-	var nodeInfo = {};
-	nodeInfo = LOOKUP_INFO[exp.type](exp);
-	return nodeInfo;
+JipdaInfo.catchClause = function(exp){
+	var body = JipdaInfo.getInfo(exp.body);
+	var par = JipdaInfo.getInfo(exp.param);
+
+	return {
+		name 	: body.name,
+		body	: body,
+		param 	: par,
+		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.conditionalExpression = function(exp){
+	var test = JipdaInfo.getInfo(exp.test);
+	var cons = JipdaInfo.getInfo(exp.consequent);
+	var alt = JipdaInfo.getInfo(exp.alternate);
+
+	return {
+		name 		: '(' + test.name + ') ?'  + cons.name + ' : ' + alt.name,
+		test		: test,
+		consequent 	: cons,
+		alternate 	: alt, 
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.doWhileStatement = function(exp){
+	var test = JipdaInfo.getInfo(exp.test);
+	var body = JipdaInfo.getInfo(exp.body);
+
+	return {
+		name 	: 'do {' + body.name + '} while ('  + test.name + ')',
+		test	: test,
+		body 	: body,
+		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.emptyStatement = function(exp){
+	return {
+		name 	: 'Empty Statement',
+		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.forStatement = function(exp){
+	var init = Jipdainfo.getInfo(exp.init);
+	var test = Jipdainfo.getInfo(exp.test);
+	var update = Jipdainfo.getInfo(exp.update);
+	var body  = Jipdainfo.getInfo(exp.body);
+
+	return {
+		name 	: 'for(' + init.name + '; ' + test.name + '; ' + update.name + '){' + body.name + '}',
+		init 	: init,
+		test 	: test,
+		update 	: update,
+		body 	: body,
+		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.forInStatement = function(exp){
+	var left = Jipdainfo.getInfo(exp.left);
+	var right = Jipdainfo.getInfo(exp.right);
+	var body  = Jipdainfo.getInfo(exp.body);
+
+	return {
+		name 	: 'for(' + left.name + ' in ' + right.name + '){' + body.name + '}',
+		left 	: left,
+		right 	: right,
+		body 	: body,
+		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.functionDeclaration = function(exp){
+	var id = JipdaInfo.getInfo(exp.id);
+	var body = JipdaInfo.getInfo(exp.body);
+	var par = [];
+	var def = [];
+
+	for(var j = 0; j < exp.params.length; j++){
+		par.push(JipdaInfo.getInfo(exp.params[j]));
+	}
+
+	for(var k = 0; k < exp.defaults.length; k++){
+		def.push(JipdaInfo.getInfo(exp.defaults[k]));
+	}
+
+	return {
+		//defaults en body!
+		name 		: i.name,
+		id 			: i,
+		parameters 	: par,
+		defaults 	: def,
+		body 		: body,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.labeledStatement = function(exp){
+	var lbl = JipdaInfo.getInfo(exp.label);
+	var body = Jipdainfo.getInfo(exp.body);
+
+	return {
+		name 		: lbl + ': ' + body.name,
+		label		: lbl,
+		body		: body,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.newExpression = function(exp){
+	var c = JipdaInfo.getInfo(exp.callee);
+
+	var arg, args = [];
+	for(var i = 0; i < exp.arguments.length; i++){
+		arg = exp.arguments[i];
+		args.push(JipdaInfo.getInfo(arg));
+	}
+
+	return {
+		name 		: 'new ' + c.name + '(' + arguments + ')',
+		arguments 	: args,
+		callee 		: c,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.postfixExpression = function(exp){
+	var op = JipdaInfo.getInfo(exp.operator);
+	var arg = JipdaInfo.getInfo(exp.argument);
+
+	return {
+		name 		: 'new ' + c.name + '(' + arguments + ')',
+		argument 	: arg,
+		operator 	: op,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.program = function(exp){
+	var body = JipdaInfo.getInfo(exp.body);
+
+	return {
+		name 		: body.name,
+		body 		: body,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.sequenceExpression = function(exp){
+	var ex, exps = [];
+
+	for(var i = 0; i < exp.expressions.length; i++){
+		ex = exp.expressions[i];
+		exps.push(JipdaInfo.getInfo(ex));
+	}
+
+	return {
+		name 		: 'Sequence Expression',
+		expressions : exps,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.switchCase = function(exp){
+	var test = JipdaInfo.getInfo(exp.test);
+	var cons = JipdaInfo.getInfo(exp.consequent);
+
+	return {
+		name 		: test.name + ' : ' + cons.name,
+		test		: test,
+		consequent 	: cons,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.switchStatement = function(exp){
+	var cse, cases = [];
+	var disc = JipdaInfo.getInfo(exp.discriminant);
+
+	for(var i = 0; i < exp.cases.length; i++){
+		cse = exp.cases[i];
+		cases.push(JipdaInfo.getInfo(cse));
+	}
+
+	return {
+		name 		: 'Sequence Expression',
+		discriminant: disc,
+		cases 		: cases,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.thisExpression = function(exp){
+	var body = JipdaInfo.getInfo(exp.body);
+
+	return {
+		name 		: 'this',
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.throwStatement = function(exp){
+	var arg = JipdaInfo.getInfo(exp.argument);
+
+	return {
+		name 	 	: 'throw ' + arg.name,
+		argument 	: arg,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.tryStatement = function(exp){
+	var gh, ghs = [];
+	var h, hs = [];
+	var block = JipdaInfo.getInfo(exp.block);
+	var fin = Jipdainfo.getInfo(exp.finalizer);
+
+	for(var i = 0; i < exp.guardedHandlers.length; i++){
+		gh = exp.guardedHandlers[i];
+		ghs.push(JipdaInfo.getInfo(gh));
+	}
+
+	for(var j = 0; j < exp.handlers.length; j++){
+		h = exp.handlers[j];
+		hs.push(JipdaInfo.getInfo(h));
+	}
+
+	return {
+		name 				: 'Try Statement',
+		block 				: block,
+		finalizer 			: fin,
+		guardedHandlers 	: ghs,
+		handlers 			: hs,
+		location 			: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.unaryExpression = function(exp){
+	var op = JipdaInfo.getInfo(exp.operator);
+	var arg = JipdaInfo.getInfo(exp.argument);
+
+	return {
+		name 		: op.name + arg.name,
+		argument 	: arg,
+		operator 	: op,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.whileStatement = function(exp){
+	var test = JipdaInfo.getInfo(exp.test);
+	var body = JipdaInfo.getInfo(exp.body);
+
+	return {
+		name 		: 'while(' + test.name + '){' + body.name + '}',
+		test 		: test,
+		body 		: body,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
+}
+
+JipdaInfo.withStatement = function(exp){
+	var obj = JipdaInfo.getInfo(exp.object);
+	var body = JipdaInfo.getInfo(exp.body);
+
+	return {
+		name 		: 'with(' + obj.name + '){' + body.name + '}',
+		object 		: obj,
+		body 		: body,
+		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+	}
 }
 
 var LOOKUP_INFO = {
@@ -269,4 +564,26 @@ var LOOKUP_INFO = {
 	'BinaryExpression' 		: JipdaInfo.binaryExpression,
 	'ExpressionStatement'	: JipdaInfo.expressionStatement,
 	'BlockStatement'		: JipdaInfo.blockStatement,
+	'BreakStatement' 		: JipdaInfo.breakStatement,
+	'CatchClause'			: JipdaInfo.catchClause,
+	'ConditionalExpression' : JipdaInfo.conditionalExpression,
+	'DoWhileStatement' 		: JipdaInfo.doWhileStatement,
+	'EmptyStatement'		: JipdaInfo.emptyStatement,
+	'ForStatement' 			: JipdaInfo.forStatement,
+	'ForInStatement' 		: JipdaInfo.forInStatement,
+	'FunctionDeclaration' 	: JipdaInfo.functionDeclaration,
+	'IfStatement' 			: JipdaInfo.conditionalExpression, //same
+	'LabeledStatement'		: JipdaInfo.labeledStatement,
+	'NewExpression'			: JipdaInfo.newExpression,
+	'PostfixExpression' 	: JipdaInfo.postfixExpression,
+	'Program'				: JipdaInfo.program,
+	'SequenceExpression' 	: JipdaInfo.sequenceExpression,
+	'SwitchCase' 			: JipdaInfo.switchCase,
+	'SwitchStatement' 		: JipdaInfo.switchStatement,
+	'ThisExpression' 		: JipdaInfo.thisExpression,
+	'ThrowStatement' 		: JipdaInfo.throwStatement,
+	'TryStatement' 			: JipdaInfo.tryStatement,
+	'UnaryExpression' 		: JipdaInfo.unaryExpression,
+	'WhileStatement' 		: JipdaInfo.whileStatement,
+	'WithStatement' 		: JipdaInfo.withStatement,
 };

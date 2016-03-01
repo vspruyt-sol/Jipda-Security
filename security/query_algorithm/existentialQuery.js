@@ -274,9 +274,9 @@ ExistentialQuery.prototype.verifyConditions = function(table, conds){
 	if(table.length === 0) return [];
 
 	var func, args, resolvedArg, resolvedArgs = [];
-	for(var key in conds){
-		func = conds[key][0];
-		args = conds[key][1];
+	for(var j = 0; j < conds.length; j++){
+		func = conds[j][0];
+		args = conds[j][1];
 		for(var i = 0; i < args.length; i++){
 			if(isResolvableVariable(args[i])){
 				resolvedArg = this.resolveVariable(args[i], table);
@@ -358,7 +358,7 @@ ExistentialQuery.prototype.matchState = function(el, tl){
 	var matchInfo, reified;
 
 	for(var key in tlInfo){
-		if(key === 'conditions') {
+		if(key === 'filters') {
 			subst = this.verifyConditions(subst, tlInfo[key]);
 		}
 		else if(key === 'properties') {
