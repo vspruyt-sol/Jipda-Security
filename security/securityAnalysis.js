@@ -51,18 +51,23 @@ SecurityAnalysis.prototype.detect = function(){
 	 * s0 = initial state van P
 	 */
 	var query, result, startNode;
-	if(this.query.type === 'Existential'){
-		if(this.query.direction === 'Forward'){
-			startNode = this.tripleStore.filter(function(x){ return (x.initial === true); })[0];
+	if(this.query.direction === 'Forward'){
+		startNode = this.tripleStore.filter(function(x){ return (x.initial === true); })[0];
+		if(this.query.type === 'Existential'){	
 			query = new ExistentialQuery(this.tripleStore, this.dfa.triples, this.dfa.acceptStates, startNode.from, this.dfa.startingNode);
 		}
 		else{
-			//Check if we have only 1 endpoint
-			if(this.tripleStore.filter(function(x){ return (x.final === true); }).length !== 1){
+			query = new UniversalQuery(this.tripleStore, this.dfa.triples, this.dfa.acceptStates, startNode.from, this.dfa.startingNode);
+		}
+		result = query.runNaiveWithNegation();
+	}
+	else{
+		//Check if we have only 1 endpoint
+		if(this.tripleStore.filter(function(x){ return (x.final === true); }).length !== 1){
 				throw 'Can\'t perform backward query! There are multiple endpoints in the JIPDA graph.'
-			}
-			//lets flip them
-			var flipped = this.tripleStore.map(
+		}
+		//lets flip them
+		var flipped = this.tripleStore.map(
 				function(x){
 					var obj = new GraphTriple(); 
 					obj.from = x.target; 
@@ -72,23 +77,18 @@ SecurityAnalysis.prototype.detect = function(){
 					obj.edge = x.edge; 
 					return obj;
 				});
-			startNode = flipped.filter(function(x){ return (x.initial === true); })[0];
+
+		startNode = flipped.filter(function(x){ return (x.initial === true); })[0];
+
+		if(this.query.type === 'Existential'){
 			query = new ExistentialQuery(flipped, this.dfa.triples, this.dfa.acceptStates, startNode.from, this.dfa.startingNode);
-		
-		}
-		result = query.runNaiveWithNegation();
-	}
-	else{
-		if(this.query.direction === 'Forward'){
-			//Todo
 		}
 		else{
-			//TODO: flip triples @&& check for single exit point (+ add entry from v0 to v0)
+			query = new UniversalQuery(flipped, this.dfa.triples, this.dfa.acceptStates, startNode.from, this.dfa.startingNode);	
 		}
-		throw 'Not yet implemented!'
-	}
-	//var eq = new ExistentialQuery(this.tripleStore, test1, [new DummyNode(4)], this.tripleStore[0].from, new DummyNode(0));
-	
+		result = query.runNaiveWithNegation();
+	}	
+	console.log(result);
 	console.log(this.processQueryResult(result));
 	
 }
@@ -105,10 +105,7 @@ SecurityAnalysis.prototype.processQueryResult = function(queryResult){
 					delete queryResult[i].theta[j];
 				}
 			}
-		}
-		
-		
-		
+		}		
 		processed.push(queryResult[i]);
 	}
 

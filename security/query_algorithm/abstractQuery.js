@@ -93,7 +93,7 @@ ExistentialQuery.prototype.runNaiveWithNegation = function(){
 		R = AbstractQuery.union(R, [tripleW]);
 		for(var i = 0; i < this.G.length; i++){
 			tripleG = this.G[i];
-			if(tripleG.from.equals(tripleW.v)){ //KLOPT DIT WEL????
+			if(tripleG.from.equals(tripleW.v)){
 				for(var j = 0; j < this.P.length; j++){
 					tripleP = this.P[j];	
 					if(tripleP.from.equals(tripleW.s)){
@@ -214,8 +214,77 @@ function UniversalQuery(G, P, F, v0, s0){
 	this.s0 = s0;	
 }
 
-UniversalQuery.prototype.runNaive = function(){
-	//TODO
+UniversalQuery.prototype.runNaiveWithNegation = function(){
+	//used variables
+	var tripleG, tripleP, theta, matched, tripleW, theta1, theta2, tripleTemp, tripleTemp2;
+	//start algorithm
+	var R = [];
+	var W = [];
+	for(var i = 0; i < this.G.length; i++){
+		tripleG = this.G[i];
+		if(tripleG.from.equals(this.v0)){ //Is de Jipda-node gelijk aan onze initial (Jipda-)node
+			for(var j = 0; j < this.P.length; j++){
+				tripleP = this.P[j];	
+				if(tripleP.from.equals(this.s0)){ //Is de NFA-node gelijk aan de initial (NFA-)node
+					theta = AbstractQuery.match(tripleG.edge,tripleP.edge);
+					for(var k = 0; k < theta.length; k++){
+						W = AbstractQuery.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
+					}
+				}
+			}
+		}
+	}
+	var T = {};
+	var U = {};
+	while(W.length > 0){
+		tripleW = W.shift();
+		R = AbstractQuery.union(R, [tripleW]);
+		for(var i = 0; i < this.G.length; i++){
+			tripleG = this.G[i];
+			if(tripleG.from.equals(tripleW.v)){
+				matched = false;
+				//hier prevMatch ofzo resetten (bijhouden of er veranderingen in match zijn)
+				for(var j = 0; j < this.P.length; j++){
+					tripleP = this.P[j];	
+					if(tripleP.from.equals(tripleW.s)){
+						theta1 = AbstractQuery.match(tripleG.edge,tripleP.edge);
+						for(var k = 0; k < theta1.length; k++){
+							theta2 = AbstractQuery.merge(tripleW.theta, theta1[k]);
+							if(theta2){
+								if(matched){
+									throw 'Determinism condition doesn\'t hold for universal query!';
+								}
+								matched = true; //TODO: ZIE PREVMATCH 
+								//(probleem is: node kan wildcard + iets anders als outgoing hebben, 
+								//dus false positive 'determinism condition fail')
+								tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
+								if(!contains(R, tripleTemp)){
+									W = AbstractQuery.union(W, [tripleTemp]);
+								}
+							}
+						}//end for		
+						if(!matched){
+							tripleTemp2 = new WorklistTriple(tripleG.target, undefined, undefined);
+							if(!contains(R, tripleTemp2)){
+								W = AbstractQuery.union(W, [tripleTemp2]);
+							}
+						}
+					}
+				} //end for 
+			}
+		} //end for
+		if(!T[tripleW.v]){
+			T[tripleW.v] = contains(this.F, tripleW.s);
+		}
+		if(T[tripleW.v]){
+			var thetaUv = U[tripleW.v] || [];
+			U[tripleW.v] = AbstractQuery.merge(tripleW.theta, thetaUv);
+		}
+		else{
+			U[tripleW.v] = undefined;
+		}
+	} //end while
+	return U;
 }
 
 /**
@@ -433,6 +502,7 @@ AbstractQuery.matchRecursive = function(key, value, statePart, subs){
 	return subs.length === 0 ? [{}] : subs;
 }
 
+//arguments of form: [{?x: Value1},{?y: Value2}, ...]
 AbstractQuery.merge = function(theta, otherTheta){
 	//(1) undefined if any two substitutions in S disagree on the mapping 
 	//of any variable in the intersection of their domains and 

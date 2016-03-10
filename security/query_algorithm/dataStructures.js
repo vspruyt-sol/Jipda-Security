@@ -125,7 +125,8 @@ function DummyNode(id){
 }
 
 DummyNode.prototype.equals = function(x){
-	return this._id === x._id;
+  return (x instanceof DummyNode) 
+      && this._id === x._id;
 }
 
 DummyNode.prototype.toString = function(){
