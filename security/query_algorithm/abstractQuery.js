@@ -97,21 +97,26 @@ ExistentialQuery.prototype.runNaiveWithNegation = function(){
 				for(var j = 0; j < this.P.length; j++){
 					tripleP = this.P[j];	
 					if(tripleP.from.equals(tripleW.s)){
-							theta = AbstractQuery.match(tripleG.edge,tripleP.edge);
-							for(var k = 0; k < theta.length; k++){
-								theta2 = AbstractQuery.merge(tripleW.theta, theta[k]);
-								if(theta2){
-									tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
-									if(!contains(R, tripleTemp)){
-										W = AbstractQuery.union(W, [tripleTemp]);
+							if(tripleP.edge.name === 'subGraph'){
+								//Expand with one step
+								//get triples from DFA
+								//Add triples to P with correct from and target
+								//Make sure to get the indices right
+								var dfa = AbstractQuery.expandSubgraph(tripleP);
+
+							}
+							else{
+								theta = AbstractQuery.match(tripleG.edge,tripleP.edge);
+								for(var k = 0; k < theta.length; k++){
+									theta2 = AbstractQuery.merge(tripleW.theta, theta[k]);
+									if(theta2){
+										tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
+										if(!contains(R, tripleTemp)){
+											W = AbstractQuery.union(W, [tripleTemp]);
+										}
 									}
 								}
-							}//end for
-						//}//if !negated
-						//else{
-							//if all are bound
-
-						//}			
+							}		
 					}
 				} //end for 
 			}
@@ -254,9 +259,8 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 								if(matched){
 									throw 'Determinism condition doesn\'t hold for universal query!';
 								}
-								matched = true; //TODO: ZIE PREVMATCH 
-								//(probleem is: node kan wildcard + iets anders als outgoing hebben, 
-								//dus false positive 'determinism condition fail')
+								matched = (tripleP.edge.name === '_' ? matched : true); 
+								//TODO: controleren of we de lijnen hieronder nog moeten doen
 								tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
 								if(!contains(R, tripleTemp)){
 									W = AbstractQuery.union(W, [tripleTemp]);
@@ -284,6 +288,8 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 			U[tripleW.v] = undefined;
 		}
 	} //end while
+	//TODO: TRANSFORM RESULTS
+	console.log(U);
 	return U;
 }
 
@@ -310,7 +316,7 @@ AbstractQuery.match = function(el, tl){
 		case 'state'		: 	_map = this.matchState(el, tl);
 								break;
 		case '_'			: 	_map = []; 
-								break;
+								break;					
 		case 'dummy'		: 	_map = [];
 								break;
 		default:
@@ -517,8 +523,6 @@ AbstractQuery.merge = function(theta, otherTheta){
 					p = findProp(otherTheta, prop);
 					if(p){ 
 						if(!(_.isEqual(p,theta[i][prop]))){ //If not equal
-							console.log('Not equal');
-							console.log(p, theta[i][prop]);
 							return false;
 						}
 					}
@@ -568,6 +572,18 @@ AbstractQuery.removeTriple = function(set, triple){
 	return set.filter(function(x){
 		return (x.from !== triple.from && x.target !== triple.target);
 	});
+}
+
+AbstractQuery.expandSubgraph = function(triple){
+	var from = triple.from;
+	var targed = triple.target;
+	var f = triple.edge.expandFunction;
+	var state = triple.edge.state;
+	var uid = triple.edge.expandContext;
+	var ctx = new RegularPathExpression();
+	ctx.uid = uid;
+	var rpe = f.call(ctx, state);
+	return rpe.toDFA(); //temp
 }
 
 //TEMP test function (maps keys to state keys)

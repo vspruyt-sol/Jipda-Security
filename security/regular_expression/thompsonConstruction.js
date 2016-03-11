@@ -12,8 +12,7 @@ ThompsonConstruction.prototype.toNFA = function(regex){
 										) 
 
 	machines = this.buildMachineStack(regex);  	
-	machines = this.kleeneUp(machines); //Deze herpt om een (.|.) te absorben in een kleene 
-	//console.log(JSON.stringify(machines));
+	machines = this.kleeneUp(machines);
   	machines = this.catify(machines);
   	machines = this.handleAlternation(machines);
 

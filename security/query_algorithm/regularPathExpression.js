@@ -89,6 +89,36 @@ RegularPathExpression.prototype.udOpenClosedFile = function(obj){
 					.udFCall({name: 'access', argName: fileName});
 }
 
+
+RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
+	// sink(x);
+	// | tmp = x
+	// | udRecTest(tmp)
+
+	//info from argument
+	obj 		= obj || {};
+	var leaked 	= obj.leakedValue || this.getRecVar('leaked'); //can this be a tmp var (see when ready)?
+
+	//state info for alias
+	var s = {};
+	var alias 	= this.getRecVar('alias');
+	setupStateChain(s, ['node','expression','left'], alias);
+	setupStateChain(s, ['node','expression','right','name'], leaked);
+
+	//new obj for recursive function
+	var newObj 	= {};
+	newObj.leakedValue = leaked;
+
+	return this 	.lBrace()
+					.udFCall({name: 'sink', argName: leaked})
+					.or()
+					.state(s)
+					.skipZeroOrMore()
+					.subGraph(newObj,this.udRecSink)
+					.rBrace();
+}
+
+
 /**
  * ----------------
  * THINGS TO DETECT
@@ -102,30 +132,13 @@ RegularPathExpression.prototype.state = function(obj){
 	return this;
 }
 
-//Assignment
-RegularPathExpression.prototype.assign = function(obj){
-	this._map.push(new RegexPart('assign', obj, 'idx' + this._map.length));
-	//Fluent API
-	return this;
-}
-
-//Function calls
-RegularPathExpression.prototype.fCall = function(obj){
-	this._map.push(new RegexPart('fCall', obj, 'idx' + this._map.length));
-	//Fluent API
-	return this;
-}
-
-//End of function calls
-RegularPathExpression.prototype.endFCall = function(obj){
-	this._map.push(new RegexPart('endFCall', obj, 'idx' + this._map.length));
-	//Fluent API
-	return this;
-}
-
-//Return statements
-RegularPathExpression.prototype.return = function(obj){
-	this._map.push(new RegexPart('return', obj, 'idx' + this._map.length));
+//subgraph (for recursion)
+RegularPathExpression.prototype.subGraph = function(obj, f){
+	//context that has an empty _map (for the creation of the subgraph)
+	//and an index equal to the 'this' object, to avoid overlapping of tmpVars/recVars
+	//var thisContext = new RegularPathExpression();
+	//thisContext.uid = this.uid;
+	this._map.push(new RegexPart('subGraph', obj, 'idx' + this._map.length, f, this.uid));
 	//Fluent API
 	return this;
 }
@@ -188,17 +201,20 @@ RegularPathExpression.prototype.star = function(obj){
 //Wildcard followed by Star
 RegularPathExpression.prototype.skipZeroOrMore = function(obj){
 
+	this.lBrace();
 	this._map.push(new RegexPart('wildcard', obj, '_'));
 	this._map.push(new RegexPart('star', obj, '*'));
+	this.rBrace();
 	//Fluent API
 	return this;
 }
 
 //Wildcard followed by Plus
 RegularPathExpression.prototype.skipOneOrMore = function(obj){
-
+	this.lBrace();
 	this._map.push(new RegexPart('wildcard', obj, '_'));
 	this._map.push(new RegexPart('plus', obj, '+'));
+	this.rBrace();
 	//Fluent API
 	return this;
 }
@@ -232,6 +248,10 @@ RegularPathExpression.prototype.getUid = function(){
 
 RegularPathExpression.prototype.getTmpVar = function(name){
 	return '?__tmp__' + name + this.uid++;
+}
+
+RegularPathExpression.prototype.getRecVar = function(name){
+	return '?recursionVar:' + name + this.uid++;
 }
 
 
@@ -277,10 +297,12 @@ RegularPathExpression.prototype.toDFA = function(){
  * -----------------------
  */
 
- function RegexPart(name, obj, symbol){
+ function RegexPart(name, obj, symbol, expandFunction, expandContext){
  	this.name = name;
  	this.symbol = symbol;
  	this.obj = obj;
+ 	this.expandFunction = expandFunction || false;
+ 	this.expandContext = expandContext || false;
  }
 
 RegexPart.prototype.toString = function(){

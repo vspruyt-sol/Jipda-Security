@@ -12,12 +12,14 @@ function Query(rpe, type, direction){
 }
 
 //EdgeLabel
-function EdgeLabel(name, state, negated)
+function EdgeLabel(name, state, negated, expandFunction, expandContext)
 {
   this.name = name || (state.node? state.node.type : '');
   //store info
   this.state = state || {};
   this.negated = negated || false;
+  this.expandFunction = expandFunction || false;  
+  this.expandContext = expandContext || false;
 }
 
 EdgeLabel.prototype.equals = function (x)

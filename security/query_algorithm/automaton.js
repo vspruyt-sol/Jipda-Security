@@ -10,7 +10,7 @@ Automaton.prototype.fromFSM = function(fsm, table){
 		if(edgeName.indexOf('idx') < 0) return new EdgeLabel(edgeName, {});
 		var idx = neg ? edgeName.substring(4, edgeName.length) : edgeName.substring(3, edgeName.length);
 		var regexPart = table[idx];
-		return new EdgeLabel(regexPart.name, regexPart.obj, neg);
+		return new EdgeLabel(regexPart.name, regexPart.obj, neg, regexPart.expandFunction, regexPart.expandContext);
 	}
 
 	//variables
@@ -29,7 +29,7 @@ Automaton.prototype.fromFSM = function(fsm, table){
 		subgraph = fsm.graph[key];
 		for(var edge in subgraph){
 			toNodes = flatten([subgraph[edge]]);
-			label = _lookupEdge(edge); //TODO: looks up edge in table 'edge is idx0 (0 = number) or -idx0'
+			label = _lookupEdge(edge);
 			for(var i = 0; i < toNodes.length; i++){
 				this.triples.push(new GraphTriple(
 									new DummyNode(parseInt(key)),

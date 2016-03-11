@@ -87,8 +87,7 @@ SecurityAnalysis.prototype.detect = function(){
 			query = new UniversalQuery(flipped, this.dfa.triples, this.dfa.acceptStates, startNode.from, this.dfa.startingNode);	
 		}
 		result = query.runNaiveWithNegation();
-	}	
-	console.log(result);
+	}
 	console.log(this.processQueryResult(result));
 	
 }

@@ -46,8 +46,6 @@ SubsetConstruction.prototype.cleanUpStates = function(nfa){
 	var count = -1;
 	var subGraph, toNode, newKey, label;
 
-	console.log(nfa);
-
 	//Number closures
 	for(var key in nfa.graph){
 		subGraph = nfa.graph[key];
