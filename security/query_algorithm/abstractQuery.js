@@ -98,11 +98,38 @@ ExistentialQuery.prototype.runNaiveWithNegation = function(){
 					tripleP = this.P[j];	
 					if(tripleP.from.equals(tripleW.s)){
 							if(tripleP.edge.name === 'subGraph'){
-								//Expand with one step
-								//get triples from DFA
-								//Add triples to P with correct from and target
-								//Make sure to get the indices right
-								var dfa = AbstractQuery.expandSubgraph(tripleP);
+								//todo: cache subgraph
+								var triples = AbstractQuery.expandSubgraph(tripleP);
+								var nextIndex = this.P.reduce(function(acc, o){ 
+															if(o.from._id > acc){
+																if(o.target._id > o.from._id) return o.target._id;
+																return o.from._id;
+															}
+															return acc;
+														}, 0) + 1; //avoid overlaps
+								//Add max index to triples from DFA
+								//TODO: does initial/final matter here?
+								var newTriples = triples.map(function(x){
+																if(x.initial) {
+																	x.from = tripleP.from;
+																	x.initial = false;
+																}
+																else{
+																	x.from._id += nextIndex;
+																}
+																if(x.final){
+																	x.target = tripleP.target;
+																	x.final = false;
+																}
+																else{
+																	x.target._id += nextIndex;
+																}
+
+																//TODO: Set initial and final to false?
+																return x;
+															});
+								//Add expanded subgraph to P
+								Array.prototype.push.apply(this.P,newTriples);
 
 							}
 							else{
@@ -575,15 +602,14 @@ AbstractQuery.removeTriple = function(set, triple){
 }
 
 AbstractQuery.expandSubgraph = function(triple){
-	var from = triple.from;
-	var targed = triple.target;
-	var f = triple.edge.expandFunction;
-	var state = triple.edge.state;
-	var uid = triple.edge.expandContext;
-	var ctx = new RegularPathExpression();
-	ctx.uid = uid;
-	var rpe = f.call(ctx, state);
-	return rpe.toDFA(); //temp
+	var f,state,uid,ctx,rpe;
+	f 		= triple.edge.expandFunction;
+	state 	= triple.edge.state;
+	uid 	= triple.edge.expandContext;
+	ctx 	= new RegularPathExpression(uid);
+	rpe 	= f.call(ctx, state);
+	dfa 	= rpe.toDFA();
+	return dfa.triples;
 }
 
 //TEMP test function (maps keys to state keys)

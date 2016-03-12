@@ -1,4 +1,4 @@
-function RegularPathExpression(){ 
+function RegularPathExpression(seed){ 
 	//Index x represents edge with label 'x' in the NFA 
 	this._map = [];
 	//Check braces
@@ -6,7 +6,7 @@ function RegularPathExpression(){
 	//Contains the NFA with its graph triples
 	this.nfa = [];
 	//temporal fix
-	this.uid = 0;
+	this.uid = seed || 0;
 }
 
 /**
@@ -40,6 +40,8 @@ RegularPathExpression.prototype.udFCall = function(obj){ //name, callee, argumen
 	var firstArgName= 	obj.argName || this.getTmpVar('firstArgName'); //if user wants to know first argument name
 	var calleeName 	= 	this.getTmpVar('calleeName'); //tmp var for matching
 	var argName 	=	this.getTmpVar('argName');
+
+	console.log('udFCall :'+ firstArgName);
 
 	//Basic function call
 	setupStateChain(s1, ['node','expression','callee'], objCallee);
@@ -99,15 +101,19 @@ RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 	obj 		= obj || {};
 	var leaked 	= obj.leakedValue || this.getRecVar('leaked'); //can this be a tmp var (see when ready)?
 
+	console.log('udRecSink: ' + leaked);
 	//state info for alias
 	var s = {};
 	var alias 	= this.getRecVar('alias');
-	setupStateChain(s, ['node','expression','left'], alias);
+
+	console.log('udRecSink: ' + alias);
+	setupStateChain(s, ['node','expression','left', 'name'], alias);
 	setupStateChain(s, ['node','expression','right','name'], leaked);
 
 	//new obj for recursive function
 	var newObj 	= {};
-	newObj.leakedValue = leaked;
+	newObj.leakedValue = alias;
+
 
 	return this 	.lBrace()
 					.udFCall({name: 'sink', argName: leaked})

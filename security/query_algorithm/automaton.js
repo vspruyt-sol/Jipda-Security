@@ -31,11 +31,13 @@ Automaton.prototype.fromFSM = function(fsm, table){
 			toNodes = flatten([subgraph[edge]]);
 			label = _lookupEdge(edge);
 			for(var i = 0; i < toNodes.length; i++){
+				//console.log(parseInt(key) === this.startingNode._id)
 				this.triples.push(new GraphTriple(
 									new DummyNode(parseInt(key)),
 									label,
-									new DummyNode(parseInt(toNodes[i]))
-					));
+									new DummyNode(parseInt(toNodes[i])),
+									(this.startingNode._id === parseInt(key)),
+									contains(this.acceptStates, new DummyNode(parseInt(toNodes[i])))));
 			}
 		}
 	}
