@@ -1,3 +1,5 @@
+var subgraphCache = {};
+
 /*
  * G = States van JIPDA graph
  * P = Pattern (RPE)
@@ -98,39 +100,17 @@ ExistentialQuery.prototype.runNaiveWithNegation = function(){
 					tripleP = this.P[j];	
 					if(tripleP.from.equals(tripleW.s)){
 							if(tripleP.edge.name === 'subGraph'){
-								//todo: cache subgraph
-								var triples = AbstractQuery.expandSubgraph(tripleP);
-								var nextIndex = this.P.reduce(function(acc, o){ 
-															if(o.from._id > acc){
-																if(o.target._id > o.from._id) return o.target._id;
-																return o.from._id;
-															}
-															return acc;
-														}, 0) + 1; //avoid overlaps
-								//Add max index to triples from DFA
-								//TODO: does initial/final matter here?
-								var newTriples = triples.map(function(x){
-																if(x.initial) {
-																	x.from = tripleP.from;
-																	x.initial = false;
-																}
-																else{
-																	x.from._id += nextIndex;
-																}
-																if(x.final){
-																	x.target = tripleP.target;
-																	x.final = false;
-																}
-																else{
-																	x.target._id += nextIndex;
-																}
-
-																//TODO: Set initial and final to false?
-																return x;
-															});
-								//Add expanded subgraph to P
+								var newTriples;
+								if(subgraphCache[tripleP]){
+									//console.log('CACHED');
+									newTriples = subgraphCache[tripleP];
+								}
+								else{
+									newTriples = AbstractQuery.expandSubgraph(tripleP, this.P);
+									//console.log('NOT YET CACHED');
+									subgraphCache[tripleP] = newTriples;
+								}
 								Array.prototype.push.apply(this.P,newTriples);
-
 							}
 							else{
 								theta = AbstractQuery.match(tripleG.edge,tripleP.edge);
@@ -316,8 +296,17 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 		}
 	} //end while
 	//TODO: TRANSFORM RESULTS
-	console.log(U);
-	return U;
+	return this.transformToPairs(U);
+}
+
+UniversalQuery.prototype.transformToPairs = function(res){
+	var val;
+	var transformed = [];
+	for(var key in res){
+		val = res[key];
+		if(val) transformed.push(new VertexThetaPair(new DummyNode(parseInt(key)), val));
+	}
+	return transformed;
 }
 
 /**
@@ -396,6 +385,7 @@ AbstractQuery.verifyConditions = function(table, conds){
 	for(var j = 0; j < conds.length; j++){
 		func = conds[j][0];
 		args = conds[j][1];
+		resolvedArgs = [];
 		for(var i = 0; i < args.length; i++){
 			if(this.isResolvableVariable(args[i])){
 				resolvedArg = this.resolveVariable(args[i], table);
@@ -601,15 +591,42 @@ AbstractQuery.removeTriple = function(set, triple){
 	});
 }
 
-AbstractQuery.expandSubgraph = function(triple){
-	var f,state,uid,ctx,rpe;
+AbstractQuery.expandSubgraph = function(triple, currPattern){
+	var f,state,uid,ctx,rpe, nextIndex, newTriples;
 	f 		= triple.edge.expandFunction;
 	state 	= triple.edge.state;
 	uid 	= triple.edge.expandContext;
 	ctx 	= new RegularPathExpression(uid);
 	rpe 	= f.call(ctx, state);
-	dfa 	= rpe.toDFA();
-	return dfa.triples;
+	triples = rpe.toDFA().triples;
+	nextIndex = currPattern.reduce(function(acc, o){ 
+										if(o.from._id > acc){
+											if(o.target._id > o.from._id) return o.target._id;
+											return o.from._id;
+										}
+										return acc;
+									}, 0) + 1; //avoid overlaps
+	newTriples = triples.map(function(x){
+									if(x.initial) {
+										x.from = triple.from;
+										x.initial = false;
+									}
+									else{
+										x.from._id += nextIndex;
+									}
+									if(x.final){
+										x.target = triple.target;
+										x.final = false;
+									}
+									else{
+										x.target._id += nextIndex;
+									}
+
+									//TODO: Set initial and final to false?
+									return x;
+								});
+
+	return newTriples;
 }
 
 //TEMP test function (maps keys to state keys)

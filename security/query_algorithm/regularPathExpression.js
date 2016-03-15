@@ -15,16 +15,19 @@ function RegularPathExpression(seed){
  * -----------------------
  */
 
-
-
-RegularPathExpression.prototype.udAssign = function(obj){ //left, right
+RegularPathExpression.prototype.udAssign = function(obj){ //left, right, leftName, rightName
 	//todo fill in params
 	var s = {};
 	var objLeft = obj.left || this.getTmpVar('objLeft');
 	var objRight = obj.right || this.getTmpVar('objRight');
+	var objLeftName = obj.leftName || this.getTmpVar('objLeftName');
+	var objRightName = obj.rightName || this.getTmpVar('objRightName');
+
 	//make vars optional
-	setupStateChain(s, ['node','expression','left'], objLeft);
-	setupStateChain(s, ['node','expression','right'], objRight);
+	this.setupStateChain(s, ['node','expression','left'], objLeft);
+	this.setupStateChain(s, ['node','expression','right'], objRight);
+	this.setupProperty(s, objLeftName, objLeft + '.name');
+	this.setupProperty(s, objRightName, objRight + '.name');
 
 	return this.state(s);
 }
@@ -41,36 +44,15 @@ RegularPathExpression.prototype.udFCall = function(obj){ //name, callee, argumen
 	var calleeName 	= 	this.getTmpVar('calleeName'); //tmp var for matching
 	var argName 	=	this.getTmpVar('argName');
 
-	console.log('udFCall :'+ firstArgName);
-
 	//Basic function call
-	setupStateChain(s1, ['node','expression','callee'], objCallee);
-	setupStateChain(s1, ['node','expression','arguments'], objArguments);
+	this.setupStateChain(s1, ['node','expression','callee'], objCallee);
+	this.setupStateChain(s1, ['node','expression','arguments'], objArguments);
 	
 	//get first argument
 	try{
-		setupProperty(s1, firstArg, prop('at', objArguments, 0)); //tmp eerste arg
-		if(firstArgName.charAt(0) === '?'){
-			setupProperty(s1, firstArgName, firstArg + '.name'); //tmp als niet geweten moet worden, anders vast
-		}
-		else{
-			setupProperty(s1, argName , firstArg + '.name');
-			setupFilter(	s1, 
-							'equals',
-							argName,
-							firstArgName);
-		}	
-		//Obj name
-		if(objName.charAt(0) === '?'){
-			setupProperty(s1, objName, objCallee + '.name');
-		}
-		else{
-			setupProperty(s1, calleeName , objCallee + '.name');
-			setupFilter(	s1, 
-							'equals',
-							calleeName,
-							objName);
-		}
+		this.setupProperty(s1, firstArg, prop('at', objArguments, 0)); //tmp eerste arg
+		this.setupProperty(s1, firstArgName, firstArg + '.name'); //tmp als niet geweten moet worden, anders vast
+		this.setupProperty(s1, objName, objCallee + '.name');
 	}
 	catch(e){ //optional, just to catch errors
 		console.log(e);
@@ -98,21 +80,22 @@ RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 	// | udRecTest(tmp)
 
 	//info from argument
-	obj 		= obj || {};
-	var leaked 	= obj.leakedValue || this.getRecVar('leaked'); //can this be a tmp var (see when ready)?
-
-	console.log('udRecSink: ' + leaked);
+	obj = obj || {};
 	//state info for alias
 	var s = {};
-	var alias 	= this.getRecVar('alias');
-
-	console.log('udRecSink: ' + alias);
-	setupStateChain(s, ['node','expression','left', 'name'], alias);
-	setupStateChain(s, ['node','expression','right','name'], leaked);
-
+	var leaked 	= obj.leakedValue || this.getTmpVar('leaked');
+	var alias 	= this.getRecVar('leakedAlias'); //use temp var if you don't want to know the aliases
+	var left = this.getTmpVar('left');
+	var right = this.getTmpVar('right');
 	//new obj for recursive function
 	var newObj 	= {};
 	newObj.leakedValue = alias;
+
+	this.setupStateChain(s, ['node','expression','left'], left); //alias
+	this.setupStateChain(s, ['node','expression','right'], right); //leaked
+
+	this.setupProperty(s, alias, left + '.name'); 
+	this.setupProperty(s, leaked, right + '.name');
 
 
 	return this 	.lBrace()
@@ -120,10 +103,53 @@ RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 					.or()
 					.state(s)
 					.skipZeroOrMore()
-					.subGraph(newObj,this.udRecSink)
+					.rec(newObj,this.udRecSink)
 					.rBrace();
 }
 
+/**
+ * ------------------
+ * Properties/filters
+ * ------------------
+ */
+
+RegularPathExpression.prototype.setupStateChain = function(obj, chain, val){
+	var cur = obj;
+	for(var i = 0; i < chain.length; i++){
+		if(i === chain.length - 1){
+			cur[chain[i]] = val;
+		}
+		else{
+			if(!cur[chain[i]]) cur[chain[i]] = {};
+			cur = cur[chain[i]];
+		}
+		
+	}
+}
+
+RegularPathExpression.prototype.setupProperty = function(obj, left, right){
+	if(!obj.properties) obj.properties = {};
+	//Is variable
+	if(isVar(left)){
+		obj.properties[left] = right;
+	}
+	else{
+		//no variable, so we have to add condition
+		var tmp = this.getTmpVar('tmpName');
+		obj.properties[tmp] = right;
+		this.setupFilter(	obj, 
+							'equals',
+							tmp,
+							left);
+	}	
+}
+
+RegularPathExpression.prototype.setupFilter = function(obj, f){
+	var args = Array.prototype.slice.call(arguments, 2);
+	var fArgs = Array.prototype.concat.apply([], [f, args])
+	if(!obj.filters) obj.filters = [];
+	obj.filters.push(cond.apply(this,fArgs));	
+}
 
 /**
  * ----------------
@@ -139,7 +165,7 @@ RegularPathExpression.prototype.state = function(obj){
 }
 
 //subgraph (for recursion)
-RegularPathExpression.prototype.subGraph = function(obj, f){
+RegularPathExpression.prototype.rec = function(obj, f){
 	//context that has an empty _map (for the creation of the subgraph)
 	//and an index equal to the 'this' object, to avoid overlapping of tmpVars/recVars
 	//var thisContext = new RegularPathExpression();
@@ -257,7 +283,7 @@ RegularPathExpression.prototype.getTmpVar = function(name){
 }
 
 RegularPathExpression.prototype.getRecVar = function(name){
-	return '?recursionVar:' + name + this.uid++;
+	return '?r:' + name + this.uid++;
 }
 
 
@@ -324,31 +350,9 @@ RegexPart.prototype.toString = function(){
  * -------
  */
 
-var setupStateChain = function(obj, chain, val){
-	var cur = obj;
-	for(var i = 0; i < chain.length; i++){
-		if(i === chain.length - 1){
-			cur[chain[i]] = val;
-		}
-		else{
-			if(!cur[chain[i]]) cur[chain[i]] = {};
-			cur = cur[chain[i]];
-		}
-		
-	}
-}
 
-var setupProperty = function(obj, left, right){
-	var prop = {};
-	if(!obj.properties) obj.properties = {};
-	obj.properties[left] = right;
-}
-
-var setupFilter = function(obj, f){
-	var args = Array.prototype.slice.call(arguments, 2);
-	var fArgs = Array.prototype.concat.apply([], [f, args])
-	if(!obj.filters) obj.filters = [];
-	obj.filters.push(cond.apply(this,fArgs));	
+var isVar = function(x){
+	return x.charAt(0) === '?';
 }
 
 //Builtin functions for properties

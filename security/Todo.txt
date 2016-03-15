@@ -1,22 +1,3 @@
-TODO: 
-- Universal query (2-3 dagen)
-- Counting (bvb hoeveel vars verwijzen naar bepaald adres) (operaties in het algemeen);
-- Reify van varnames
-- abstractie voor of vast of var
-- RECURSIE
-
-
-CHECK:
-- state(?x)*state(?x)*state(?x)* ... hebben we match als we een graph hebben als  0-->0-->0--->0--->0 CHECK!
-																					  |<-------|
-- Matchen op state ipv values ook! CHECK
-
-- Abstractiemechanisme (queries definen, ander venster oproepen/gebruiken) CHECK
-
-- Negatie (CHECK VOOR REEDS GEBONDEN VARIABELEN)
-
-- Info uit esprima (max 1 dag) CHECK
-
-- Backward query (max 2 uur) CHECK
-
-- Delete temps bij match  CHECK
+- Memoization
+- Subgraph in universal
+- More examples

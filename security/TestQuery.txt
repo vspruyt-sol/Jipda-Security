@@ -1,4 +1,71 @@
 G.skipZeroOrMore()
+.lBrace()
+  .lBrace()
+    .udRecSink({leakedValue: '?x'})
+  .rBrace()
+  .or()
+  .lBrace()
+    .udOpenClosedFile({name: '?file'})
+  .rBrace()
+.rBrace()
+
+//((udRecSink)|(udOpenClosedFile))
+
+var open = function(file){
+  file = 1;
+}
+var access = function(file){
+  file = 2;
+}
+var close = function(file){
+  file = 0;
+    var z = 4;
+    var g = 5;
+}
+
+
+
+close(file);
+//open(file);
+access(file);
+
+var source = function(){
+    //Some secure info leaked
+    return 'Important';
+}
+
+var sink = function(x){
+  //leak some data
+}
+
+var x,y,z, o = {};
+x = source();
+o.y = x;
+z = o.y;
+sink(z);
+
+
+var g = 5;
+
+
+G.skipZeroOrMore()
+.udAssign({leftName:'?left', rightName:'?right'})
+.skipZeroOrMore()
+.udRecSink({leakedValue: '?left'})
+-----------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+G.skipZeroOrMore()
 .state({
   node: {
     type: 'ExpressionStatement',
