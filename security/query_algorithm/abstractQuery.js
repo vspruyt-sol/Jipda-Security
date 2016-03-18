@@ -15,59 +15,6 @@ function ExistentialQuery(G, P, F, v0, s0){
 	this.s0 = s0;	
 }
 
-ExistentialQuery.prototype.runNaive = function(){
-	//used variables
-	var tripleG, tripleP, theta, theta2,
-		tripleW, tripleTemp;
-	//start algorithm
-	var R = [];
-	var W = [];
-	for(var i = 0; i < this.G.length; i++){
-		tripleG = this.G[i];
-		if(tripleG.from.equals(this.v0)){ //Is de Jipda-node gelijk aan onze initial (Jipda-)node
-			for(var j = 0; j < this.P.length; j++){
-				tripleP = this.P[j];	
-				if(tripleP.from.equals(this.s0)){ //Is de NFA-node gelijk aan de initial (NFA-)node
-					theta = AbstractQuery.match(tripleG.edge,tripleP.edge);
-					for(var k = 0; k < theta.length; k++){
-						W = AbstractQuery.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
-					}
-				}
-			}
-		}
-	}
-	var E = [];
-	while(W.length > 0){
-		tripleW = W.shift();
-		R = AbstractQuery.union(R, [tripleW]);
-		for(var i = 0; i < this.G.length; i++){
-			tripleG = this.G[i];
-			if(tripleG.from.equals(tripleW.v)){ //KLOPT DIT WEL????
-				for(var j = 0; j < this.P.length; j++){
-					tripleP = this.P[j];	
-					if(tripleP.from.equals(tripleW.s)){ //KLOPT DIT WEL????
-						theta = AbstractQuery.match(tripleG.edge,tripleP.edge); //theta = [[{x:a},{callee:sink}]]
-						for(var k = 0; k < theta.length; k++){
-							theta2 = AbstractQuery.merge(tripleW.theta, theta[k]);
-							if(theta2){
-								tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
-								if(!contains(R, tripleTemp)){
-									W = AbstractQuery.union(W, [tripleTemp]);
-								}
-							}
-						}//end for		
-					}
-				} //end for 
-			}
-		} //end for
-		
-		if(contains(this.F, tripleW.s)){
-			E = AbstractQuery.union(E, [new VertexThetaPair(tripleW.v, tripleW.theta)]);
-		}
-	} //end while
-	return E;
-}
-
 ExistentialQuery.prototype.runNaiveWithNegation = function(){
 	//used variables
 	var tripleG, tripleP, theta, theta2,
@@ -113,7 +60,7 @@ ExistentialQuery.prototype.runNaiveWithNegation = function(){
 								Array.prototype.push.apply(this.P,newTriples);
 							}
 							else{
-								theta = AbstractQuery.match(tripleG.edge,tripleP.edge);
+								theta = AbstractQuery.match(tripleG.edge,tripleP.edge, tripleW.theta); //theta added
 								for(var k = 0; k < theta.length; k++){
 									theta2 = AbstractQuery.merge(tripleW.theta, theta[k]);
 									if(theta2){
@@ -320,7 +267,8 @@ function AbstractQuery(){
 AbstractQuery.extensions = function(theta, tl){
 }
 
-AbstractQuery.match = function(el, tl){
+AbstractQuery.match = function(el, tl, curTheta){
+	//curTheta is optional
 	//Given an edge label el and a transition label tl, let match(tl,el), 
 	//which takes a set of symbols as an implicit argument, be the set of minimal substitutions θ 
 	//such that el matches tl under θ. The resulting set has at most one element when tl contains 
@@ -340,9 +288,15 @@ AbstractQuery.match = function(el, tl){
 	}
 
 	if(_map){
-		//TODO: Drop temp variables!
+		//Drop temp variables!
 		_map = AbstractQuery.cleanupTempVars(_map);
-		if(tl.negated) return [];
+
+		//TODO: map with current substitutions:
+		if(tl.negated && AbstractQuery.merge(_map, curTheta)){
+			return [];
+		}
+
+		//if(tl.negated) return [];
 		substitutions.push(_map);
 	}
 	return tl.negated ? [[{}]] : substitutions; //substitution	

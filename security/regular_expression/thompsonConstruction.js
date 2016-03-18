@@ -14,6 +14,7 @@ ThompsonConstruction.prototype.toNFA = function(regex){
 	machines = this.buildMachineStack(regex);  	
 	machines = this.kleeneUp(machines);
   	machines = this.catify(machines);
+  	//console.log(machines);
   	machines = this.handleAlternation(machines);
 
   	for(var i = 0; i < machines.length; i++){
@@ -51,7 +52,7 @@ ThompsonConstruction.prototype.buildMachineStack = function(regex){
     	nextChar = regexPart.symbol;
 
 
-    	//TODO: Nextchar is negation (e.g. -a)
+    	//TODO: BESLISSING GEMAAKT OM NEGATIE NIET TE NESTEN
     	switch(nextChar){
     		case '*': machines.push([KLEENE_MACHINE(), 	[1,2]]); 		break;
     		case '+': machines.push([PLUS_MACHINE(), 	[1,2]]); 		break;
@@ -71,12 +72,8 @@ ThompsonConstruction.prototype.buildMachineStack = function(regex){
 					  	nextSuccChar = succRegexPart.symbol;
 					  }
 					  skip = subExpression.length + 1;
-					  if(negated){
-					  	subExpression = modifyForNegation(subExpression);
-					  	if(!subExpression) throw 'Incorrect usage of negation. Correct usage: ¬a or ¬(a|b). These terms can be wrapped in multiple braces.'
-						negated = false;
-					  }
 					  subGraph = this.toNFA(subExpression);
+					  if(negated) subGraph.negatedPairs.push([subGraph.origin,_.keys(subGraph.acceptStates)]);
 					  machines.push([subGraph, null]);
 					  break;
 			case '¬': negated = true;
@@ -121,7 +118,7 @@ ThompsonConstruction.prototype.kleeneUp = function(machines){
 
 ThompsonConstruction.prototype.catify = function(machines){ 
 	var newMachines = [];
-	var curMachine, fsm, offset, acc;
+	var curMachine, fsm, offset, acc, newNegatedPairs, curPair, newLeft, newRight;
 	for(var i = 0; i < machines.length; i++){
 		curMachine = machines[i];
 	    if(i === 0){
@@ -131,6 +128,14 @@ ThompsonConstruction.prototype.catify = function(machines){
 	    	fsm = newMachines.pop()[0];
 	    	offset = fsm.getNodeCount() - 1;
 	    	acc = Utilities.keyAt(fsm.acceptStates, 0) || 0;	//Attachment point
+	    	//TEST NEGATION
+	    	/*for(var j = 0; j < curMachine[0].negatedPairs.length; j++){
+	    		curPair = curMachine[0].negatedPairs[j];
+	    		newRight = curPair[1].map(function(x){return parseInt(x) + offset;});
+	    		newLeft = curPair[0] + offset;
+	    		fsm.negatedPairs.push([newLeft, newRight]);
+	    	}*/
+	    	attachNegatedPairs(fsm, curMachine[0], offset);
 	    	fsm.attachGraph(acc, curMachine[0]);
 	    	for(var prop in fsm.acceptStates) {
 		  	   	if(curMachine[0].acceptStates[parseInt(prop) - offset] === undefined){
@@ -152,9 +157,9 @@ ThompsonConstruction.prototype.handleAlternation = function(machines){
     return machines;
 }
 
-ThompsonConstruction.prototype.absorbLeftAlternation = function(machines){ //CONTAINS A BUG (I think)
+ThompsonConstruction.prototype.absorbLeftAlternation = function(machines){
 	var newMachines = [];
-	var curMachine, from, to, replaced;
+	var curMachine, from, to, replaced, poppedMachine;
 	for(var i = 0; i < machines.length; i++){
 		curMachine = machines[i];
 		if(curMachine[1] == null || curMachine[1].length === 0){ //No more edges to be replaced/edited
@@ -163,7 +168,11 @@ ThompsonConstruction.prototype.absorbLeftAlternation = function(machines){ //CON
 		else{
 			from = curMachine[1].shift();
 			to = curMachine[1].shift();
-			replaced = curMachine[0].replaceEdge(from, 0, to, newMachines.pop()[0]); //PENDING
+			//TEST NEGATION
+			poppedMachine = newMachines.pop()[0];
+			//console.log(JSON.stringify(poppedMachine));
+			//console.log(JSON.stringify(curMachine[0]));
+			replaced = curMachine[0].replaceEdge(from, 0, to, poppedMachine); //PENDING
 			newMachines.push([replaced, curMachine[1]]);
 		}
 	}
@@ -202,7 +211,7 @@ var modifyForNegation = function(expression){
 		}
 	}
 
-	//Found 'or', see of it is a valid negation
+	//Found 'or', see if it is a valid negation
 	if (foundOr && left.length > 0 && right.length > 0){
 		left = stripBraces(left);
 		right = stripBraces(right);
@@ -224,5 +233,15 @@ var stripBraces = function(expression){
 		return stripBraces(expression.slice(1,-1));
 	}
 	return expression;
+}
+
+var attachNegatedPairs = function(fsm, machine, offset){
+	var curPair, newLeft, newRight;
+	for(var j = 0; j < machine.negatedPairs.length; j++){
+	    		curPair = machine.negatedPairs[j];
+	    		newRight = curPair[1].map(function(x){return parseInt(x) + offset;});
+	    		newLeft = curPair[0] + offset;
+	    		fsm.negatedPairs.push([newLeft, newRight]);
+	}
 }
 

@@ -25,7 +25,8 @@ RegularPathExpression.prototype.udAssign = function(obj){ //left, right, leftNam
 
 	//make vars optional
 	this.setupStateChain(s, ['node','expression','left'], objLeft);
-	this.setupStateChain(s, ['node','expression','right'], objRight);
+	this.setupStateChain(s, ['node','expression','right'], objRight);	
+	this.setupStateChain(s, ['node','expression','operator'], "=");
 	this.setupProperty(s, objLeftName, objLeft + '.name');
 	this.setupProperty(s, objRightName, objRight + '.name');
 
@@ -73,7 +74,6 @@ RegularPathExpression.prototype.udOpenClosedFile = function(obj){
 					.udFCall({name: 'access', argName: fileName});
 }
 
-
 RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 	// sink(x);
 	// | tmp = x
@@ -105,6 +105,33 @@ RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 					.skipZeroOrMore()
 					.rec(newObj,this.udRecSink)
 					.rBrace();
+}
+
+RegularPathExpression.prototype.udAvailableExpression = function(obj){ //left(Name),right(Name), Operator
+	obj = obj || {};
+	var s = {};
+
+	var objLeft = obj.left || this.getTmpVar('obLeft');
+	var objRight = obj.right || this.getTmpVar('obRight');
+	var objLeftName = obj.leftName || this.getTmpVar('obLeftName');
+	var objRightName = obj.rightName || this.getTmpVar('obRightName');
+	var objOperator = obj.operator || this.getTmpVar('obOperator');
+
+	this.setupStateChain(s, ['node','type'], 'BinaryExpression');
+	this.setupStateChain(s, ['node','left'], objLeft);
+	this.setupStateChain(s, ['node','right'], objRight);
+	this.setupStateChain(s, ['node','operator'], objOperator);
+	
+	this.setupProperty(s, objLeftName, objLeft + '.name');
+	this.setupProperty(s, objRightName, objRight + '.name');
+
+	return this .state(s)
+				.skipZeroOrMore()
+				.lBrace()
+				.udAssign({leftName: objLeftName})
+				.or()
+				.udAssign({leftName: objRightName})
+				.rBrace();
 }
 
 /**

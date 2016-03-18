@@ -1,3 +1,4 @@
-- Memoization
+- Negatie van alles: subgraph maken van alles dat genegeerd is, daarna matchen en kijken
 - Subgraph in universal
+- Memoization
 - More examples

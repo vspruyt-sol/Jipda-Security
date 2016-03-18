@@ -3,6 +3,7 @@ function FiniteStateMachine(acceptStates, graph, origin, type){
 	this.graph = graph || {}; //TODO: Should I make a separate 'class' for node->edge->node connections?
 	this.origin = origin || 0;
 	this.tpe = type || ''; //debugging purposes
+	this.negatedPairs = []; //experimental
 }
 
 FiniteStateMachine.prototype.getNodeCount = function(){
@@ -145,7 +146,10 @@ FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm, debug)
     }
 
     var offset = this.getNodeCount() - 1;
+   	console.log(JSON.stringify(fsm));
+   	console.log(JSON.stringify(this));
     this.attachGraph(from, fsm, debug);
+    console.log(JSON.stringify(this));
 
     //for each of the edges pointing at the accept state of the graph
     //redirect them to point at dest
@@ -157,6 +161,7 @@ FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm, debug)
 
     this.deleteEdge(from, label, to); 
     this.renumberNodes();
+
     return this;
 }
 
