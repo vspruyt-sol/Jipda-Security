@@ -43,9 +43,8 @@ SubsetConstruction.prototype.cleanUpStates = function(nfa){
 	var newAcceptStates = {};
 	var tmp = {};
 	var count = -1;
-	var subGraph, toNode, newKey, label;
-
-	//TODO: Map every negated pair to new labels
+	var subGraph, toNode, newKey, label, pairL, pairR, tmpVal, tmpVal2, tmpL, tmpR;
+	var newNegatedPairs = [];
 
 	//Number closures
 	for(var key in nfa.graph){
@@ -56,6 +55,27 @@ SubsetConstruction.prototype.cleanUpStates = function(nfa){
 			if(tmp[toNode] === undefined) tmp[toNode] = ++count;			
 		}
 	}
+
+	//Map old pairs to new ones
+	for(var i = 0; i < nfa.negatedPairs.length; i++){
+		pairL = nfa.negatedPairs[i][0];
+		pairR = nfa.negatedPairs[i][1][0];
+		for(var key in tmp){
+			tmpVal = tmp[key];
+			if(contains(nodeRepToArray(key), pairL)) {
+				tmpL = tmpVal;
+				for(var key2 in tmp){
+					tmpVal2 = tmp[key2];
+					if(contains(nodeRepToArray(key2), pairR)) {
+						console.log(tmpVal2);
+						tmpR = tmpVal2;
+						newNegatedPairs.push([tmpL, tmpR]);
+					}
+				}
+			}
+		}
+	}
+	console.log(newNegatedPairs);
 
 	//Replace closures with their new node numbers
 	for(var key in nfa.graph){
@@ -74,6 +94,13 @@ SubsetConstruction.prototype.cleanUpStates = function(nfa){
 	}
 
 	//Return the cleaned up fsm
-	return new FiniteStateMachine(newAcceptStates, newGraph, 0, nfa.tpe);
+	return new FiniteStateMachine(newAcceptStates, newGraph, 0, nfa.tpe, newNegatedPairs);
 }
 
+var nodeRepToArray = function(rep){
+	if(rep.split(',').length > 1){
+		//console.log(rep.split(',').map(function(x){return parseInt(x);}));
+		return rep.split(',').map(function(x){return parseInt(x);});
+	}
+	return [parseInt(rep)];
+}
