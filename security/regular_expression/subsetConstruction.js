@@ -67,15 +67,14 @@ SubsetConstruction.prototype.cleanUpStates = function(nfa){
 				for(var key2 in tmp){
 					tmpVal2 = tmp[key2];
 					if(contains(nodeRepToArray(key2), pairR)) {
-						console.log(tmpVal2);
+						
 						tmpR = tmpVal2;
-						newNegatedPairs.push([tmpL, tmpR]);
+						newNegatedPairs.push([tmpL, [tmpR]]);
 					}
 				}
 			}
 		}
 	}
-	console.log(newNegatedPairs);
 
 	//Replace closures with their new node numbers
 	for(var key in nfa.graph){

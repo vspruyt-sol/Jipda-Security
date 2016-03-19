@@ -12,7 +12,7 @@ function Query(rpe, type, direction){
 }
 
 //EdgeLabel
-function EdgeLabel(name, state, negated, expandFunction, expandContext)
+function EdgeLabel(name, state, negated, expandFunction, expandContext, negationMarker)
 {
   this.name = name || (state.node? state.node.type : '');
   //store info
@@ -20,6 +20,7 @@ function EdgeLabel(name, state, negated, expandFunction, expandContext)
   this.negated = negated || false;
   this.expandFunction = expandFunction || false;  
   this.expandContext = expandContext || false;
+  this.negationMarker = negationMarker || false;
 }
 
 EdgeLabel.prototype.equals = function (x)
@@ -163,6 +164,13 @@ Quintuple.prototype.equals = function(x){
       && (this.vto === x.vto || this.vto.equals(x.vto))
       && (this.sto === x.sto || this.sto.equals(x.sto))
       && (this.theta === x.theta || equalTheta(this.theta, x.theta));
+}
+
+//To indicate we are in a part of the pattern being negated
+function NegationMarker(from, to, id){
+  this.from = from;
+  this.to = to;
+  this.id = id;
 }
 
 //UTILITIES

@@ -54,10 +54,12 @@ ExistentialQuery.prototype.runNaiveWithNegation = function(){
 								}
 								else{
 									newTriples = AbstractQuery.expandSubgraph(tripleP, this.P);
-									//console.log('NOT YET CACHED');
 									subgraphCache[tripleP] = newTriples;
 								}
-								Array.prototype.push.apply(this.P,newTriples);
+								//add if it isn't in P yet
+								for(var z = 0; z < newTriples.length; z++){
+									if(!contains(this.P, newTriples[z])) this.P.push(newTriples[z]);
+								}
 							}
 							else{
 								theta = AbstractQuery.match(tripleG.edge,tripleP.edge, tripleW.theta); //theta added
@@ -291,12 +293,10 @@ AbstractQuery.match = function(el, tl, curTheta){
 		//Drop temp variables!
 		_map = AbstractQuery.cleanupTempVars(_map);
 
-		//TODO: map with current substitutions:
 		if(tl.negated && AbstractQuery.merge(_map, curTheta)){
 			return [];
 		}
 
-		//if(tl.negated) return [];
 		substitutions.push(_map);
 	}
 	return tl.negated ? [[{}]] : substitutions; //substitution	

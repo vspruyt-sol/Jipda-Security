@@ -1,4 +1,9 @@
 - Negatie van alles: subgraph maken van alles dat genegeerd is, daarna matchen en kijken
+- Haakjes tweede deel van negatedPairs weghalen
 - Subgraph in universal
-- Memoization
 - More examples
+
+Map negatie : {negationId: theta}
+Als laatste node bereikt van negationId en er is een match (theta), stop dan de matching, want geen resultaat.
+Als nog niet laatste node maar wel in negationId, zou algo normaal stoppen (wegens geen match), dan geven we ipv false of [] eerder [{}] terug om het algoritme verder te laten gaan tot laatste node.
+Als aan laatse node van negationId en er is geen match (theta = false), dan kunnen we verder matchen. 

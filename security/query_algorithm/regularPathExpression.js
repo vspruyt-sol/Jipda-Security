@@ -68,9 +68,10 @@ RegularPathExpression.prototype.udOpenClosedFile = function(obj){
 
 	return 	this	.udFCall({name: 'close', argName: fileName})
 					.not()
-					.lBrace()
+					//.lBrace()
 					.udFCall({name: 'open'})
-					.rBrace().star()
+					//.rBrace()
+					.star()
 					.udFCall({name: 'access', argName: fileName});
 }
 
@@ -329,7 +330,6 @@ RegularPathExpression.prototype.toNFA = function(){
 	//One way to make a nfa, from a FSM
 	nfa.fromFSM(fsm, this._map); //built so that NFA's don't depend on FSM's per sé.
 	//return the NFA
-	console.log(JSON.stringify(fsm));
 	return nfa;
 }
 
