@@ -11,11 +11,11 @@ ThompsonConstruction.prototype.toNFA = function(regex){
 											}, 0, 'Initial'
 										) 
 
-	machines = this.buildMachineStack(regex);  	
+	machines = this.buildMachineStack(regex);
 	machines = this.kleeneUp(machines);
   	machines = this.catify(machines);
-  	//console.log(machines);
   	machines = this.handleAlternation(machines);
+  	
 
   	for(var i = 0; i < machines.length; i++){
   		curMachine = machines[i];
@@ -34,7 +34,7 @@ ThompsonConstruction.prototype.toNFA = function(regex){
 
   	orig.deleteEdge(0, 0, 0); // (0, PENDING, 0);
 
- 	return new FiniteStateMachine(orig.acceptStates, orig.graph, 0, 'Final');
+ 	return new FiniteStateMachine(orig.acceptStates, orig.graph, 0, 'Final', orig.negatedPairs);
 }
 
 ThompsonConstruction.prototype.buildMachineStack = function(regex){
@@ -51,8 +51,6 @@ ThompsonConstruction.prototype.buildMachineStack = function(regex){
     	regexPart = regex[i];
     	nextChar = regexPart.symbol;
 
-
-    	//TODO: BESLISSING GEMAAKT OM NEGATIE NIET TE NESTEN
     	switch(nextChar){
     		case '*': machines.push([KLEENE_MACHINE(), 	[1,2]]); 		break;
     		case '+': machines.push([PLUS_MACHINE(), 	[1,2]]); 		break;
@@ -73,7 +71,10 @@ ThompsonConstruction.prototype.buildMachineStack = function(regex){
 					  }
 					  skip = subExpression.length + 1;
 					  subGraph = this.toNFA(subExpression);
-					  if(negated) subGraph.negatedPairs.push([subGraph.origin,_.keys(subGraph.acceptStates)]);
+					  if(negated) {
+					  	subGraph.negatedPairs.push([subGraph.origin,_.keys(subGraph.acceptStates)]);
+					  	negated = false;
+					  }
 					  machines.push([subGraph, null]);
 					  break;
 			case '¬': negated = true;
@@ -101,14 +102,14 @@ ThompsonConstruction.prototype.kleeneUp = function(machines){
 			newMachines.push([curMachine[0], null]);
 		}
 		else{
+
 			if(curMachine[1].length === 2){ //precedence of * and +
 				from = curMachine[1].shift();
 				to = curMachine[1].shift();
 				replaced = curMachine[0].replaceEdge(from, 0, to, newMachines.pop()[0], true); //PENDING
 				newMachines.push([replaced, curMachine[1]]);
 			}
-			else{ // dealing with |
-				//console.log('ALTERNATION IN KLEENEUP');
+			else{ 
 				newMachines.push([curMachine[0],curMachine[1]])
 			}
 		}
@@ -117,26 +118,24 @@ ThompsonConstruction.prototype.kleeneUp = function(machines){
 }
 
 ThompsonConstruction.prototype.catify = function(machines){ 
+	//console.log(JSON.stringify(machines));
 	var newMachines = [];
 	var curMachine, fsm, offset, acc, newNegatedPairs, curPair, newLeft, newRight;
 	for(var i = 0; i < machines.length; i++){
 		curMachine = machines[i];
+		//console.log(JSON.stringify(curMachine[0]));
 	    if(i === 0){
 	    	newMachines.push([curMachine[0], null]);
 	    }
 	    else if(curMachine[1] == null && machines[i-1][1] == null){
 	    	fsm = newMachines.pop()[0];
 	    	offset = fsm.getNodeCount() - 1;
-	    	acc = Utilities.keyAt(fsm.acceptStates, 0) || 0;	//Attachment point
+	    	acc = parseInt(Utilities.keyAt(fsm.acceptStates, 0)) || 0;	//Attachment point
 	    	//TEST NEGATION
-	    	/*for(var j = 0; j < curMachine[0].negatedPairs.length; j++){
-	    		curPair = curMachine[0].negatedPairs[j];
-	    		newRight = curPair[1].map(function(x){return parseInt(x) + offset;});
-	    		newLeft = curPair[0] + offset;
-	    		fsm.negatedPairs.push([newLeft, newRight]);
-	    	}*/
-	    	attachNegatedPairs(fsm, curMachine[0], offset);
-	    	fsm.attachGraph(acc, curMachine[0]);
+	    	
+	    	fsm.attachNegatedPairs(curMachine[0], offset);
+	    	fsm.attachGraph(acc, curMachine[0], false);
+
 	    	for(var prop in fsm.acceptStates) {
 		  	   	if(curMachine[0].acceptStates[parseInt(prop) - offset] === undefined){
 		  	   		delete fsm.acceptStates[prop]; //remove the property
@@ -170,8 +169,6 @@ ThompsonConstruction.prototype.absorbLeftAlternation = function(machines){
 			to = curMachine[1].shift();
 			//TEST NEGATION
 			poppedMachine = newMachines.pop()[0];
-			//console.log(JSON.stringify(poppedMachine));
-			//console.log(JSON.stringify(curMachine[0]));
 			replaced = curMachine[0].replaceEdge(from, 0, to, poppedMachine); //PENDING
 			newMachines.push([replaced, curMachine[1]]);
 		}
@@ -233,15 +230,5 @@ var stripBraces = function(expression){
 		return stripBraces(expression.slice(1,-1));
 	}
 	return expression;
-}
-
-var attachNegatedPairs = function(fsm, machine, offset){
-	var curPair, newLeft, newRight;
-	for(var j = 0; j < machine.negatedPairs.length; j++){
-	    		curPair = machine.negatedPairs[j];
-	    		newRight = curPair[1].map(function(x){return parseInt(x) + offset;});
-	    		newLeft = curPair[0] + offset;
-	    		fsm.negatedPairs.push([newLeft, newRight]);
-	}
 }
 

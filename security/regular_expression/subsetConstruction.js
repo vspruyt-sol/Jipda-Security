@@ -6,7 +6,7 @@ SubsetConstruction.prototype.toDFA = function(nfa){
 	var newGraph = {};
 	var newAcceptStates = {};
 	var newLabels = {};
-	var states = [nfa.closureOf(nfa.origin)];
+	var states = [nfa.closureOf(nfa.origin)]; //overal waar je met lambda aankan
 	var edgeLabels = nfa.getEdgeLabels();
 	var state, label, closuresThroughLabel, node, closure, tmp;
 
@@ -35,16 +35,17 @@ SubsetConstruction.prototype.toDFA = function(nfa){
 		if(_.keys(newGraph[state]).length === 0) delete newGraph[state];
 	}
 
-	return this.cleanUpStates(new FiniteStateMachine(newAcceptStates,newGraph, nfa.origin, 'DFA'));
+	return this.cleanUpStates(new FiniteStateMachine(newAcceptStates,newGraph, nfa.origin, 'DFA', nfa.negatedPairs));
 }
 
 SubsetConstruction.prototype.cleanUpStates = function(nfa){
-	//TODO
 	var newGraph = {};
 	var newAcceptStates = {};
 	var tmp = {};
 	var count = -1;
 	var subGraph, toNode, newKey, label;
+
+	//TODO: Map every negated pair to new labels
 
 	//Number closures
 	for(var key in nfa.graph){
@@ -55,8 +56,6 @@ SubsetConstruction.prototype.cleanUpStates = function(nfa){
 			if(tmp[toNode] === undefined) tmp[toNode] = ++count;			
 		}
 	}
-
-
 
 	//Replace closures with their new node numbers
 	for(var key in nfa.graph){

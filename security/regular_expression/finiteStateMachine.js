@@ -1,9 +1,9 @@
-function FiniteStateMachine(acceptStates, graph, origin, type){
+function FiniteStateMachine(acceptStates, graph, origin, type, negatedPairs){
 	this.acceptStates = acceptStates || {};
 	this.graph = graph || {}; //TODO: Should I make a separate 'class' for node->edge->node connections?
 	this.origin = origin || 0;
 	this.tpe = type || ''; //debugging purposes
-	this.negatedPairs = []; //experimental
+	this.negatedPairs = negatedPairs || []; //experimental
 }
 
 FiniteStateMachine.prototype.getNodeCount = function(){
@@ -66,15 +66,24 @@ FiniteStateMachine.prototype.acceptStateOfClosure = function(closure){
 	return false;
 }
 
-FiniteStateMachine.prototype.attachGraph = function(attachPoint, fsm, debug){
+FiniteStateMachine.prototype.attachGraph = function(attachPoint, fsm, endPoint){
 	var nodeCount = this.getNodeCount();
-	
 	//clone, since it will be 'reused'
 	var fsmC = clone(fsm);
-
 	this.incrementNodeLabels.apply(fsmC, [nodeCount - 1]);
-	//fsmC.incrementNodeLabels = this.incrementNodeLabels;
-	//fsmC.incrementNodeLabels(nodeCount - 1);
+	//console.log(JSON.stringify(fsmC));
+	//TEST NEGATION
+	fsmC.negatedPairs = fsmC.negatedPairs.map(function(x){
+		//if the pair is the pair for a non-inner negation
+		var n1, n2;
+		n1 = x[0];
+		n2 = x[1];
+		if(x[0] === fsmC.origin) n1 = attachPoint;
+		if(endPoint && contains(_.keys(fsmC.acceptStates).map(function(x){return parseInt(x);}), parseInt(x[1][0]))) n2 = [endPoint]; //TODO
+		return [n1,n2];
+	});
+
+	this.attachNegatedPairs(fsmC, 0);
 
 	var rootEdges = fsmC.graph[fsmC.origin];
 	delete fsmC.graph[fsmC.origin];
@@ -136,7 +145,7 @@ FiniteStateMachine.prototype.addEdge = function(from, label, to){
 	}
 }
 
-FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm, debug){
+FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm){
 	if(!fsm.acceptStates || fsm.acceptStates === {}){
 		throw 'The fsm to be inserted doesn\'t have any accept states.';
 	}
@@ -146,10 +155,7 @@ FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm, debug)
     }
 
     var offset = this.getNodeCount() - 1;
-   	console.log(JSON.stringify(fsm));
-   	console.log(JSON.stringify(this));
-    this.attachGraph(from, fsm, debug);
-    console.log(JSON.stringify(this));
+    this.attachGraph(from, fsm, to);
 
     //for each of the edges pointing at the accept state of the graph
     //redirect them to point at dest
@@ -160,16 +166,13 @@ FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm, debug)
     }
 
     this.deleteEdge(from, label, to); 
-    this.renumberNodes();
+    this.renumberNodes();    
 
     return this;
 }
 
 FiniteStateMachine.prototype.renumberNodes = function(){
-	//TODO BUGGED
-
 	var nodes = this.getNodeNames();
-	//console.log(JSON.stringify(nodes));
 	var n;
 	for(var i = 0; i < nodes.length; i++){
 		n = nodes[i];
@@ -212,6 +215,13 @@ FiniteStateMachine.prototype.incrementNodeLabels = function(amount){
     this.graph = newGraph;
     this.acceptStates = newAcceptStates; 
     this.origin += amount;
+    this.negatedPairs = this.negatedPairs.map(function(x){
+    	return [x[0] + amount,
+    			x[1].map(function(y){
+    				return parseInt(y) + amount;
+    			})]
+    });
+
 }
 
 FiniteStateMachine.prototype.retargetEdges = function(oldTarget, newTarget){
@@ -223,7 +233,34 @@ FiniteStateMachine.prototype.retargetEdges = function(oldTarget, newTarget){
 			if(_.include(to, oldTarget)){ //als edge naar oude target, vervang deze door nieuwe
 				this.addEdge(from, label, newTarget);
 				this.deleteEdge(from, label, oldTarget);
+				this.retargetNegatedPair(from, oldTarget, newTarget);
 			}
+		}
+	}
+}
+
+FiniteStateMachine.prototype.attachNegatedPairs = function(machine, offset){
+	var curPair, newLeft, newRight;
+	for(var j = 0; j < machine.negatedPairs.length; j++){
+
+		curPair = machine.negatedPairs[j];
+		newRight = curPair[1].map(function(x){return parseInt(x) + offset;});
+		newLeft = parseInt(curPair[0]) + offset;
+		if(!contains(this.negatedPairs, [newLeft, newRight])){
+			this.negatedPairs.push([newLeft, newRight]);
+		}
+	}
+}
+
+FiniteStateMachine.prototype.retargetNegatedPair = function(from, oldTo, newTo){
+	var curPair, replaced;
+	for(var i = 0; i < this.negatedPairs.length; i++){
+		curPair = this.negatedPairs[i];
+		if(curPair[0] === from){
+			replaced = curPair[1].map(function(x){
+				return (parseInt(x) === oldTo) ? newTo : oldTo;
+			});
+			curPair[1] = replaced;
 		}
 	}
 }

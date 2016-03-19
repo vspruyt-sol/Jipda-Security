@@ -329,6 +329,7 @@ RegularPathExpression.prototype.toNFA = function(){
 	//One way to make a nfa, from a FSM
 	nfa.fromFSM(fsm, this._map); //built so that NFA's don't depend on FSM's per sé.
 	//return the NFA
+	console.log(JSON.stringify(fsm));
 	return nfa;
 }
 
