@@ -1,7 +1,7 @@
 - Negatie van alles: subgraph maken van alles dat genegeerd is, daarna matchen en kijken
-- Haakjes tweede deel van negatedPairs weghalen
 - Subgraph in universal
 - More examples
+- Haakjes tweede deel van negatedPairs weghalen
 
 Map negatie : {negationId: theta}
 Als laatste node bereikt van negationId en er is een match (theta), stop dan de matching, want geen resultaat.

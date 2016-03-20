@@ -15,13 +15,13 @@ Automaton.prototype.fromFSM = function(fsm, table){
 	}
 
 	//variables
-	var subgraph, toNodes, label, map;
+	var subgraph, toNodes, label, negationMap, from, to, curNeg, marker;
 
 	//Negated pairs
 	this.negatedPairs = fsm.negatedPairs;
 
 	//Test negation pairs
-	map = this.buildNegationPaths(fsm);
+	negationMap = this.buildNegationPaths(fsm);
 	//TODO: go over triples and add negation marker
 
 	//collect accept states
@@ -48,14 +48,33 @@ Automaton.prototype.fromFSM = function(fsm, table){
 			}
 		}
 	}
+
+	//add negation markers to triples
+	for(var j = 0; j < this.triples.length; j++){
+		//See in which negated paths the triple is
+		for(var idx in negationMap){ //negationMap[idx] is [[path1],[path2],[path3]]
+			for(var k = 0; k < negationMap[idx].length; k++){
+				curNeg = negationMap[idx][k];
+				from = curNeg[0];
+				to = curNeg[curNeg.length - 1];
+				marker = new NegationMarker(from, 
+							to, 
+							parseInt(idx),
+							this.triples[j].target._id === to);
+				if(this.inNegationPath(this.triples[j], curNeg) && !contains(this.triples[j].edge.negationMarkers, marker)){
+					this.triples[j].edge.negationMarkers.push(marker);
+				}
+			}
+		}
+	}
 }
 
 Automaton.prototype.buildNegationPaths = function(fsm){
-	var from, to, map = {};
+	var from, to, map = {}, cnt = 0;
 	for(var i = 0; i < this.negatedPairs.length; i++){
 		from = this.negatedPairs[i][0];
 		to = fsm.negatedPairs[i][1][0];
-		map[[from, to]] = this.findPathsBetween(from, to, fsm);
+		map[cnt++] = this.findPathsBetween(from, to, fsm);
 	}
 	return map;
 }
@@ -92,26 +111,16 @@ Automaton.prototype.findPathsBetween = function(from, to, fsm){
 	}	
 	return result;
 }
-/*
-def BFS(graph,start,end,q):
-	
-	temp_path = [start]
-	
-	q.enqueue(temp_path)
-	
-	while q.IsEmpty() == False:
-		tmp_path = q.dequeue()
-		last_node = tmp_path[len(tmp_path)-1]
-		print tmp_path
-		if last_node == end:
-			print "VALID_PATH : ",tmp_path
-		for link_node in graph[last_node]:
-			if link_node not in tmp_path:
-				new_path = []
-				new_path = tmp_path + [link_node]
-				q.enqueue(new_path)
-*/
 
+Automaton.prototype.inNegationPath = function(triple, negatedPath){
+	var cur, next;
+	for(var i = 0; i < negatedPath.length - 1; i++){
+		cur = negatedPath[i];
+		next= negatedPath[i+1];
+		if(triple.from._id === cur && triple.target._id === next) return true;
+	}
+	return false;
+}
 
 
 
