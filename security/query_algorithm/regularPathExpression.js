@@ -18,10 +18,10 @@ function RegularPathExpression(seed){
 RegularPathExpression.prototype.udAssign = function(obj){ //left, right, leftName, rightName
 	//todo fill in params
 	var s = {};
-	var objLeft = obj.left || this.getTmpVar('objLeft');
-	var objRight = obj.right || this.getTmpVar('objRight');
-	var objLeftName = obj.leftName || this.getTmpVar('objLeftName');
-	var objRightName = obj.rightName || this.getTmpVar('objRightName');
+	var objLeft = this.getTmpIfUndefined(obj.left); // || this.getTmpVar('objLeft');
+	var objRight = this.getTmpIfUndefined(obj.right); // || this.getTmpVar('objRight');
+	var objLeftName = this.getTmpIfUndefined(obj.leftName); // || this.getTmpVar('objLeftName');
+	var objRightName = this.getTmpIfUndefined(obj.rightName); // || this.getTmpVar('objRightName');
 
 	//make vars optional
 	this.setupStateChain(s, ['node','expression','left'], objLeft);
@@ -31,6 +31,42 @@ RegularPathExpression.prototype.udAssign = function(obj){ //left, right, leftNam
 	this.setupProperty(s, objRightName, objRight + '.name');
 
 	return this.state(s);
+}
+
+RegularPathExpression.prototype.udVarDecl = function(obj){ //left, right, leftName, rightName, decls
+	//todo fill in params
+	var s = {};
+	var objLeft = obj.left || this.getTmpVar('objLeft');
+	var objRight = obj.right || this.getTmpVar('objRight');
+	var objLeftName = obj.leftName || this.getTmpVar('objLeftName');
+	var objRightName = obj.rightName || this.getTmpVar('objRightName');
+	var objDecls = obj.decls || this.getTmpVar('objDecls');
+	var objFirstDecl = this.getTmpVar('objFirstDecl');
+
+	this.setupStateChain(s, ['node','declarations'], objDecls);
+
+	this.setupProperty(s, objFirstDecl, prop('at', objDecls, 0));
+	this.setupProperty(s, objLeft, objFirstDecl + '.id');
+	this.setupProperty(s, objRight, objFirstDecl + '.init');
+	this.setupProperty(s, objLeftName, objLeft + '.name');
+	this.setupProperty(s, objRightName, objRight + '.name');
+
+	return this.state(s);
+}
+
+RegularPathExpression.prototype.udAssignOrVarDecl = function(obj){ //left, right, leftName, rightName
+	obj = obj || {};
+	var objLeft = obj.left || this.getTmpVar('objLeft');
+	var objRight = obj.right || this.getTmpVar('objRight');
+	var objLeftName = obj.leftName || this.getTmpVar('objLeftName');
+	var objRightName = obj.rightName || this.getTmpVar('objRightName');
+
+
+	return this 	.lBrace()
+					.udVarDecl({left: objLeft, right: objRight, leftName: objLeftName, rightName: objRightName})
+					.or()
+					.udAssign({left: objLeft, right: objRight, leftName: objLeftName, rightName: objRightName})
+					.rBrace();
 }
 
 RegularPathExpression.prototype.udFCall = function(obj){ //name, callee, arguments, argName (eerste arg);
@@ -52,7 +88,7 @@ RegularPathExpression.prototype.udFCall = function(obj){ //name, callee, argumen
 	//get first argument
 	try{
 		this.setupProperty(s1, firstArg, prop('at', objArguments, 0)); //tmp eerste arg
-		this.setupProperty(s1, firstArgName, firstArg + '.name'); //tmp als niet geweten moet worden, anders vast
+		this.setupProperty(s1, firstArgName, firstArg + '.name');
 		this.setupProperty(s1, objName, objCallee + '.name');
 	}
 	catch(e){ //optional, just to catch errors
@@ -88,6 +124,7 @@ RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 	var alias 	= this.getRecVar('leakedAlias'); //use temp var if you don't want to know the aliases
 	var left = this.getTmpVar('left');
 	var right = this.getTmpVar('right');
+	var env = this.getTmpVar('env');
 	//new obj for recursive function
 	var newObj 	= {};
 	newObj.leakedValue = alias;
@@ -97,6 +134,7 @@ RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 
 	this.setupProperty(s, alias, left + '.name'); 
 	this.setupProperty(s, leaked, right + '.name');
+	this.setupProperty(s, env, right + '.name');
 
 
 	return this 	.lBrace()
@@ -314,6 +352,13 @@ RegularPathExpression.prototype.getRecVar = function(name){
 	return '?r:' + name + this.uid++;
 }
 
+RegularPathExpression.prototype.getTmpIfUndefined = function(name){
+	if(!name){
+		return this.getTmpVar('');
+	}
+	return name;
+}
+
 
 /**
  * -------------
@@ -403,6 +448,8 @@ var cond = function(f){
 	return [found, args];
 }
 
+
+//TODO: getEnvAddr, getStoreVal
 var queryFunctions = {
 	conditions : { //filters
 				equals 		: _.isEqual,
@@ -414,5 +461,12 @@ var queryFunctions = {
 				identity 		: function(a){ return a; },
 				length			: function(a){ return a.length; },
 				at 				: function(a,idx){ return a[idx]; },
+				getEnvAddr		: function(env, varName){
+										if (env._global && varName) return undefined;
+										return env.lookup(varName);;
+								  },
+				getStoreVal		: function(store, envAddr){
+										return store.lookupAval(envAddr);
+								  },
 				}
 }

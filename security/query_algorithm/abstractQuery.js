@@ -1,4 +1,7 @@
 var subgraphCache = {};
+//maps negationmarker ID's to true/false, meaning resp. 
+//that the pattern inside the negation is still being matched/has stopped matching.
+var negationMap = {};
 
 /*
  * G = States van JIPDA graph
@@ -19,6 +22,10 @@ ExistentialQuery.prototype.runNaiveWithNegation = function(){
 	//used variables
 	var tripleG, tripleP, theta, theta2,
 		tripleW, tripleTemp;
+
+	//Reset stuff
+	subgraphCache = {};
+	negationMap = {};
 	//start algorithm
 	var R = [];
 	var W = [];
@@ -278,15 +285,46 @@ AbstractQuery.match = function(el, tl, curTheta){
 	//substitutions of the form {x → b}, where b is any symbol other than a.
 	var substitutions = [];
 	var _map = [];
+	var lastMatch = false;
 	switch(tl.name){
-		case 'state'		: 	_map = this.matchState(el, tl);
+		case 'state'		: 	_map = this.matchState(el, tl, curTheta);
 								break;
 		case '_'			: 	_map = []; 
-								break;					
-		case 'dummy'		: 	_map = [];
 								break;
 		default:
 			throw "Can not handle 'tl.name': " + tl.name + ". Source: AbstractQuery.match(el, tl)"
+	}
+
+	//WE ARE IN THE MIDDLE OF A NEGATION! 
+	//ATTENTION: NO NESTED NEGATION ALLOWED
+	//ALL VARIABLES IN A NEGATION HAVE TO BE BOUND ALREADY
+	if(tl.negationMarkers.length > 0){
+		//Do this for all negationmarkers
+		for(var i = 0; i < tl.negationMarkers.length; i++){
+			//create it if it doesn't exist (default value)
+			if(negationMap[tl.negationMarkers[i].id] === undefined) negationMap[tl.negationMarkers[i].id] = true;
+
+			if(tl.negationMarkers[i].last){
+				if(!_map) negationMap[tl.negationMarkers[i].id] = false;
+				lastMatch = lastMatch || negationMap[tl.negationMarkers[i].id];
+				return negationMap[tl.negationMarkers[i].id] ? [] : [[]];
+			}
+			else{
+				if(!_map){
+					negationMap[tl.negationMarkers[i].id] = false;
+				}
+				
+			}
+
+		}
+		return lastMatch ? [] : [[]];
+		// ALTIJD PAS HET ALGO STOPPEN/DOORGAAN ALS DE VOLLEDIGE NEGATIE KLAAR IS
+		// Eerste geval: we zijn aan het einde van de negatie
+		// dus, als last = true && match: return [], anders return [[]];
+		// Tweede geval: er is een match gevonden, maar nog niet aan einde
+		// dus, pas de map aan naar mapValue = mapValue && true en return [[]]; (om het algo niet te stoppen)
+		// Derde geval: er is geen match gevonden, maar nog niet aan einde
+		// dus, pas de map aan naar mapValue = false && return [[]]; (om het algo niet te stoppen)
 	}
 
 	if(_map){
@@ -333,7 +371,7 @@ AbstractQuery.resolveVariable = function(varName, table){
 AbstractQuery.verifyConditions = function(table, conds){
 
 	//als er iets foutgelopen is is de tabel leeg:
-	if(table.length === 0) return [];
+	if(!table || table.length === 0) return [];
 
 	var func, args, resolvedArg, resolvedArgs = [];
 	for(var j = 0; j < conds.length; j++){
@@ -369,7 +407,7 @@ AbstractQuery.addExtraProperties = function(table, props){
 			for(var i = 0; i < args.length; i++){
 				if(this.isResolvableVariable(args[i])){
 					resolvedArg = this.resolveVariable(args[i], table);
-					if(!resolvedArg) throw 'could not resolve argument ' + args[i];
+					if(resolvedArg.length === 0) return false; //couldn't find a resolution
 				}
 				else{
 					resolvedArg = args[i];
@@ -377,6 +415,7 @@ AbstractQuery.addExtraProperties = function(table, props){
 				resolvedArgs.push(resolvedArg);
 			}
 			res = func.apply(this, resolvedArgs);
+			if(!res) return false;
 			var obj = {};
 			obj[key] = res;
 			table.push(obj);
@@ -415,7 +454,7 @@ AbstractQuery.addExtraProperties = function(table, props){
 	return table;
 }
 
-AbstractQuery.matchState = function(el, tl){
+AbstractQuery.matchState = function(el, tl, curTheta){
 	var tlInfo = tl.state;
 	var subst = [];
 	var matchInfo, reified;
@@ -425,6 +464,9 @@ AbstractQuery.matchState = function(el, tl){
 			subst = this.verifyConditions(subst, tlInfo[key]);
 		}
 		else if(key === 'properties') {
+			console.log(subst);
+			console.log(curTheta);
+			console.log('----');
 			subst = this.addExtraProperties(subst, tlInfo[key]);
 		}
 		else{
@@ -465,7 +507,7 @@ AbstractQuery.matchRecursive = function(key, value, statePart, subs){
 	else if(value.constructor.name === 'String'){ //assume it is a string
 		if(value.charAt(0) === '?'){ //it's a variable, store it
 			var obj = {};
-			obj[value] =  statePart;
+			obj[value] =  JipdaInfo.getInfo(statePart);
 			subs.push(obj);
 		}
 		else{
@@ -575,8 +617,6 @@ AbstractQuery.expandSubgraph = function(triple, currPattern){
 									else{
 										x.target._id += nextIndex;
 									}
-
-									//TODO: Set initial and final to false?
 									return x;
 								});
 

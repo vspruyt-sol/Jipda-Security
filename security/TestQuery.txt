@@ -57,6 +57,16 @@ G.skipZeroOrMore()
 .udAssign({leftName:'?left', rightName:'?right'})
 .skipZeroOrMore()
 .udRecSink({leakedValue: '?left'})
+
+-----------------------------------------
+Assign a var and then pass it as an argument
+
+G
+.skipZeroOrMore()
+.udAssignOrVarDecl({leftName: '?l'})
+.skipZeroOrMore()
+.udFCall({argName: '?l'})
+
 -----------------------------------------
 Available Expression
 

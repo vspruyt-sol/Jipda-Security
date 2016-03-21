@@ -43,7 +43,7 @@ SubsetConstruction.prototype.cleanUpStates = function(nfa){
 	var newAcceptStates = {};
 	var tmp = {};
 	var count = -1;
-	var subGraph, toNode, newKey, label, pairL, pairR, tmpVal, tmpVal2, tmpL, tmpR;
+	var subGraph, toNode, newKey, label, pairL, pairR, tmpVal, tmpVal2, tmpL, tmpR, newOrigin = 0;
 	var newNegatedPairs = [];
 
 	//Number closures
@@ -92,8 +92,15 @@ SubsetConstruction.prototype.cleanUpStates = function(nfa){
 		newAcceptStates[tmp[key]] = label;
 	}
 
+	//origin
+	for(var key in tmp){
+		if(contains(nodeRepToArray(key), nfa.origin)) {
+			newOrigin = tmp[key];
+		}
+	}
+
 	//Return the cleaned up fsm
-	return new FiniteStateMachine(newAcceptStates, newGraph, 0, nfa.tpe, newNegatedPairs);
+	return new FiniteStateMachine(newAcceptStates, newGraph, newOrigin, nfa.tpe, newNegatedPairs);
 }
 
 var nodeRepToArray = function(rep){

@@ -12,10 +12,9 @@ ThompsonConstruction.prototype.toNFA = function(regex){
 										) 
 
 	machines = this.buildMachineStack(regex);
-	machines = this.kleeneUp(machines);
+  	machines = this.kleeneUp(machines);
   	machines = this.catify(machines);
   	machines = this.handleAlternation(machines);
-  	
 
   	for(var i = 0; i < machines.length; i++){
   		curMachine = machines[i];
@@ -33,6 +32,8 @@ ThompsonConstruction.prototype.toNFA = function(regex){
   	}
 
   	orig.deleteEdge(0, 0, 0); // (0, PENDING, 0);
+
+	//console.log(JSON.stringify(new FiniteStateMachine(orig.acceptStates, orig.graph, 0, 'Final', orig.negatedPairs)));
 
  	return new FiniteStateMachine(orig.acceptStates, orig.graph, 0, 'Final', orig.negatedPairs);
 }

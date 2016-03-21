@@ -43,7 +43,7 @@ JipdaInfo.assignmentExpression = function(exp){
 		rightName	: r.name,
 		right 		: r,
 		type 		: 'AssignmentExpression',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -51,7 +51,7 @@ JipdaInfo.identifier = function(exp){
 	return {
 		name 	: exp.name,
 		type 	: 'Identifier',
-		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location: exp.loc,
 	}
 }
 
@@ -61,7 +61,7 @@ JipdaInfo.literal = function(exp){
 		raw		: exp.raw,
 		value	: exp.value,
 		type 	: 'Literal',
-		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location: exp.loc,
 	}
 }
 
@@ -70,7 +70,7 @@ JipdaInfo.objectExpression = function(exp){
 	var arr = [];
 	//calculate name if nested
 	for(var i = 0; i < exp.properties.length; i++){
-		arr.push(properties[i]);
+		arr.push(exp.properties[i]);
 		tmp +=  JipdaInfo.getInfo(exp.properties[i]).name + ', ';
 	}
 
@@ -82,7 +82,7 @@ JipdaInfo.objectExpression = function(exp){
 		name		: tmp,
 		properties 	: arr,
 		type 		: 'ObjectExpression',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -100,7 +100,7 @@ JipdaInfo.arrayExpression = function(exp){
 	return {
 		name	: tmp,
 		type 	: 'ArrayExpression',
-		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location: exp.loc,
 	}
 }
 
@@ -115,7 +115,7 @@ JipdaInfo.property = function(exp){
 		valueName 	: v.name,
 		kind		: exp.kind,
 		type 		: 'Property',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -136,7 +136,7 @@ JipdaInfo.memberExpression = function(exp){
 		properties 	: prop,
 		name 		: o.name + '['+ p.name + ']',
 		type		: 'MemberExpression',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -156,7 +156,7 @@ JipdaInfo.variableDeclaration = function(exp){
 		name 		: tmp,
 		declarations: decls,
 		type 		: 'VariableDeclaration',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -173,7 +173,7 @@ JipdaInfo.variableDeclarator = function(exp){
 		operator 	: '=',
 		isFunction 	: (exp.init && exp.init.type === 'FunctionExpression'),
 		type		: 'VariableDeclarator',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -195,11 +195,11 @@ JipdaInfo.functionExpression = function(exp){
 		//defaults en body!
 		name 		: i.name,
 		id 			: i,
-		parameters 	: par,
+		params	 	: par,
 		defaults 	: def,
 		body 		: body,
 		type		: 'FunctionExpression',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -222,7 +222,7 @@ JipdaInfo.callExpression = function(exp){
 		arguments 	: args,
 		callee 		: c,
 		type		: 'CallExpression',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -233,7 +233,7 @@ JipdaInfo.returnStatement = function(exp){
 		name 		: arg.name,
 		argument 	: arg,
 		type 		: 'ReturnStatement',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -247,7 +247,7 @@ JipdaInfo.binaryExpression = function(exp){
 		right 		: r,
 		operator 	: exp.operator,
 		type		: 'BinaryExpression',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -257,7 +257,7 @@ JipdaInfo.expressionStatement = function(exp){
 		name 		: ex.name,
 		expression	: ex,
 		type		: 'ExpressionStatement',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -272,7 +272,7 @@ JipdaInfo.blockStatement = function(exp){
 		name 		: 'BlockStatement',
 		body		: elems,
 		type 		: 'BlockStatement',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -283,7 +283,7 @@ JipdaInfo.breakStatement = function(exp){
 		name 		: lbl,
 		label		: lbl,
 		type		: 'BreakStatement',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -296,7 +296,7 @@ JipdaInfo.catchClause = function(exp){
 		body	: body,
 		param 	: par,
 		type	: 'CatchClause',
-		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location: exp.loc,
 	}
 }
 
@@ -311,7 +311,7 @@ JipdaInfo.conditionalExpression = function(exp){
 		consequent 	: cons,
 		alternate 	: alt, 
 		type		: 'ConditionalExpression',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -324,7 +324,7 @@ JipdaInfo.doWhileStatement = function(exp){
 		test	: test,
 		body 	: body,
 		type	: 'DoWhileStatement',
-		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location: exp.loc,
 	}
 }
 
@@ -332,7 +332,7 @@ JipdaInfo.emptyStatement = function(exp){
 	return {
 		name 	: 'Empty Statement',
 		type	: 'EmptyStatement',
-		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location: exp.loc,
 	}
 }
 
@@ -349,7 +349,7 @@ JipdaInfo.forStatement = function(exp){
 		update 	: update,
 		body 	: body,
 		type	: 'ForStatement',
-		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location: exp.loc,
 	}
 }
 
@@ -364,7 +364,7 @@ JipdaInfo.forInStatement = function(exp){
 		right 	: right,
 		body 	: body,
 		type	: 'ForInStatement',
-		location: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location: exp.loc,
 	}
 }
 
@@ -386,11 +386,11 @@ JipdaInfo.functionDeclaration = function(exp){
 		//defaults en body!
 		name 		: i.name,
 		id 			: i,
-		parameters 	: par,
+		params 		: par,
 		defaults 	: def,
 		body 		: body,
 		type		: 'FunctionDeclaration',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -403,7 +403,7 @@ JipdaInfo.labeledStatement = function(exp){
 		label		: lbl,
 		body		: body,
 		type		: 'LabeledStatement',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -421,7 +421,7 @@ JipdaInfo.newExpression = function(exp){
 		arguments 	: args,
 		callee 		: c,
 		type		: 'NewExpression',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -434,7 +434,7 @@ JipdaInfo.postfixExpression = function(exp){
 		argument 	: arg,
 		operator 	: op,
 		type		: 'PostfixExpression',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -445,7 +445,7 @@ JipdaInfo.program = function(exp){
 		name 		: body.name,
 		body 		: body,
 		type 		: 'Program',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -461,7 +461,7 @@ JipdaInfo.sequenceExpression = function(exp){
 		name 		: 'Sequence Expression',
 		expressions : exps,
 		type		: 'SequenceExpression',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -474,7 +474,7 @@ JipdaInfo.switchCase = function(exp){
 		test		: test,
 		consequent 	: cons,
 		type		: 'SwitchCase',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -492,7 +492,7 @@ JipdaInfo.switchStatement = function(exp){
 		discriminant: disc,
 		cases 		: cases,
 		type		: 'SwitchStatement',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -502,7 +502,7 @@ JipdaInfo.thisExpression = function(exp){
 	return {
 		name 		: 'this',
 		type		: 'ThisExpression',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -513,7 +513,7 @@ JipdaInfo.throwStatement = function(exp){
 		name 	 	: 'throw ' + arg.name,
 		argument 	: arg,
 		type		: 'ThrowStatement',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -540,7 +540,7 @@ JipdaInfo.tryStatement = function(exp){
 		guardedHandlers 	: ghs,
 		handlers 			: hs,
 		type				: 'TryStatement',
-		location 			: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 			: exp.loc,
 	}
 }
 
@@ -553,7 +553,7 @@ JipdaInfo.unaryExpression = function(exp){
 		argument 	: arg,
 		operator 	: op,
 		type		: 'UnaryExpression',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -566,7 +566,7 @@ JipdaInfo.whileStatement = function(exp){
 		test 		: test,
 		body 		: body,
 		type		: 'WhileStatement',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
@@ -579,7 +579,7 @@ JipdaInfo.withStatement = function(exp){
 		object 		: obj,
 		body 		: body,
 		type		: 'WithStatement',
-		location 	: exp.loc.start.line + ' - ' + exp.loc.end.line,
+		//location 	: exp.loc,
 	}
 }
 
