@@ -202,6 +202,7 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 			}
 		}
 	}
+	console.log(JSON.stringify(W));
 	var T = {};
 	var U = {};
 	while(W.length > 0){
@@ -218,6 +219,11 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 						theta1 = AbstractQuery.match(tripleG.edge,tripleP.edge);
 						for(var k = 0; k < theta1.length; k++){
 							theta2 = AbstractQuery.merge(tripleW.theta, theta1[k]);
+							//console.log(JSON.stringify(tripleW.theta));
+							//console.log(JSON.stringify(theta1[k]));
+							//console.log(JSON.stringify(theta2));
+							//console.log(tripleW.v);
+							//console.log('----');
 							if(theta2){
 								if(matched){
 									throw 'Determinism condition doesn\'t hold for universal query!';
@@ -244,14 +250,20 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 			T[tripleW.v] = contains(this.F, tripleW.s);
 		}
 		if(T[tripleW.v]){
-			var thetaUv = U[tripleW.v] || [];
-			U[tripleW.v] = AbstractQuery.merge(tripleW.theta, thetaUv);
+			//console.log(U[tripleW.v]);
+			if(U[tripleW.v] === false){
+				U[tripleW.v] = false;
+			}
+			else{
+				var thetaUv = U[tripleW.v] || []; //HIER ZIT DE FOUT
+				U[tripleW.v] = AbstractQuery.merge(tripleW.theta, thetaUv);
+			}
+			
 		}
 		else{
 			U[tripleW.v] = undefined;
 		}
 	} //end while
-	//TODO: TRANSFORM RESULTS
 	return this.transformToPairs(U);
 }
 
@@ -464,9 +476,9 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 			subst = this.verifyConditions(subst, tlInfo[key]);
 		}
 		else if(key === 'properties') {
-			console.log(subst);
-			console.log(curTheta);
-			console.log('----');
+			//console.log(subst);
+			//console.log(curTheta);
+			//console.log('----');
 			subst = this.addExtraProperties(subst, tlInfo[key]);
 		}
 		else{

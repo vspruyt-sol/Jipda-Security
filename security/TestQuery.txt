@@ -1,3 +1,33 @@
+UNIVERSAL QUERY
+
+G.skipZeroOrMore()
+.udClosedAllOpenedFiles({name:'?f'})
+
+var open = function(file){
+  file = 1;
+}
+var access = function(file){
+  file = 2;
+}
+var close = function(file){
+  file = 0;
+    var z = 4;
+    var g = 5;
+}
+
+if(1 + 2 > 5){
+    open(file);
+  access(file);
+}
+else{
+    open(file);
+  access(file);
+}
+
+close(file);
+
+-------------------------------------
+
 G.skipZeroOrMore()
 .lBrace()
   .lBrace()

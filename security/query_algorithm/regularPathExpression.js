@@ -111,6 +111,24 @@ RegularPathExpression.prototype.udOpenClosedFile = function(obj){
 					.udFCall({name: 'access', argName: fileName});
 }
 
+RegularPathExpression.prototype.udClosedAllOpenedFiles = function(obj){
+	obj = obj || {};
+	var fileName = obj.name || this.getTmpVar('objName');
+
+	//(open(f) _* (access(f) _*)* close(f))*
+	return 	this	.lBrace()
+						.udFCall({name: 'open', argName: fileName})
+						.skipZeroOrMore()
+						.lBrace()
+							.udFCall({name: 'access', argName: fileName})
+							.skipZeroOrMore()
+						.rBrace()
+						.star()
+						.udFCall({name: 'close', argName: fileName})
+					.rBrace()
+					//.star()
+}
+
 RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 	// sink(x);
 	// | tmp = x
