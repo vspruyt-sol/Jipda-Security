@@ -26,7 +26,7 @@ SecurityAnalysis.prototype.initialize = function(){
 			//console.log(rpe);
 			this.nfa = rpe.toNFA();
 			this.dfa = rpe.toDFA();
-			console.log(this.dfa);
+			//console.log(this.dfa);
 			output.innerHTML = '';
 	    }
 	    else{
@@ -88,7 +88,7 @@ SecurityAnalysis.prototype.detect = function(){
 		}
 		result = query.runNaiveWithNegation();
 	}
-	console.log(this.processQueryResult(result));
+	this.processQueryResult(result);
 	
 }
 
@@ -118,12 +118,24 @@ SecurityAnalysis.prototype.processQueryResult = function(queryResult){
 SecurityAnalysis.prototype.markQueryResult = function(results, marker){
 	//var ids = _fromStateIds(triples);
 	var ids = results.map(function(x){ return x.v._id; });
-	var info;
+	var info, theta;
 	for(var i = 0; i < ids.length; i++){
 			info = this.states[ids[i]].marker ? this.states[ids[i]].marker.info + Utilities.objToString(results[i].theta) + '<br />' : Utilities.objToString(results[i].theta) + '<br />';
+			//theta = this.states[ids[i]].marker ? this.states[ids[i]].marker.theta.push(results[i].theta) : [results[i].theta];
+			
+			if(this.states[ids[i]].marker){
+				theta = this.states[ids[i]].marker.theta.slice(),
+				theta.push(results[i].theta);
+				//theta = 
+			}
+			else{
+				theta = [results[i].theta];
+			}
+
 			this.states[ids[i]].marker = {
 										'className'	: marker,
-										'info'		: info
+										'info'		: info,
+										'theta'		: theta
 									 };
 	}
 }

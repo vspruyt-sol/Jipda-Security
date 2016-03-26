@@ -480,11 +480,24 @@ var queryFunctions = {
 				length			: function(a){ return a.length; },
 				at 				: function(a,idx){ return a[idx]; },
 				getEnvAddr		: function(env, varName){
-										if (env._global && varName) return undefined;
-										return env.lookup(varName);;
+										try{
+											var addr =  env.lookup(varName);
+											return addr;
+										}
+										catch(e){
+											return undefined;
+										}
+										
 								  },
 				getStoreVal		: function(store, envAddr){
-										return store.lookupAval(envAddr);
+										try{
+											var val = store.lookupAval(envAddr);
+											return val;
+										}
+										catch(e){
+											return undefined;
+										}
+										
 								  },
 				}
 }

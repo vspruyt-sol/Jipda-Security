@@ -6,6 +6,7 @@ function JipdaInfo(){
 }
 
 //here for backwards supportability
+/*
 JipdaInfo.lookup = function(exp, el){
 	//if we lookup something that isn't a node
 	if(!el && exp && !exp.type) return false;
@@ -23,7 +24,7 @@ JipdaInfo.lookup = function(exp, el){
 		nodeInfo : nodeInfo,
 		kontInfo : kontInfo,
 	}
-}
+}*/
 
 JipdaInfo.getInfo = function(exp){
 	//if we lookup something that isn't a node

@@ -56,7 +56,6 @@ ExistentialQuery.prototype.runNaiveWithNegation = function(){
 							if(tripleP.edge.name === 'subGraph'){
 								var newTriples;
 								if(subgraphCache[tripleP]){
-									//console.log('CACHED');
 									newTriples = subgraphCache[tripleP];
 								}
 								else{
@@ -219,11 +218,6 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 						theta1 = AbstractQuery.match(tripleG.edge,tripleP.edge);
 						for(var k = 0; k < theta1.length; k++){
 							theta2 = AbstractQuery.merge(tripleW.theta, theta1[k]);
-							//console.log(JSON.stringify(tripleW.theta));
-							//console.log(JSON.stringify(theta1[k]));
-							//console.log(JSON.stringify(theta2));
-							//console.log(tripleW.v);
-							//console.log('----');
 							if(theta2){
 								if(matched){
 									throw 'Determinism condition doesn\'t hold for universal query!';
@@ -255,7 +249,7 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 				U[tripleW.v] = false;
 			}
 			else{
-				var thetaUv = U[tripleW.v] || []; //HIER ZIT DE FOUT
+				var thetaUv = U[tripleW.v] || [];
 				U[tripleW.v] = AbstractQuery.merge(tripleW.theta, thetaUv);
 			}
 			
@@ -307,6 +301,7 @@ AbstractQuery.match = function(el, tl, curTheta){
 			throw "Can not handle 'tl.name': " + tl.name + ". Source: AbstractQuery.match(el, tl)"
 	}
 
+	//If we look at this, be sure to clean up temp variables
 	//WE ARE IN THE MIDDLE OF A NEGATION! 
 	//ATTENTION: NO NESTED NEGATION ALLOWED
 	//ALL VARIABLES IN A NEGATION HAVE TO BE BOUND ALREADY
@@ -406,7 +401,13 @@ AbstractQuery.verifyConditions = function(table, conds){
 	return table;
 }
 
-AbstractQuery.addExtraProperties = function(table, props){
+AbstractQuery.addExtraProperties = function(table, props, curTheta){
+	//curTheta is added to access already bound variables from previous matching steps
+	//var lookupTable = AbstractQuery.merge(table, curTheta);
+	//var lookupTable = table;
+	//var lookupTable = table;
+	//if(!lookupTable) return false;	
+
 	var toLookup, propString, subSubs, accessors, lookupInfo, lookedUp, func, args, resolvedArg, res;
 	var matches = true;
 	var resolvedArgs = [];
@@ -430,6 +431,8 @@ AbstractQuery.addExtraProperties = function(table, props){
 			if(!res) return false;
 			var obj = {};
 			obj[key] = res;
+			//for the current lookup
+			//lookupTable.push(obj);
 			table.push(obj);
 		}
 		else{
@@ -452,10 +455,11 @@ AbstractQuery.addExtraProperties = function(table, props){
 						obj[key] = lookupInfo;
 					}
 					if(obj[key]){
+						//lookupTable.push(obj);
 						table.push(obj);
 					} 
 					else{
-						return [];
+						return false; // was return [];
 					}
 					
 				}
@@ -476,10 +480,7 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 			subst = this.verifyConditions(subst, tlInfo[key]);
 		}
 		else if(key === 'properties') {
-			//console.log(subst);
-			//console.log(curTheta);
-			//console.log('----');
-			subst = this.addExtraProperties(subst, tlInfo[key]);
+			subst = this.addExtraProperties(subst, tlInfo[key], curTheta);
 		}
 		else{
 			reified = mapStateKey(key, el);
@@ -571,7 +572,8 @@ AbstractQuery.merge = function(theta, otherTheta){
 		}
 		return false;
 	}
-	res = mergeIterate(theta, otherTheta);
+
+	res = mergeIterate(theta.slice(), otherTheta.slice()); //Changed this to merge copies instead of the actual arrays
 
 	return res;
 }
