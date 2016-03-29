@@ -16,14 +16,13 @@ function RegularPathExpression(seed){
  */
 
 RegularPathExpression.prototype.udAssign = function(obj){ //left, right, leftName, rightName
-	//todo fill in params
+	//Variables
 	var s = {};
-	var objLeft = this.getTmpIfUndefined(obj.left); // || this.getTmpVar('objLeft');
-	var objRight = this.getTmpIfUndefined(obj.right); // || this.getTmpVar('objRight');
-	var objLeftName = this.getTmpIfUndefined(obj.leftName); // || this.getTmpVar('objLeftName');
-	var objRightName = this.getTmpIfUndefined(obj.rightName); // || this.getTmpVar('objRightName');
+	var objLeft = this.getTmpIfUndefined(obj.left); 
+	var objRight = this.getTmpIfUndefined(obj.right); 
+	var objLeftName = this.getTmpIfUndefined(obj.leftName); 
+	var objRightName = this.getTmpIfUndefined(obj.rightName); 
 
-	//make vars optional
 	this.setupStateChain(s, ['node','expression','left'], objLeft);
 	this.setupStateChain(s, ['node','expression','right'], objRight);	
 	this.setupStateChain(s, ['node','expression','operator'], "=");
@@ -134,6 +133,8 @@ RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 	// | tmp = x
 	// | udRecTest(tmp)
 
+	// TODO: Right addr has to match in every step
+
 	//info from argument
 	obj = obj || {};
 	//state info for alias
@@ -142,7 +143,7 @@ RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 	var alias 	= this.getRecVar('leakedAlias'); //use temp var if you don't want to know the aliases
 	var left = this.getTmpVar('left');
 	var right = this.getTmpVar('right');
-	var env = this.getTmpVar('env');
+	//var env = this.getTmpVar('env');
 	//new obj for recursive function
 	var newObj 	= {};
 	newObj.leakedValue = alias;
@@ -152,7 +153,7 @@ RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 
 	this.setupProperty(s, alias, left + '.name'); 
 	this.setupProperty(s, leaked, right + '.name');
-	this.setupProperty(s, env, right + '.name');
+	//this.setupProperty(s, env, right + '.name');
 
 
 	return this 	.lBrace()
@@ -480,6 +481,7 @@ var queryFunctions = {
 				length			: function(a){ return a.length; },
 				at 				: function(a,idx){ return a[idx]; },
 				getEnvAddr		: function(env, varName){
+										//als global 'global' meegeven
 										try{
 											var addr =  env.lookup(varName);
 											return addr;
@@ -490,6 +492,8 @@ var queryFunctions = {
 										
 								  },
 				getStoreVal		: function(store, envAddr){
+										//krijgt environment mee ipv addres en ook de node waarvan je de val wilt
+										//als global geef global object terug, anders custom functie aanroepen
 										try{
 											var val = store.lookupAval(envAddr);
 											return val;

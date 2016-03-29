@@ -201,7 +201,6 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 			}
 		}
 	}
-	console.log(JSON.stringify(W));
 	var T = {};
 	var U = {};
 	while(W.length > 0){
@@ -215,7 +214,7 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 				for(var j = 0; j < this.P.length; j++){
 					tripleP = this.P[j];	
 					if(tripleP.from.equals(tripleW.s)){
-						theta1 = AbstractQuery.match(tripleG.edge,tripleP.edge);
+						theta1 = AbstractQuery.match(tripleG.edge,tripleP.edge, tripleW.theta);
 						for(var k = 0; k < theta1.length; k++){
 							theta2 = AbstractQuery.merge(tripleW.theta, theta1[k]);
 							if(theta2){
@@ -240,6 +239,7 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 				} //end for 
 			}
 		} //end for
+
 		if(!T[tripleW.v]){
 			T[tripleW.v] = contains(this.F, tripleW.s);
 		}
@@ -375,7 +375,13 @@ AbstractQuery.resolveVariable = function(varName, table){
 	return false;
 }
 
-AbstractQuery.verifyConditions = function(table, conds){
+AbstractQuery.verifyConditions = function(table, conds, curTheta){
+
+	var lookupTable = table;
+	
+	if(curTheta) lookupTable = AbstractQuery.merge(table, curTheta);
+	//var lookupTable = table;
+	if(!lookupTable) return false;	
 
 	//als er iets foutgelopen is is de tabel leeg:
 	if(!table || table.length === 0) return [];
@@ -387,7 +393,7 @@ AbstractQuery.verifyConditions = function(table, conds){
 		resolvedArgs = [];
 		for(var i = 0; i < args.length; i++){
 			if(this.isResolvableVariable(args[i])){
-				resolvedArg = this.resolveVariable(args[i], table);
+				resolvedArg = this.resolveVariable(args[i], lookupTable);
 				//if(!resolvedArg) throw 'could not resolve argument ' + args[i];
 			}
 			else{
@@ -403,10 +409,11 @@ AbstractQuery.verifyConditions = function(table, conds){
 
 AbstractQuery.addExtraProperties = function(table, props, curTheta){
 	//curTheta is added to access already bound variables from previous matching steps
-	//var lookupTable = AbstractQuery.merge(table, curTheta);
+	var lookupTable = table;
+	
+	if(curTheta) lookupTable = AbstractQuery.merge(table, curTheta);
 	//var lookupTable = table;
-	//var lookupTable = table;
-	//if(!lookupTable) return false;	
+	if(!lookupTable) return false;	
 
 	var toLookup, propString, subSubs, accessors, lookupInfo, lookedUp, func, args, resolvedArg, res;
 	var matches = true;
@@ -419,7 +426,7 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 			args = propString[1];
 			for(var i = 0; i < args.length; i++){
 				if(this.isResolvableVariable(args[i])){
-					resolvedArg = this.resolveVariable(args[i], table);
+					resolvedArg = this.resolveVariable(args[i], lookupTable);
 					if(resolvedArg.length === 0) return false; //couldn't find a resolution
 				}
 				else{
@@ -432,14 +439,14 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 			var obj = {};
 			obj[key] = res;
 			//for the current lookup
-			//lookupTable.push(obj);
+			lookupTable.push(obj);
 			table.push(obj);
 		}
 		else{
 			toLookup = propString.split('.')[0];
 			accessors = propString.split('.').slice(1);
 			for(var i = 0; i < table.length; i++){
-				subSubs = table[i];
+				subSubs = lookupTable[i];
 				if(subSubs[toLookup]) lookedUp = subSubs[toLookup] //lookup variable
 				if(subSubs[key]){ //variable already defined
 					//throw 'Substitution for ' + key + ' already exists.'
@@ -455,7 +462,7 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 						obj[key] = lookupInfo;
 					}
 					if(obj[key]){
-						//lookupTable.push(obj);
+						lookupTable.push(obj);
 						table.push(obj);
 					} 
 					else{
@@ -477,7 +484,7 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 
 	for(var key in tlInfo){
 		if(key === 'filters') {
-			subst = this.verifyConditions(subst, tlInfo[key]);
+			subst = this.verifyConditions(subst, tlInfo[key], curTheta);
 		}
 		else if(key === 'properties') {
 			subst = this.addExtraProperties(subst, tlInfo[key], curTheta);

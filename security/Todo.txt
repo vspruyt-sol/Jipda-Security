@@ -1,29 +1,5 @@
 TODO:
+- Data flow
 - Subgraph in universal
-- LookupTable (zie hieronder)
+- universal testen -> file en filee (andere paper)
 - More examples
-- ToString jipdaInfo
-
-
-
-
-//DIT IS NIET OK NU
-G
-.skipZeroOrMore()
-.state({node:{
-        declarations: '?decls'
-    },
-        properties:{
-          '?firstDecl':prop('at','?decls',0),
-          '?firstDeclLeft': '?firstDecl.id.name',
-          }})
-.skipZeroOrMore()
-.state({
-    benv: '?__tmp__benv',
-    store:'?__tmp__store',
-  properties:{
-          '?lookingFor':prop('identity','?firstDeclLeft'),
-          '?test':'?firstDeclLeft',
-          '?addr':prop('getEnvAddr','?__tmp__benv','?lookingFor'),
-          '?storeVal':prop('getStoreVal','?__tmp__store','?addr')
-        }})
