@@ -91,7 +91,6 @@ ExistentialQuery.prototype.runNaiveWithNegation = function(){
 	return E;
 }
 
-//TODO BUGFIX
 ExistentialQuery.prototype.runMemo = function(){
 	//used variables
 	var tripleG, tripleP, pairWts, theta, pairTemp, quintupleMts, theta2;
@@ -183,19 +182,54 @@ function UniversalQuery(G, P, F, v0, s0){
 
 UniversalQuery.prototype.runNaiveWithNegation = function(){
 	//used variables
-	var tripleG, tripleP, theta, matched, tripleW, theta1, theta2, tripleTemp, tripleTemp2;
+	//for matchedPair, 1 and 2 are just names without any meaning
+	var tripleG, tripleP, theta, tripleW, theta1, theta2, tripleTemp, tripleTemp2, matchPair;
 	//start algorithm
 	var R = [];
 	var W = [];
 	for(var i = 0; i < this.G.length; i++){
 		tripleG = this.G[i];
 		if(tripleG.from.equals(this.v0)){ //Is de Jipda-node gelijk aan onze initial (Jipda-)node
+			matchPair = undefined;
 			for(var j = 0; j < this.P.length; j++){
 				tripleP = this.P[j];	
 				if(tripleP.from.equals(this.s0)){ //Is de NFA-node gelijk aan de initial (NFA-)node
-					theta = AbstractQuery.match(tripleG.edge,tripleP.edge);
-					for(var k = 0; k < theta.length; k++){
-						W = AbstractQuery.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
+					if(tripleP.edge.name === 'subGraph'){
+						var newTriples;
+						if(subgraphCache[tripleP]){
+							newTriples = subgraphCache[tripleP];
+						}
+						else{
+							newTriples = AbstractQuery.expandSubgraph(tripleP, this.P);
+							subgraphCache[tripleP] = newTriples;
+						}
+						//add if it isn't in P yet
+						for(var z = 0; z < newTriples.length; z++){
+							if(!contains(this.P, newTriples[z])) this.P.push(newTriples[z]);
+						}
+					}
+					else{
+						theta = AbstractQuery.match(tripleG.edge,tripleP.edge);
+						for(var k = 0; k < theta.length; k++){
+							if(matchPair === undefined || matchPair[3] === "_"){
+								matchPair = {
+									1: tripleP.target, 
+									2: theta[k],
+									3: tripleP.edge.name
+								};
+								W = AbstractQuery.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
+								//console.log('added');
+								//console.log(new WorklistTriple(tripleG.target, tripleP.target, theta[k]));
+							}
+							else{
+								if((matchPair[1] !== tripleP.target) || (matchPair[2] !== theta[k])){
+									throw 'Determinism condition doesn\'t hold for universal query!';
+								}
+							}
+						}
+						if(matchPair === undefined){
+							W = AbstractQuery.union(W, [new WorklistTriple(tripleG.target, undefined, undefined)]);
+						}
 					}
 				}
 			}
@@ -209,30 +243,53 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 		for(var i = 0; i < this.G.length; i++){
 			tripleG = this.G[i];
 			if(tripleG.from.equals(tripleW.v)){
-				matched = false;
-				//hier prevMatch ofzo resetten (bijhouden of er veranderingen in match zijn)
+				matchPair = undefined;
 				for(var j = 0; j < this.P.length; j++){
 					tripleP = this.P[j];	
 					if(tripleP.from.equals(tripleW.s)){
-						theta1 = AbstractQuery.match(tripleG.edge,tripleP.edge, tripleW.theta);
-						for(var k = 0; k < theta1.length; k++){
-							theta2 = AbstractQuery.merge(tripleW.theta, theta1[k]);
-							if(theta2){
-								if(matched){
-									throw 'Determinism condition doesn\'t hold for universal query!';
-								}
-								matched = (tripleP.edge.name === '_' ? matched : true); 
-								//TODO: controleren of we de lijnen hieronder nog moeten doen
-								tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
-								if(!contains(R, tripleTemp)){
-									W = AbstractQuery.union(W, [tripleTemp]);
-								}
+						
+						if(tripleP.edge.name === 'subGraph'){
+							var newTriples;
+							if(subgraphCache[tripleP]){
+								newTriples = subgraphCache[tripleP];
 							}
-						}//end for		
-						if(!matched){
-							tripleTemp2 = new WorklistTriple(tripleG.target, undefined, undefined);
-							if(!contains(R, tripleTemp2)){
-								W = AbstractQuery.union(W, [tripleTemp2]);
+							else{
+								newTriples = AbstractQuery.expandSubgraph(tripleP, this.P);
+								subgraphCache[tripleP] = newTriples;
+							}
+							//add if it isn't in P yet
+							for(var z = 0; z < newTriples.length; z++){
+								if(!contains(this.P, newTriples[z])) this.P.push(newTriples[z]);
+							}
+						}
+						else{
+							theta1 = AbstractQuery.match(tripleG.edge,tripleP.edge, tripleW.theta);
+							for(var k = 0; k < theta1.length; k++){
+								theta2 = AbstractQuery.merge(tripleW.theta, theta1[k]);
+								if(theta2){
+									if(matchPair === undefined || matchPair[3] === "_"){ //suppress error
+										matchPair = {
+											1: tripleP.target,
+											2: theta2,
+											3: tripleP.edge.name
+										}
+										tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
+										if(!contains(R, tripleTemp)){
+											W = AbstractQuery.union(W, [tripleTemp]);
+										}
+									}				
+									else{
+										if((matchPair[1] !== tripleP.target) || (matchPair[2] !== theta2)){
+											throw 'Determinism condition doesn\'t hold for universal query!';
+										}
+									}
+								}
+							}//end for		
+							if(matchPair === undefined){
+								tripleTemp2 = new WorklistTriple(tripleG.target, undefined, undefined);
+								if(!contains(R, tripleTemp2)){
+									W = AbstractQuery.union(W, [tripleTemp2]);
+								}
 							}
 						}
 					}
@@ -240,19 +297,16 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 			}
 		} //end for
 
-		if(!T[tripleW.v]){
+		if((T[tripleW.v] === undefined) || (T[tripleW.v] !== false)){
 			T[tripleW.v] = contains(this.F, tripleW.s);
 		}
 		if(T[tripleW.v]){
-			//console.log(U[tripleW.v]);
-			if(U[tripleW.v] === false){
-				U[tripleW.v] = false;
+			if(U[tripleW.v] === undefined){
+				U[tripleW.v] = tripleW.theta;
 			}
 			else{
-				var thetaUv = U[tripleW.v] || [];
-				U[tripleW.v] = AbstractQuery.merge(tripleW.theta, thetaUv);
-			}
-			
+				U[tripleW.v] = AbstractQuery.merge(U[tripleW.v],tripleW.theta);
+			}			
 		}
 		else{
 			U[tripleW.v] = undefined;
@@ -305,7 +359,7 @@ AbstractQuery.match = function(el, tl, curTheta){
 	//WE ARE IN THE MIDDLE OF A NEGATION! 
 	//ATTENTION: NO NESTED NEGATION ALLOWED
 	//ALL VARIABLES IN A NEGATION HAVE TO BE BOUND ALREADY
-	if(tl.negationMarkers.length > 0){
+	/*if(tl.negationMarkers.length > 0){
 		//Do this for all negationmarkers
 		for(var i = 0; i < tl.negationMarkers.length; i++){
 			//create it if it doesn't exist (default value)
@@ -332,7 +386,7 @@ AbstractQuery.match = function(el, tl, curTheta){
 		// dus, pas de map aan naar mapValue = mapValue && true en return [[]]; (om het algo niet te stoppen)
 		// Derde geval: er is geen match gevonden, maar nog niet aan einde
 		// dus, pas de map aan naar mapValue = false && return [[]]; (om het algo niet te stoppen)
-	}
+	}*/
 
 	if(_map){
 		//Drop temp variables!
@@ -378,14 +432,13 @@ AbstractQuery.resolveVariable = function(varName, table){
 AbstractQuery.verifyConditions = function(table, conds, curTheta){
 
 	var lookupTable = table;
+	//als er iets foutgelopen is is de tabel leeg:
+	if(!table || table.length === 0) return [];
 	
 	if(curTheta) lookupTable = AbstractQuery.merge(table, curTheta);
 	//var lookupTable = table;
 	if(!lookupTable) return false;	
-
-	//als er iets foutgelopen is is de tabel leeg:
-	if(!table || table.length === 0) return [];
-
+	
 	var func, args, resolvedArg, resolvedArgs = [];
 	for(var j = 0; j < conds.length; j++){
 		func = conds[j][0];
@@ -410,8 +463,9 @@ AbstractQuery.verifyConditions = function(table, conds, curTheta){
 AbstractQuery.addExtraProperties = function(table, props, curTheta){
 	//curTheta is added to access already bound variables from previous matching steps
 	var lookupTable = table;
-	
+
 	if(curTheta) lookupTable = AbstractQuery.merge(table, curTheta);
+
 	//var lookupTable = table;
 	if(!lookupTable) return false;	
 
@@ -445,7 +499,7 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 		else{
 			toLookup = propString.split('.')[0];
 			accessors = propString.split('.').slice(1);
-			for(var i = 0; i < table.length; i++){
+			for(var i = 0; i < lookupTable.length; i++){
 				subSubs = lookupTable[i];
 				if(subSubs[toLookup]) lookedUp = subSubs[toLookup] //lookup variable
 				if(subSubs[key]){ //variable already defined
@@ -454,7 +508,10 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 				}
 				if(lookedUp){ //not already defined and found in table
 					var obj = {};
-					lookupInfo = JipdaInfo.getInfo(lookedUp); //expression matching on val
+					//console.log(lookedUp);
+					//lookupInfo = JipdaInfo.getInfo(lookedUp); //expression matching on val
+					lookupInfo = lookedUp;
+
 					if(lookupInfo){
 						for(var g = 0; g < accessors.length; g++){
 							if(lookupInfo) lookupInfo = lookupInfo[accessors[g]];
@@ -477,57 +534,108 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 	return table;
 }
 
+AbstractQuery.addExtraPropertiesSwapped = function(table, props, curTheta){
+	function swap(obj){
+	  var ret = {};
+	  for(var key in obj){
+	    ret[obj[key]] = key;
+	  }
+	  return ret;
+	}
+	var swapped = swap(props);
+	return this.addExtraProperties(table, swapped, curTheta);
+}
+
 AbstractQuery.matchState = function(el, tl, curTheta){
 	var tlInfo = tl.state;
 	var subst = [];
 	var matchInfo, reified;
 
+	//TODO herschrijven naar minder duplicate code
 	for(var key in tlInfo){
-		if(key === 'filters') {
-			subst = this.verifyConditions(subst, tlInfo[key], curTheta);
+		switch (key){
+			case 'filters': 
+						subst = this.verifyConditions(subst, tlInfo[key], curTheta);
+						break;
+			case 'properties': 
+						subst = this.addExtraPropertiesSwapped(subst, tlInfo[key], curTheta);
+						break;
+			/*case 'benvTest': //TESTING
+						benv = 	mapStateKey('benv', el);
+						console.log(benv);
+						if(!benv) return false;
+						matchInfo = this.matchRecursive('benv', tlInfo[key], mapStateKey('benv',el)); //pass along the corresponding statepart
+						if(matchInfo){
+							subst.push.apply(subst, matchInfo)
+						}
+						else{
+							return false;
+						};
+						break;
+			case 'storeTest': //TESTING
+						store = mapStateKey('store', el);
+						console.log(store);
+						if(!store) return false;
+						matchInfo = this.matchRecursive('store', tlInfo[key], mapStateKey('store',el)); //pass along the corresponding statepart
+						if(matchInfo){
+							subst.push.apply(subst, matchInfo)
+						}
+						else{
+							return false;
+						};
+						break;*/
+			default: 	reified = 	mapStateKey(key, el);
+						if(!reified) return false;
+						matchInfo = this.matchRecursive(key, tlInfo[key], mapStateKey(key,el)); //pass along the corresponding statepart
+						if(matchInfo){
+							subst.push.apply(subst, matchInfo)
+						}
+						else{
+							return false;
+						};
 		}
-		else if(key === 'properties') {
-			subst = this.addExtraProperties(subst, tlInfo[key], curTheta);
-		}
-		else{
-			reified = mapStateKey(key, el);
-			if(!reified) return false;
-			matchInfo = this.matchRecursive(key, tlInfo[key], mapStateKey(key,el)); //pass along the corresponding statepart
-			if(matchInfo){
-				subst.push.apply(subst, matchInfo)
-			}
-			else{
-				return false;
-			}
-		}	
 	}
 	return subst.length === 0 ? false : subst;
 }
 
 AbstractQuery.matchRecursive = function(key, value, statePart, subs){
 	var reified, matchInfo, merged;
+
 	subs = subs || [];
 	if(value instanceof Array){
 		//TODO overloop alle elems (momenteel skip)?
 	}
 	else if(value instanceof Object) {
-		for(var k in value){
-			reified = mapStateKey(k, statePart);
-			if(!reified) return false;
-			matchInfo = this.matchRecursive(k, value[k], reified, subs);
-			if (matchInfo){
-				subs = this.merge(subs, matchInfo);
-				if(!subs) return false;
-			}
-			else{
-				return false;
+		//Handle benv and store differently as other objects
+		if(key === 'benv'){
+			console.log('I should BENV');
+			return false;
+		}
+		else if(key === 'store'){
+			console.log('I should STORE');
+			return false;
+		}
+		else{
+			for(var k in value){
+				reified = mapStateKey(k, statePart);
+				if(!reified) return false;
+				matchInfo = this.matchRecursive(k, value[k], reified, subs);
+				if (matchInfo){
+					subs = this.merge(subs, matchInfo);
+					if(!subs) return false;
+				}
+				else{
+					return false;
+				}
 			}
 		}
 	}
 	else if(value.constructor.name === 'String'){ //assume it is a string
 		if(value.charAt(0) === '?'){ //it's a variable, store it
 			var obj = {};
-			obj[value] =  JipdaInfo.getInfo(statePart);
+			//obj[value] =  JipdaInfo.getInfo(statePart);
+			//console.log(statePart);
+			obj[value] =  statePart;
 			subs.push(obj);
 		}
 		else{
@@ -647,6 +755,7 @@ AbstractQuery.expandSubgraph = function(triple, currPattern){
 //TEMP test function (maps keys to state keys)
 var mapStateKey = function(key, statePart){
 	//TODO:do some reifying
+	if(key === 'this') return statePart;
 	return statePart[key] ? statePart[key] : false;
 }
 

@@ -26,7 +26,7 @@ SecurityAnalysis.prototype.initialize = function(){
 			//console.log(rpe);
 			this.nfa = rpe.toNFA();
 			this.dfa = rpe.toDFA();
-			//console.log(this.dfa);
+			console.log(this.dfa);
 			output.innerHTML = '';
 	    }
 	    else{

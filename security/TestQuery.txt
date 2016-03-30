@@ -187,3 +187,93 @@ G.skipZeroOrMore()
     '?decsAtName': '?right.name',
   },
 })
+
+
+
+
+UNIVERSAL QUERY
+
+G
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.state({node: {
+        expression : '?exp'
+    },
+        properties:{
+          '?expName': '?exp.name'
+        },
+        filters: [
+          cond('equals','?expName', 'open')
+        ]     
+})
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.wildcard()
+.state({node: {
+        expression : '?exp2'
+    },
+        properties:{
+          '?exp2Name': '?exp2.name'
+        },
+        filters: [
+          cond('equals','?exp2Name', 'close')
+        ]     
+})
+
+
+var file = 3;
+var filee = 5;
+
+var open = function(file){
+file = 1;
+}
+var access = function(file){
+file = 2;
+}
+var close = function(file){
+file = 0;
+  var z = 4;
+  var g = 5;
+  return g;
+}
+
+
+if(1 + 2 > 5){
+  open(file);
+  access(file);
+  //close(file);
+}
+else{
+  open(file);
+access(file);
+  //close(file);
+}
+close(file);
+
