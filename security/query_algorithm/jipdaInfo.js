@@ -38,6 +38,7 @@ JipdaInfo.assignmentExpression = function(exp){
 	var l = JipdaInfo.getInfo(exp.left);
 	var r = JipdaInfo.getInfo(exp.right);
 	return {
+		name 		: l.name + ' ' + exp.operator + ' ' + r.name,
 		leftName	: l.name,
 		left 		: l,
 		operator	: exp.operator,
@@ -254,6 +255,7 @@ JipdaInfo.binaryExpression = function(exp){
 
 JipdaInfo.expressionStatement = function(exp){
 	var ex = JipdaInfo.getInfo(exp.expression);
+	//console.log(ex);
 	return {
 		name 		: ex.name,
 		expression	: ex,
@@ -264,13 +266,17 @@ JipdaInfo.expressionStatement = function(exp){
 
 JipdaInfo.blockStatement = function(exp){
 	var elem, elems = [];
+	var name = '';
 	//calculate name if nested
 	for(var i = 0; i < exp.body.length; i++){
-		elems.push(JipdaInfo.getInfo(exp.body[i]));
+		elem = JipdaInfo.getInfo(exp.body[i]);
+		elems.push(elem);
+		//console.log(elem);
+		name += elem.name + ' ';
 	}
 
 	return {
-		name 		: 'BlockStatement',
+		name 		: name,
 		body		: elems,
 		type 		: 'BlockStatement',
 		//location 	: exp.loc,
@@ -306,11 +312,13 @@ JipdaInfo.conditionalExpression = function(exp){
 	var cons = JipdaInfo.getInfo(exp.consequent);
 	var alt = JipdaInfo.getInfo(exp.alternate);
 
+	var name = alt ? '(' + test.name + ') ? '  + cons.name + ' : ' + alt.name : '(' + test.name + ') '  + cons.name
+
 	return {
-		name 		: '(' + test.name + ') ?'  + cons.name + ' : ' + alt.name,
+		name 		: name,
 		test		: test,
 		consequent 	: cons,
-		alternate 	: alt, 
+		alternate 	: alt || {name: "NotDefined"}, 
 		type		: 'ConditionalExpression',
 		//location 	: exp.loc,
 	}

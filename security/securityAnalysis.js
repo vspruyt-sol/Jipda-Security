@@ -94,9 +94,11 @@ SecurityAnalysis.prototype.detect = function(){
 
 SecurityAnalysis.prototype.processQueryResult = function(queryResult){
 	var processed = [];
+	var newProcessed = [];
 	var subs;
-	//1. Strip empty substitutions?
+	//1. Strip temp substitutions
 	for(var i = 0; i < queryResult.length; i++){
+		
 		for(var j = 0; j < queryResult[i].theta.length; j++){
 			subs = queryResult[i].theta[j];
 			for(var key in subs){
@@ -104,7 +106,10 @@ SecurityAnalysis.prototype.processQueryResult = function(queryResult){
 					delete queryResult[i].theta[j];
 				}
 			}
-		}		
+			if(queryResult[i].theta[j] && _.keys(queryResult[i].theta[j]).length > 0) newProcessed.push(queryResult[i].theta[j]);
+		}
+		queryResult[i].theta = newProcessed.slice();
+		newProcessed = [];
 		processed.push(queryResult[i]);
 	}
 

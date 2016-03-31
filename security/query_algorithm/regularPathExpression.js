@@ -15,6 +15,132 @@ function RegularPathExpression(seed){
  * -----------------------
  */
 
+RegularPathExpression.prototype.beginFCall = function(obj){ //this, kont, lkont, name, callee, arguments, argName (first argument)
+	var s1 = {};
+
+	var objThis 	= this.getTmpIfUndefined(obj.this);
+	var objKont 	= this.getTmpIfUndefined(obj.kont); 
+	var objLkont 	= this.getTmpIfUndefined(obj.lkont); 
+	var objName 	= this.getTmpIfUndefined(obj.name); 
+	var objCallee 	= this.getTmpIfUndefined(obj.callee); 
+	var objArguments= this.getTmpIfUndefined(obj.arguments); 
+	var objArgName 	= this.getTmpIfUndefined(obj.argName); 
+
+	this.setupStateChain(s1, ['kont'], objKont);
+	this.setupStateChain(s1, ['lkont'], objLkont);
+	
+
+	return this .fCall({name: objName, callee: objCallee, arguments: objArguments, argName: objArgName})
+				.state(s1);
+}
+
+RegularPathExpression.prototype.endFCall = function(obj){ //kont, lkont
+	var s1 = {};
+
+	var objKont 	= this.getTmpIfUndefined(obj.kont); 
+	var objLkont 	= this.getTmpIfUndefined(obj.lkont); 
+
+	this.setupStateChain(s1, ['kont'], objKont);
+	this.setupStateChain(s1, ['lkont'], objLkont);
+	
+	return this.state(s1);
+}
+
+RegularPathExpression.prototype.beginIf = function(obj){ //this, test, cons, alt, kont, lkont
+	var s1 = {}, s2 = {}, s3 = {};
+
+	var objThis = this.getTmpIfUndefined(obj.this); 
+	var objTest = this.getTmpIfUndefined(obj.test); 
+	var objCons = this.getTmpIfUndefined(obj.cons); 
+	var objAlt = this.getTmpIfUndefined(obj.alt); 
+	var objKont = this.getTmpIfUndefined(obj.kont); 
+	var objLkont = this.getTmpIfUndefined(obj.lkont); 
+
+	this.setupStateChain(s1, ['node','this'], objThis);
+	this.setupStateChain(s1, ['node','test'], objTest);
+	this.setupStateChain(s1, ['node','consequent'], objCons);
+	this.setupStateChain(s1, ['node','alternate'], objAlt);
+	//this.setupStateChain(s1, ['node','type'], 'IfStatement');
+
+	this.setupStateChain(s2, ['node','this'], objCons);
+	this.setupStateChain(s2, ['kont'], objKont);
+	this.setupStateChain(s2, ['lkont'], objLkont);
+
+	this.setupStateChain(s3, ['node','this'], objAlt);
+	this.setupStateChain(s3, ['kont'], objKont);
+	this.setupStateChain(s3, ['lkont'], objLkont);	
+
+	return this .state(s1)
+				.skipZeroOrMore()
+				.lBrace()
+					.state(s2)
+					.or()
+					.state(s3)
+				.rBrace()
+}
+
+RegularPathExpression.prototype.beginIfTrue = function(obj){ //this, test, cons, alt, kont, lkont
+	var s1 = {}, s2 = {};
+
+	var objThis = this.getTmpIfUndefined(obj.this); 
+	var objTest = this.getTmpIfUndefined(obj.test); 
+	var objCons = this.getTmpIfUndefined(obj.cons); 
+	var objAlt = this.getTmpIfUndefined(obj.alt); 
+	var objKont = this.getTmpIfUndefined(obj.kont); 
+	var objLkont = this.getTmpIfUndefined(obj.lkont); 
+
+	this.setupStateChain(s1, ['node','this'], objThis);
+	this.setupStateChain(s1, ['node','test'], objTest);
+	this.setupStateChain(s1, ['node','consequent'], objCons);
+	this.setupStateChain(s1, ['node','alternate'], objAlt);
+	//this.setupStateChain(s1, ['node','type'], 'IfStatement');
+
+	this.setupStateChain(s2, ['node','this'], objCons);
+	this.setupStateChain(s2, ['kont'], objKont);
+	this.setupStateChain(s2, ['lkont'], objLkont);
+
+	return this .state(s1)
+				.skipZeroOrMore()
+				.state(s2)
+}
+
+RegularPathExpression.prototype.beginIfFalse = function(obj){ //this, test, cons, alt, kont, lkont
+	var s1 = {}, s2 = {};
+
+	var objThis = this.getTmpIfUndefined(obj.this); 
+	var objTest = this.getTmpIfUndefined(obj.test); 
+	var objCons = this.getTmpIfUndefined(obj.cons); 
+	var objAlt = this.getTmpIfUndefined(obj.alt); 
+	var objKont = this.getTmpIfUndefined(obj.kont); 
+	var objLkont = this.getTmpIfUndefined(obj.lkont); 
+
+	this.setupStateChain(s1, ['node','this'], objThis);
+	this.setupStateChain(s1, ['node','test'], objTest);
+	this.setupStateChain(s1, ['node','consequent'], objCons);
+	this.setupStateChain(s1, ['node','alternate'], objAlt);
+	//this.setupStateChain(s1, ['node','type'], 'IfStatement');
+
+	this.setupStateChain(s2, ['node','this'], objAlt);
+	this.setupStateChain(s2, ['kont'], objKont);
+	this.setupStateChain(s2, ['lkont'], objLkont);
+
+	return this .state(s1)
+				.skipZeroOrMore()
+				.state(s2)
+}
+
+RegularPathExpression.prototype.endIf = function(obj){ //kont, lkont
+	var s = {};
+
+	var objKont = this.getTmpIfUndefined(obj.kont); 
+	var objLkont = this.getTmpIfUndefined(obj.lkont); 
+
+	this.setupStateChain(s, ['kont'], objKont);
+	this.setupStateChain(s, ['lkont'], objLkont);
+
+	return this.state(s);				
+}
+
 RegularPathExpression.prototype.udAssign = function(obj){ //left, right, leftName, rightName
 	//Variables
 	var s = {};
@@ -68,9 +194,10 @@ RegularPathExpression.prototype.udAssignOrVarDecl = function(obj){ //left, right
 					.rBrace();
 }
 
-RegularPathExpression.prototype.udFCall = function(obj){ //name, callee, arguments, argName (eerste arg);
+RegularPathExpression.prototype.fCall = function(obj){ //name, callee, arguments, argName (eerste arg);
 	obj = obj || {};
-	var s1 = {};
+	var s1 = {}; //als ExpressionStatement
+	var s2 = {}; //als CallExpression
 
 	var objName 	=	obj.name || this.getTmpVar('objName'); //naam van de functie
 	var objCallee 	= 	obj.callee || this.getTmpVar('objNode'); //de callee node
@@ -85,16 +212,24 @@ RegularPathExpression.prototype.udFCall = function(obj){ //name, callee, argumen
 	this.setupStateChain(s1, ['node','expression','arguments'], objArguments);
 	
 	//get first argument
-	try{
-		this.setupProperty(s1, firstArg, prop('at', objArguments, 0)); //tmp eerste arg
-		this.setupProperty(s1, firstArgName, firstArg + '.name');
-		this.setupProperty(s1, objName, objCallee + '.name');
-	}
-	catch(e){ //optional, just to catch errors
-		console.log(e);
-	}
+	this.setupProperty(s1, firstArg, prop('at', objArguments, 0)); //tmp eerste arg
+	this.setupProperty(s1, firstArgName, firstArg + '.name');
+	this.setupProperty(s1, objName, objCallee + '.name');
 
-	return this.state(s1);
+		//Basic function call
+	this.setupStateChain(s2, ['node','callee'], objCallee);
+	this.setupStateChain(s2, ['node','arguments'], objArguments);
+	
+	//get first argument
+	this.setupProperty(s2, firstArg, prop('at', objArguments, 0)); //tmp eerste arg
+	this.setupProperty(s2, firstArgName, firstArg + '.name');
+	this.setupProperty(s2, objName, objCallee + '.name');
+
+	return this .lBrace()
+					.state(s1)
+					.or()
+					.state(s2)
+				.rBrace()
 }
 
 RegularPathExpression.prototype.udOpenClosedFile = function(obj){
@@ -295,6 +430,18 @@ RegularPathExpression.prototype.or = function(obj){
 RegularPathExpression.prototype.wildcard = function(obj){
 
 	this._map.push(new RegexPart('wildcard', obj, '_'));
+	//Fluent API
+	return this;
+}
+
+//Wildcard
+RegularPathExpression.prototype.wildcards = function(times){
+
+	//Push wildcard times
+	for(var i = 0; i < times; i++){
+		this._map.push(new RegexPart('wildcard', undefined, '_'));
+	}
+	
 	//Fluent API
 	return this;
 }

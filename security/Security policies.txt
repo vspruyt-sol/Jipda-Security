@@ -1,0 +1,81 @@
+Security policies:
+
+OK betekent: "I like"
+NOK betekent: "I don't like"
+MOK betekent: "Maybe I like"
+
+----------
+|PidginQL|
+----------
+//OK
+1. Only CMS administrators can send a message to all CMS users.
+"This is a typical access control policy, ensuring that the
+function used to send messages to all users, is called only
+when the current user is an administrator."
+
+//NOK
+2. Only users with correct privileges can add students
+to a course.
+"SIMILAR TO 1"
+
+//OK
+3. Punished users may only perform certain actions.
+
+//OK
+4. A database is opened only after the master password
+is checked or when creating a new database.
+"Method doOpenDatabaseActions is called to open the password
+database. We confirmed that this occurs only in the
+newDatabase method or when protected by appropriate checks
+of the master password."
+
+//OK
+5. The user’s master password entry does not explicitly
+flow to the GUI, console, or network.
+"When we consider only the data dependencies in the program,
+there is no information flow from the user’s password
+entry to any of the Java Swing GUI classes or any other
+public output." 
+
+//OK
+6. The user’s master password entry does not influence the GUI, console, or network inappropriately.
+
+//OK
+7. The secret does not depend in any way on the user input.
+
+//OK
+8. The secret does not influence the output except through the comparison with the user’s guess.
+
+//OK
+9. Public outputs do not depend on a user’s password, unless it has been cryptographically hashed.
+"This trusted-declassification policy is similar to Policy E2.
+The declassifies function ensures that the only information
+flow from the user’s password to public outputs are through
+the argument to the hash function."
+
+//OK
+10. Tax information is encrypted before being written
+to disk.
+
+//OK
+11. Tax information is not decrypted unless the
+user’s password is entered correctly.
+
+//OK
+12. A review can be viewed only by an authorized user.
+"let check = pgm.[isAdmin ||
+(isAuthorOf && notifyDeadlinePast) ||
+(isPC && reviewDeadlinePast && !hasConflict) ||
+isReviewerOf]"
+
+//MOK
+13. A paper’s acceptance status can be released only
+to an author of the paper after the notification deadline, or
+to PC members without conflicts.
+"... // output = errors or responses sent to the client
+... // define deadline, role, and conflict checks
+let isAccepted = pgm.returnsOf(‘‘isAccepted’’) in
+let check = pgm.[(isAuthorOf && notifyDeadlinePast) ||
+(isPC && !hasConflict)] in
+pgm.flowAccessControlled(check, isAccepted, output)"
+

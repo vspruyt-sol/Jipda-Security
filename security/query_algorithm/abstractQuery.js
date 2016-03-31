@@ -390,7 +390,7 @@ AbstractQuery.match = function(el, tl, curTheta){
 
 	if(_map){
 		//Drop temp variables!
-		_map = AbstractQuery.cleanupTempVars(_map);
+		//_map = AbstractQuery.cleanupTempVars(_map);
 
 		if(tl.negated && AbstractQuery.merge(_map, curTheta)){
 			return [];
@@ -509,8 +509,8 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 				if(lookedUp){ //not already defined and found in table
 					var obj = {};
 					//console.log(lookedUp);
-					//lookupInfo = JipdaInfo.getInfo(lookedUp); //expression matching on val
-					lookupInfo = lookedUp;
+					lookupInfo = JipdaInfo.getInfo(lookedUp); //expression matching on val
+					//lookupInfo = lookedUp;
 
 					if(lookupInfo){
 						for(var g = 0; g < accessors.length; g++){
@@ -558,7 +558,7 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 						subst = this.verifyConditions(subst, tlInfo[key], curTheta);
 						break;
 			case 'properties': 
-						subst = this.addExtraPropertiesSwapped(subst, tlInfo[key], curTheta);
+						subst = this.addExtraProperties(subst, tlInfo[key], curTheta);
 						break;
 			/*case 'benvTest': //TESTING
 						benv = 	mapStateKey('benv', el);
@@ -584,9 +584,9 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 							return false;
 						};
 						break;*/
-			default: 	reified = 	mapStateKey(key, el);
-						if(!reified) return false;
-						matchInfo = this.matchRecursive(key, tlInfo[key], mapStateKey(key,el)); //pass along the corresponding statepart
+			default: 	reified = mapStateKey(key, el);
+						if(reified === false) return false;
+						matchInfo = this.matchRecursive(key, tlInfo[key], reified); //pass along the corresponding statepart
 						if(matchInfo){
 							subst.push.apply(subst, matchInfo)
 						}
@@ -618,7 +618,10 @@ AbstractQuery.matchRecursive = function(key, value, statePart, subs){
 		else{
 			for(var k in value){
 				reified = mapStateKey(k, statePart);
-				if(!reified) return false;
+
+				//console.log(k)
+				if(reified === false) return false;
+
 				matchInfo = this.matchRecursive(k, value[k], reified, subs);
 				if (matchInfo){
 					subs = this.merge(subs, matchInfo);
@@ -633,9 +636,9 @@ AbstractQuery.matchRecursive = function(key, value, statePart, subs){
 	else if(value.constructor.name === 'String'){ //assume it is a string
 		if(value.charAt(0) === '?'){ //it's a variable, store it
 			var obj = {};
-			//obj[value] =  JipdaInfo.getInfo(statePart);
+			obj[value] =  JipdaInfo.getInfo(statePart) || {name: "NotDefined"};
 			//console.log(statePart);
-			obj[value] =  statePart;
+			//obj[value] =  statePart;
 			subs.push(obj);
 		}
 		else{
@@ -755,8 +758,13 @@ AbstractQuery.expandSubgraph = function(triple, currPattern){
 //TEMP test function (maps keys to state keys)
 var mapStateKey = function(key, statePart){
 	//TODO:do some reifying
-	if(key === 'this') return statePart;
-	return statePart[key] ? statePart[key] : false;
+
+	switch (key){
+		case 'this' : 	return statePart; break;
+		case 'id'	: 	return statePart['_id']; break;
+		default		: 	return statePart[key] !== undefined ? statePart[key] : false;
+	}
+	
 }
 
 var contains = function(set, elem){	
