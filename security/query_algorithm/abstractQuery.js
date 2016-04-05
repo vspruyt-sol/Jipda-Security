@@ -546,10 +546,103 @@ AbstractQuery.addExtraPropertiesSwapped = function(table, props, curTheta){
 	return this.addExtraProperties(table, swapped, curTheta);
 }
 
+AbstractQuery.getAddresses = function(obj, env, store, subs){
+	var map = [];
+	var resolved, curAddr, curVal, addrName;
+	var toLookup, prop, names, found;
+
+	//TODO: kijken voor global
+
+	for(var varName in obj){
+		addrName = obj[varName];
+		//benv:{?varName : ?addr}
+		if(this.isResolvableVariable(varName)){
+			resolved = this.resolveVariable(varName, subs);
+		}
+		//benv:{?varName : ?addr}
+		else{
+			resolved = varName;
+		}
+		
+		if(resolved instanceof Object){
+			//TODO
+		}
+		else{ //String
+			if(env._global){
+				curAddr = 1;
+				prop = resolved.split('.'); //still have to look for resolved in the global object
+			}
+			else{
+				//split on dots for objects
+				toLookup = resolved.split('.')[0];
+				prop = resolved.split('.').slice(1);
+				//console.log(env);
+				//console.log(toLookup);
+				curAddr = env.lookup(toLookup);
+				if(curAddr.toString() === "_") {
+					//Not found in environment, maybe in global object
+					curAddr = 1;
+					prop = resolved.split('.');
+				}
+				else{
+					curAddr = this.processLookup(store.lookupAval(curAddr));
+					if(!curAddr) return false;
+				}
+			}
+		}
+
+		//We now have the address from the store
+		//If prop.length > 0 zoek verder
+
+		for(var i = 0; i < prop.length; i++){
+			try{
+				found = false;
+				curVal = store.lookupAval(curAddr);
+				if(curVal.constructor.name === "Obj"){
+					names = curVal.names();
+					for(var j = 0; j < names.length; j++){
+						if(names[j].toString() === prop[i]){
+							//TODO if !curAddr return false ofzo
+							curAddr = this.processLookup(curVal.lookup(names[j])[0]);
+							if(!curAddr) return false;
+							found = true;
+							break;
+						}
+					}
+					if(!found) return false;
+				}
+				else{
+					curAddr = this.processLookup(curVal);
+					if(!curAddr) return false;
+				}
+			}
+			catch(e){
+				console.log(e);
+				return false;
+			}
+		}
+
+		var newO = {};
+		newO[addrName] = curAddr;
+		map.push(newO);
+
+	}
+	
+	return map;
+}
+
+AbstractQuery.processLookup = function(lookedUp){
+	if(lookedUp.as && lookedUp.as.values().length > 0){
+		return lookedUp.as.values()[0];
+	}
+	return false
+}
+
 AbstractQuery.matchState = function(el, tl, curTheta){
 	var tlInfo = tl.state;
 	var subst = [];
 	var matchInfo, reified;
+	var benv, store, mapping;
 
 	//TODO herschrijven naar minder duplicate code
 	for(var key in tlInfo){
@@ -560,11 +653,15 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 			case 'properties': 
 						subst = this.addExtraProperties(subst, tlInfo[key], curTheta);
 						break;
-			/*case 'benvTest': //TESTING
+			case 'benv': //TESTING
 						benv = 	mapStateKey('benv', el);
-						console.log(benv);
-						if(!benv) return false;
-						matchInfo = this.matchRecursive('benv', tlInfo[key], mapStateKey('benv',el)); //pass along the corresponding statepart
+						store = mapStateKey('store', el);
+						mapping = tlInfo[key];
+
+						//console.log(benv);
+						if(!benv || !store) return false;
+						matchInfo = this.getAddresses(mapping, benv, store, subst);
+						//pass along the corresponding statepart
 						if(matchInfo){
 							subst.push.apply(subst, matchInfo)
 						}
@@ -572,9 +669,9 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 							return false;
 						};
 						break;
-			case 'storeTest': //TESTING
+			/*case 'storeTest': //TESTING
 						store = mapStateKey('store', el);
-						console.log(store);
+						//console.log(store);
 						if(!store) return false;
 						matchInfo = this.matchRecursive('store', tlInfo[key], mapStateKey('store',el)); //pass along the corresponding statepart
 						if(matchInfo){
@@ -606,32 +703,21 @@ AbstractQuery.matchRecursive = function(key, value, statePart, subs){
 		//TODO overloop alle elems (momenteel skip)?
 	}
 	else if(value instanceof Object) {
-		//Handle benv and store differently as other objects
-		if(key === 'benv'){
-			console.log('I should BENV');
-			return false;
-		}
-		else if(key === 'store'){
-			console.log('I should STORE');
-			return false;
-		}
-		else{
-			for(var k in value){
-				reified = mapStateKey(k, statePart);
+		for(var k in value){
+			reified = mapStateKey(k, statePart);
 
-				//console.log(k)
-				if(reified === false) return false;
+			//console.log(k)
+			if(reified === false) return false;
 
-				matchInfo = this.matchRecursive(k, value[k], reified, subs);
-				if (matchInfo){
-					subs = this.merge(subs, matchInfo);
-					if(!subs) return false;
-				}
-				else{
-					return false;
-				}
+			matchInfo = this.matchRecursive(k, value[k], reified, subs);
+			if (matchInfo){
+				subs = this.merge(subs, matchInfo);
+				if(!subs) return false;
 			}
-		}
+			else{
+				return false;
+			}
+		}	
 	}
 	else if(value.constructor.name === 'String'){ //assume it is a string
 		if(value.charAt(0) === '?'){ //it's a variable, store it

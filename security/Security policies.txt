@@ -7,6 +7,7 @@ MOK betekent: "Maybe I like"
 ----------
 |PidginQL|
 ----------
+
 //OK
 1. Only CMS administrators can send a message to all CMS users.
 "This is a typical access control policy, ensuring that the
@@ -78,4 +79,67 @@ let isAccepted = pgm.returnsOf(‘‘isAccepted’’) in
 let check = pgm.[(isAuthorOf && notifyDeadlinePast) ||
 (isPC && !hasConflict)] in
 pgm.flowAccessControlled(check, isAccepted, output)"
+
+------------
+|GateKeeper|
+------------
+
+//OK OOK IN CONSCRIPT
+14. No alert calls
+GlobalSym(m, h) : - PTSTO("global", g), HEAPPTSTO(g, m, h).
+AlertCalls(i) 	: - GlobalSym("alert", h), CALLS(i, h).
+
+//OK
+15. Detect writes to frozen objects (Prototype poisoning)
+FrozenViolation(v) : – STORE(v, _, _), PTSTO(v, h'), BuiltInObject (h), Reaches (h, h').
+
+//OK
+16. Script inclusion
+DocumentWrite (i) : – GlobalSym ("document", d ), HEAPPTSTO(d, "write", m), CALLS(i, h).
+DocumentWrite (i) : – GlobalSym ("document", d ), HEAPPTSTO(d, "writeln", m), CALLS(i, h).
+
+//MOK OOK IN CONSCRIPT
+17. No XMLHttpRequests used (object XHR en use of methods open/send/...)
+
+//OK
+18. Global namespace pollution
+
+//OK
+19. Tainting data
+var o = new ActiveXObject();
+var x = o.m();
+System.Shell.Execute(x);
+
+-----------
+|ConScript|
+-----------
+
+//NOK
+20. No dynamic scripts (inladen scripts kunnen we niet detecten, tenzij via document.write)
+
+//OK
+21. No string arguments to setInterval, setTimeout
+
+//OK
+22. Restrict XMLHttpRequest to secure connections
+
+//OK
+23. HTTP-only cookies
+
+//OK
+24. Whitelist URL redirections
+
+----------------------------------------------------
+|Information-Flow Security for a Core of JavaScript|
+----------------------------------------------------
+
+25. Doen vooral zaken als implicit flow, dus MOK. Werken met security upgrades, wat eigelijk hetzelfde is als zeggen: Een upgegrade waarde zit in secure context en zal niet lekken. als upg t; dan mag in t een waarde vloeien bvb afhankelijk van een secret.
+(-> Ik kan dit anders uitdrukken, als een waarde die wel naar een leakfunctie gaat na een if(secret) bvb).
+
+----------------------------------------------------------------------------------------------------------
+|JunGL: a Scripting Language for Refactoring & Isolating JavaScript with Filters, Rewriting, and Wrappers|
+----------------------------------------------------------------------------------------------------------
+
+Voorbeeldjes als proof of concept in thesis?
+
 

@@ -136,7 +136,7 @@ JipdaInfo.memberExpression = function(exp){
 		propertyName: p.name,
 		property 	: p,
 		properties 	: prop,
-		name 		: o.name + '['+ p.name + ']',
+		name 		: o.name + '.' + p.name,
 		type		: 'MemberExpression',
 		//location 	: exp.loc,
 	}
