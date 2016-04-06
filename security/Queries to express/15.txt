@@ -1,0 +1,32 @@
+15. No alert calls
+
+G.skipZeroOrMore()
+.fCall({
+  callee:'?callee',
+  arguments:'?args',
+  properties:{
+    '?name' : '?callee.name'
+  },
+  lookup:{'?name': '?lookedUp',
+          'alert': '?alertAddress'},
+  filters:[
+  	cond('equals','?lookedUp', '?alertAddress')
+  ]
+})
+
+var alert = function(message){
+  //show annoying window
+}
+
+var notAlert = function(message){
+  //Not alert
+}
+
+
+var alias = alert;
+
+for(var i = 0; i < 10; i++){
+	alert("very");
+	alias("annoying");
+  	notAlert("Not annoying");
+}

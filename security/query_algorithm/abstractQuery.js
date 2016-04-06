@@ -551,19 +551,28 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 	var resolved, curAddr, curVal, addrName;
 	var toLookup, prop, names, found;
 
-	//TODO: kijken voor global
+
 
 	for(var varName in obj){
 		addrName = obj[varName];
 		//benv:{?varName : ?addr}
 		if(this.isResolvableVariable(varName)){
 			resolved = this.resolveVariable(varName, subs);
+			if(!resolved) return false;
 		}
 		//benv:{?varName : ?addr}
 		else{
 			resolved = varName;
 		}
 		
+		//check for string literals, lambda's and numbers
+		if(Utilities.isNumeric(resolved) || resolved === "Lambda" || resolved.charAt(0) === '"' || resolved.charAt(0) === '\''){
+			var newO = {};
+			newO[addrName] = resolved;
+			map.push(newO);
+			continue;
+		}
+
 		if(resolved instanceof Object){
 			//TODO
 		}
@@ -633,9 +642,10 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 
 AbstractQuery.processLookup = function(lookedUp){
 	if(lookedUp.as && lookedUp.as.values().length > 0){
+
 		return lookedUp.as.values()[0];
 	}
-	return false
+	return lookedUp.toString(); //change to false if we don't want values
 }
 
 AbstractQuery.matchState = function(el, tl, curTheta){
@@ -653,7 +663,7 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 			case 'properties': 
 						subst = this.addExtraProperties(subst, tlInfo[key], curTheta);
 						break;
-			case 'benv': //TESTING
+			case 'lookup':
 						benv = 	mapStateKey('benv', el);
 						store = mapStateKey('store', el);
 						mapping = tlInfo[key];
@@ -700,6 +710,7 @@ AbstractQuery.matchRecursive = function(key, value, statePart, subs){
 
 	subs = subs || [];
 	if(value instanceof Array){
+		console.log('ARRAY');
 		//TODO overloop alle elems (momenteel skip)?
 	}
 	else if(value instanceof Object) {

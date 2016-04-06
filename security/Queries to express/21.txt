@@ -1,0 +1,31 @@
+21. No string arguments to setInterval, setTimeout
+
+G.skipZeroOrMore()
+.fCall({
+  callee:'?callee',
+  arguments:'?args',
+  properties:{
+    '?name' : '?callee.name',
+    '?secArg': prop('at', '?args', 0),
+  	'?arg': '?secArg.name'
+  },
+  lookup:{'?arg': '?lookedUp'},
+  filters:[
+  	cond('isString', '?lookedUp')
+  ]
+})
+
+
+var setTimeout = function(f,arg){
+  //do something
+}
+
+var interval = 1000;
+var f = function(){}
+var i = 1;
+var s = "stringgy"
+var o = {};
+setTimeout(i, interval);
+setTimeout(s, interval);
+setTimeout(o, interval);
+setTimeout(f, interval);

@@ -1,0 +1,70 @@
+1. Only CMS administrators can send a message to all CMS users.
+"This is a typical access control policy, ensuring that the
+function used to send messages to all users, is called only
+when the current user is an administrator."
+
+G.skipZeroOrMore()
+.beginIfFalse({test: '?condition',
+			   kont: '?kont', 
+               lkont:'?lkont',
+               properties:{
+                 'isAdministrator' : '?condition.callee.name'
+               }})
+.skipZeroOrMore()
+.fCall({name:'broadcast'})
+.skipZeroOrMore()
+.endIf({kont: '?kont', 
+	    lkont:'?lkont'})
+
+      of
+
+G.skipZeroOrMore()
+.beginIfFalse({test: '?condition',
+         kont: '?kont', 
+               lkont:'?lkont',
+               properties:{
+                 'isAdministrator' : '?condition.callee.name'
+               }})
+.skipZeroOrMore()
+.fCall({callee: '?callee',
+        properties:{
+          'broadcast' : '?callee.name'
+       }})
+.skipZeroOrMore()
+.endIf({kont: '?kont', 
+      lkont:'?lkont'})
+
+Uitleg:
+G is het startpunt van de query
+Dan skippen we enkele staten die we niet zoeken (is hetzelfde als wildcard*)
+Dan zoeken we enkel de false-branch van een conditional (kont en lkont linken begin en einde van een if aan elkaar, meer hierover later)
+Dan skippen we weer enkele staten
+Dan zoeken we een verboden call van 'broadcast'
+Dan skippen we weer enkele staten
+De verboden call moet gebeuren voor het einde van de false-branch, zodat we zeker zijn dat we nog in de conditional zitten
+
+var broadcast = function(message){
+  //send broadcast
+}
+
+var isAdministrator = function(user){
+  //do some authentication
+  if(user.admin === 1){
+    return false;
+  }
+  else{
+  	return true;
+  }
+}
+
+var user = {admin: 0}
+
+if(isAdministrator(user)){
+  broadcast("This is a broadcast");
+  //some things
+}
+else{
+  var message = "I am an evil message";
+  broadcast(message); 
+  //some other things
+}

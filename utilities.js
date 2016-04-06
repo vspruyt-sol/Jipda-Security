@@ -58,6 +58,9 @@ Utilities.removeFromArray = function(arr, obj) {
 	}
 }
 
+Utilities.isNumeric = function(n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
+}
 
 /**
  * Extend Array prototype for extra functionality

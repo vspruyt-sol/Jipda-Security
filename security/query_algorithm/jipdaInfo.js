@@ -28,8 +28,16 @@ JipdaInfo.lookup = function(exp, el){
 
 JipdaInfo.getInfo = function(exp){
 	//if we lookup something that isn't a node
+	if(exp instanceof Array){
+		var res = [];
+		for(var i = 0; i < exp.length; i++){
+			res.push(JipdaInfo.getInfo(exp[i]));
+		}
+		return res;
+	}
 	if(!exp || (exp && !exp.type)) return exp;
 	var nodeInfo = {};
+	console.log(exp);
 	nodeInfo = LOOKUP_INFO[exp.type](exp);
 	return nodeInfo;
 }
@@ -59,10 +67,11 @@ JipdaInfo.identifier = function(exp){
 
 JipdaInfo.literal = function(exp){
 	return {
-		name	: exp.raw,
-		raw		: exp.raw,
-		value	: exp.value,
-		type 	: 'Literal',
+		name		: exp.raw,
+		raw			: exp.raw,
+		value		: exp.value,
+		type 		: 'Literal',
+		valuetype 	: (typeof exp.value),
 		//location: exp.loc,
 	}
 }
@@ -346,10 +355,10 @@ JipdaInfo.emptyStatement = function(exp){
 }
 
 JipdaInfo.forStatement = function(exp){
-	var init = Jipdainfo.getInfo(exp.init);
-	var test = Jipdainfo.getInfo(exp.test);
-	var update = Jipdainfo.getInfo(exp.update);
-	var body  = Jipdainfo.getInfo(exp.body);
+	var init = JipdaInfo.getInfo(exp.init);
+	var test = JipdaInfo.getInfo(exp.test);
+	var update = JipdaInfo.getInfo(exp.update);
+	var body  = JipdaInfo.getInfo(exp.body);
 
 	return {
 		name 	: 'for(' + init.name + '; ' + test.name + '; ' + update.name + '){' + body.name + '}',
@@ -363,9 +372,9 @@ JipdaInfo.forStatement = function(exp){
 }
 
 JipdaInfo.forInStatement = function(exp){
-	var left = Jipdainfo.getInfo(exp.left);
-	var right = Jipdainfo.getInfo(exp.right);
-	var body  = Jipdainfo.getInfo(exp.body);
+	var left = JipdaInfo.getInfo(exp.left);
+	var right = JipdaInfo.getInfo(exp.right);
+	var body  = JipdaInfo.getInfo(exp.body);
 
 	return {
 		name 	: 'for(' + left.name + ' in ' + right.name + '){' + body.name + '}',
@@ -405,7 +414,7 @@ JipdaInfo.functionDeclaration = function(exp){
 
 JipdaInfo.labeledStatement = function(exp){
 	var lbl = JipdaInfo.getInfo(exp.label);
-	var body = Jipdainfo.getInfo(exp.body);
+	var body = JipdaInfo.getInfo(exp.body);
 
 	return {
 		name 		: lbl + ': ' + body.name,
@@ -442,7 +451,7 @@ JipdaInfo.postfixExpression = function(exp){
 		name 		: arg.name + op,
 		argument 	: arg,
 		operator 	: op,
-		type		: 'PostfixExpression',
+		type		: 'UpdateExpression',
 		//location 	: exp.loc,
 	}
 }
@@ -530,7 +539,7 @@ JipdaInfo.tryStatement = function(exp){
 	var gh, ghs = [];
 	var h, hs = [];
 	var block = JipdaInfo.getInfo(exp.block);
-	var fin = Jipdainfo.getInfo(exp.finalizer);
+	var fin = JipdaInfo.getInfo(exp.finalizer);
 
 	for(var i = 0; i < exp.guardedHandlers.length; i++){
 		gh = exp.guardedHandlers[i];
@@ -561,7 +570,7 @@ JipdaInfo.unaryExpression = function(exp){
 		name 		: op + arg.name,
 		argument 	: arg,
 		operator 	: op,
-		type		: 'UnaryExpression',
+		type		: (op === '++' || op === '--') ? "UpdateExpression" : "UnaryExpression"
 		//location 	: exp.loc,
 	}
 }
@@ -630,4 +639,5 @@ var LOOKUP_INFO = {
 	'UnaryExpression' 		: JipdaInfo.unaryExpression,
 	'WhileStatement' 		: JipdaInfo.whileStatement,
 	'WithStatement' 		: JipdaInfo.withStatement,
+	'UpdateExpression'		: JipdaInfo.unaryExpression,
 };
