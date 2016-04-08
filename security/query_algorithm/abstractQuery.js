@@ -549,15 +549,21 @@ AbstractQuery.addExtraPropertiesSwapped = function(table, props, curTheta){
 AbstractQuery.getAddresses = function(obj, env, store, subs){
 	var map = [];
 	var resolved, curAddr, curVal, addrName;
-	var toLookup, prop, names, found;
+	var toLookup, prop, names, found, startRes, restRes;
 
 
 
 	for(var varName in obj){
 		addrName = obj[varName];
+
+		//allow '?var.prop1.prop2'
+		startRes = varName.split('.')[0];
+		restRes = varName.split('.').slice(1);
+
 		//benv:{?varName : ?addr}
-		if(this.isResolvableVariable(varName)){
-			resolved = this.resolveVariable(varName, subs);
+		if(this.isResolvableVariable(startRes)){
+			resolved = this.resolveVariable(startRes, subs);
+			resolved = [].concat.apply([resolved], restRes).join('.');
 			if(!resolved) return false;
 		}
 		//benv:{?varName : ?addr}
@@ -577,9 +583,9 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 			//TODO
 		}
 		else{ //String
-			if(env._global){
+			if(env._global || startRes === '_global'){
 				curAddr = 1;
-				prop = resolved.split('.'); //still have to look for resolved in the global object
+				prop = (startRes === '_global') ? resolved.split('.').slice(1) : resolved.split('.'); //still have to look for resolved in the global object
 			}
 			else{
 				//split on dots for objects
@@ -633,6 +639,10 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 
 		var newO = {};
 		newO[addrName] = curAddr;
+		//console.log(JSON.stringify([newO]));
+		//console.log(JSON.stringify(map));
+		//console.log(this.merge([newO], map));
+		if(!this.merge(map, [newO])) return false;
 		map.push(newO);
 
 	}
@@ -658,6 +668,7 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 	for(var key in tlInfo){
 		switch (key){
 			case 'filters': 
+						//console.log(this.verifyConditions(subst, tlInfo[key], curTheta));
 						subst = this.verifyConditions(subst, tlInfo[key], curTheta);
 						break;
 			case 'properties': 
@@ -692,7 +703,8 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 						};
 						break;*/
 			default: 	reified = mapStateKey(key, el);
-						if(reified === false) return false;
+						//if(key === '_global') console.log(key + '->' + reified);
+						if(reified === undefined) return false;
 						matchInfo = this.matchRecursive(key, tlInfo[key], reified); //pass along the corresponding statepart
 						if(matchInfo){
 							subst.push.apply(subst, matchInfo)
@@ -706,7 +718,9 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 }
 
 AbstractQuery.matchRecursive = function(key, value, statePart, subs){
-	var reified, matchInfo, merged;
+	var reified, matchInfo, merged, tmp;
+
+	//console.log(key + '-> ' + value + ' = ' + statePart);
 
 	subs = subs || [];
 	if(value instanceof Array){
@@ -718,7 +732,7 @@ AbstractQuery.matchRecursive = function(key, value, statePart, subs){
 			reified = mapStateKey(k, statePart);
 
 			//console.log(k)
-			if(reified === false) return false;
+			if(reified === undefined) return false;
 
 			matchInfo = this.matchRecursive(k, value[k], reified, subs);
 			if (matchInfo){
@@ -733,8 +747,16 @@ AbstractQuery.matchRecursive = function(key, value, statePart, subs){
 	else if(value.constructor.name === 'String'){ //assume it is a string
 		if(value.charAt(0) === '?'){ //it's a variable, store it
 			var obj = {};
-			obj[value] =  JipdaInfo.getInfo(statePart) || {name: "NotDefined"};
+			tmp = statePart;//JipdaInfo.getInfo(statePart);
+			if(tmp === undefined){
+				obj[value] = {name: "NotDefined"};
+			}
+			else{
+				obj[value] =  tmp;
+			}
+			//obj[value] =  JipdaInfo.getInfo(statePart) || {name: "NotDefined"};
 			//console.log(statePart);
+			//console.log('----');
 			//obj[value] =  statePart;
 			subs.push(obj);
 		}
@@ -754,6 +776,8 @@ AbstractQuery.merge = function(theta, otherTheta){
 	//(1) undefined if any two substitutions in S disagree on the mapping 
 	//of any variable in the intersection of their domains and 
 	//(2) the union of the substitutions in S otherwise.
+	//console.log(JSON.stringify(theta));
+	//console.log(JSON.stringify(otherTheta));
 	//iterate over set 1
 	var res = [];
 	function mergeIterate(theta, otherTheta){
@@ -762,7 +786,7 @@ AbstractQuery.merge = function(theta, otherTheta){
 			for(var prop in theta[i]){ //only one prop...
 				if(theta[i].hasOwnProperty(prop)){
 					p = findProp(otherTheta, prop);
-					if(p){ 
+					if(p !== undefined){ 
 						if(!(_.isEqual(p,theta[i][prop]))){ //If not equal
 							return false;
 						}
@@ -785,11 +809,13 @@ AbstractQuery.merge = function(theta, otherTheta){
 				}
 			}
 		}
-		return false;
+		return undefined;
 	}
 
 	res = mergeIterate(theta.slice(), otherTheta.slice()); //Changed this to merge copies instead of the actual arrays
 
+	//console.log(JSON.stringify(res));
+	//console.log('----');
 	return res;
 }
 
@@ -856,10 +882,13 @@ AbstractQuery.expandSubgraph = function(triple, currPattern){
 var mapStateKey = function(key, statePart){
 	//TODO:do some reifying
 
+	//console.log(key);
+	//console.log(statePart[key] !== undefined ? statePart[key] : "UNDEFINED");
+
 	switch (key){
-		case 'this' : 	return statePart; break;
-		case 'id'	: 	return statePart['_id']; break;
-		default		: 	return statePart[key] !== undefined ? statePart[key] : false;
+		case 'this' : 	return JipdaInfo.getInfo(statePart); break;
+		case 'id'	: 	return JipdaInfo.getInfo(statePart['_id']); break;
+		default		: 	return statePart[key] !== undefined ? JipdaInfo.getInfo(statePart[key]) : undefined;
 	}
 	
 }

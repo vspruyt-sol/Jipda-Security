@@ -1,0 +1,51 @@
+18. Global namespace pollution
+
+G.skipZeroOrMore()
+.lBrace()
+.state({
+  node:{
+    type: 'VariableDeclaration',
+  },
+  benv:{
+    _global: false
+  }
+})
+.or()
+.state({
+  node:{
+    type: 'FunctionDeclaration'
+  },
+  benv:{
+    _global: false
+  }
+})
+.rBrace()
+
+
+//This is a namespace
+(function(arg){
+  	//perform some actions
+  	var ok = "someString";
+  	var alsoOk = function(){
+  		//also ok
+    }
+    
+    function Ok(){
+
+	}
+  
+  	var good = new Ok();
+
+})(1);
+
+var nOkVar = "3";
+
+var nOkFunc = function(){
+	//a global function
+}
+
+function Nok(){
+
+}
+
+var nOkCtor = new Nok();

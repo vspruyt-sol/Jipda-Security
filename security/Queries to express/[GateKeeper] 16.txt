@@ -1,0 +1,41 @@
+16. script inclusions
+
+
+G.skipZeroOrMore()
+.lBrace()
+.fCall({
+  name: '?name',
+  lookup:{
+    '?name'   : '?addr',
+    '_global.document.write': '?addr',
+    }
+})
+.or()
+.fCall({
+  name: '?name',
+  lookup:{
+    '?name'   : '?addr',
+    '_global.document.writeln': '?addr',
+    }
+})
+.rBrace()
+
+
+var document = {
+  write: function(arg){ 
+    // do something
+  },
+  writeln: function(arg){
+  	//do something
+  },
+  getElementById: function(id){/* ... */}
+}
+
+if(document.write("1")){
+	//some example code
+};
+
+var o = {};
+o.f = document.writeln;
+o.f("1");
+var x = document.getElementById('id');

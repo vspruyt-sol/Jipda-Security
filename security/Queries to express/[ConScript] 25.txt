@@ -1,4 +1,4 @@
-15. No alert calls
+25. Prevent resource abuse
 
 G.skipZeroOrMore()
 .fCall({
@@ -7,12 +7,10 @@ G.skipZeroOrMore()
   properties:{
     '?name' : '?callee.name'
   },
-  lookup:{'?name': '?lookedUp',
-          'alert': '?alertAddress'},
-  filters:[
-  	cond('equals','?lookedUp', '?alertAddress')
-  ]
+  lookup:{'?name': '?alertAddress',
+          '_global.alert': '?alertAddress'}
 })
+
 
 var alert = function(message){
   //show annoying window
@@ -20,13 +18,17 @@ var alert = function(message){
 
 var notAlert = function(message){
   //Not alert
+  var alert = function(a){
+  }
+  
+  alert(1); // not detected as violation (which is good)
 }
 
 
 var alias = alert;
 
 for(var i = 0; i < 10; i++){
-	alert("very");
-	alias("annoying");
-  	notAlert("Not annoying");
+  alert("very");
+  alias("annoying");
+    notAlert("Not annoying");
 }

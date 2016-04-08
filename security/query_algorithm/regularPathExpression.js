@@ -15,6 +15,41 @@ function RegularPathExpression(seed){
  * -----------------------
  */
 
+RegularPathExpression.prototype.writeToFrozenObjectPrototype = function(obj){
+	var obj = obj || {};
+	var states = [];
+	var frozenObjects = ['Array', 'Boolean', 'Date', 'Function'];
+	var ret = this.lBrace();
+
+	var objProps = this.getTmpIfUndefined();
+
+	for(var i = 0; i < frozenObjects.length; i++){
+		var s = {};
+
+		this.setupStateChain(s, ['node', 'expression', 'left','properties'], objProps);
+		//console.log(JSON.stringify(s));
+		this.setupStateChain(s, ['node', 'expression', 'left','mainObjectName'], frozenObjects[i]);
+		
+		this.setupFilter(s, 'contains', objProps, 'prototype');
+
+		this.finalize(s, obj);
+		states.push(s);
+	}
+
+	for(var j = 0; j < states.length; j++){
+		if(j !== states.length - 1){
+			ret = ret.state(states[j]).or()
+		}
+		else{
+			ret = ret.state(states[j]).rBrace();
+		}
+	}
+
+	console.log(ret);
+
+	return ret;
+}
+
 RegularPathExpression.prototype.beginFCall = function(obj){ //this, kont, lkont, name, callee, arguments, argName (first argument)
 	var s1 = {};
 
@@ -425,10 +460,10 @@ RegularPathExpression.prototype.processProperties = function(state, obj){
 RegularPathExpression.prototype.setupFilter = function(obj, f){
 	var args = Array.prototype.slice.call(arguments, 2);
 	var fArgs = Array.prototype.concat.apply([], [f, args])
-	console.log(args);
-	console.log(fArgs);
+
 	if(!obj.filters) obj.filters = [];
 	obj.filters.push(cond.apply(this,fArgs));	
+	//console.log(obj.filters);
 }
 
 RegularPathExpression.prototype.processFilters = function(state, obj){
@@ -457,10 +492,6 @@ RegularPathExpression.prototype.processLookups = function(state, obj){
 	//console.log(state);
 	return state;
 }
-
-
-
-
 
 /**
  * ----------------
@@ -632,6 +663,7 @@ RegularPathExpression.prototype.toNFA = function(){
 	//One way to make a nfa, from a FSM
 	nfa.fromFSM(fsm, this._map); //built so that NFA's don't depend on FSM's per sé.
 	//return the NFA
+	console.log(nfa);
 	return nfa;
 }
 
@@ -706,6 +738,7 @@ var cond = function(f){
 }
 
 var isString = function(s){
+	if(s === '{Str}') return true;
 	if(s.indexOf('-') === 3 || s.charAt(0) === '{') return false;
 	return true;
 }

@@ -129,8 +129,6 @@ System.Shell.Execute(x);
 //OK
 24. Whitelist URL redirections
 
-25. Prevent resource abuse
-
 ----------------------------------------------------
 |Information-Flow Security for a Core of JavaScript|
 ----------------------------------------------------

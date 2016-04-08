@@ -1,0 +1,63 @@
+15. Writes to frozen objects
+
+//Writes to prototypes of all frozen objects
+G.skipZeroOrMore().writeToFrozenObjectPrototype()
+
+
+//Writes to the first frozen object (without having it assigned before)
+G.not()
+.state({
+  node:{
+    expression:{
+      left:{
+        properties: '?props',
+        mainObjectName: 'Array'
+      }
+    }
+  },
+  filters:[
+  	cond('contains', '?props', 'prototype')
+  ]
+})
+.star()
+.state({
+  node:{
+    expression:{
+      left:{
+        properties: '?props',
+        mainObjectName: 'Array'
+      }
+    }
+  },
+  filters:[
+  	cond('contains', '?props', 'prototype')
+  ]
+})
+
+Array.prototype.push = function(a){
+  //do something evil instead of pushing
+  var window = { location: "www.good.com" }
+  window.location = "www.evil.com"
+}
+
+Array.prototype.shift = function(){
+  //do something evil instead of pushing
+  var window = { location: "www.good.com" }
+  window.location = "www.evil.com"
+}
+
+function Boolean(){
+}
+
+Boolean.prototype.isTruthy = function(){}
+
+
+function Date(){
+}
+
+
+Date.prototype.toMilliseconds = 3;
+
+
+Function.prototype.apply = function(){}
+

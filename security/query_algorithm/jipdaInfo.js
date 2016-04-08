@@ -37,7 +37,7 @@ JipdaInfo.getInfo = function(exp){
 	}
 	if(!exp || (exp && !exp.type)) return exp;
 	var nodeInfo = {};
-	console.log(exp);
+	//console.log(exp);
 	nodeInfo = LOOKUP_INFO[exp.type](exp);
 	return nodeInfo;
 }
@@ -77,6 +77,7 @@ JipdaInfo.literal = function(exp){
 }
 
 JipdaInfo.objectExpression = function(exp){
+	//console.log(exp);
 	var tmp = '{';
 	var arr = [];
 	//calculate name if nested
@@ -98,10 +99,13 @@ JipdaInfo.objectExpression = function(exp){
 }
 
 JipdaInfo.arrayExpression = function(exp){
+	//console.log(exp);
 	var tmp = '[';
+	var elems = [];
 	//calculate name if nested
 	for(var i = 0; i < exp.elements.length; i++){
 		tmp += JipdaInfo.getInfo(exp.elements[i]).name + ', ';
+		elems.push(JipdaInfo.getInfo(exp.elements[i]));
 	}
 
 	if (exp.elements.length > 0) tmp = tmp.slice(0, -2);
@@ -111,6 +115,7 @@ JipdaInfo.arrayExpression = function(exp){
 	return {
 		name	: tmp,
 		type 	: 'ArrayExpression',
+		elements: elems
 		//location: exp.loc,
 	}
 }
@@ -142,6 +147,7 @@ JipdaInfo.memberExpression = function(exp){
 	return {
 		object	 	: o,
 		objectName 	: o.name,
+		mainObjectName: o.name.split('.')[0],
 		propertyName: p.name,
 		property 	: p,
 		properties 	: prop,
@@ -402,8 +408,8 @@ JipdaInfo.functionDeclaration = function(exp){
 
 	return {
 		//defaults en body!
-		name 		: i.name,
-		id 			: i,
+		name 		: id.name,
+		id 			: id,
 		params 		: par,
 		defaults 	: def,
 		body 		: body,
