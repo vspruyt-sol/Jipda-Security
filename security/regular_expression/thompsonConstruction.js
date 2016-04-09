@@ -12,9 +12,13 @@ ThompsonConstruction.prototype.toNFA = function(regex){
 										) 
 
 	machines = this.buildMachineStack(regex);
+	//console.log(JSON.stringify(machines));
   	machines = this.kleeneUp(machines);
+	//console.log(JSON.stringify(machines));
   	machines = this.catify(machines);
+	//console.log(JSON.stringify(machines));
   	machines = this.handleAlternation(machines);
+	//console.log(JSON.stringify(machines));
 
   	for(var i = 0; i < machines.length; i++){
   		curMachine = machines[i];
@@ -32,6 +36,8 @@ ThompsonConstruction.prototype.toNFA = function(regex){
   	}
 
   	orig.deleteEdge(0, 0, 0); // (0, PENDING, 0);
+
+	//console.log(JSON.stringify(orig));
 
 	//console.log(JSON.stringify(new FiniteStateMachine(orig.acceptStates, orig.graph, 0, 'Final', orig.negatedPairs)));
 
@@ -71,7 +77,9 @@ ThompsonConstruction.prototype.buildMachineStack = function(regex){
 					  	nextSuccChar = succRegexPart.symbol;
 					  }
 					  skip = subExpression.length + 1;
+					  console.log('Start subexpression');
 					  subGraph = this.toNFA(subExpression);
+					  console.log('End subexpression');
 					  if(negated) {
 					  	subGraph.negatedPairs.push([subGraph.origin,_.keys(subGraph.acceptStates)]);
 					  	negated = false;
@@ -166,13 +174,20 @@ ThompsonConstruction.prototype.absorbLeftAlternation = function(machines){
 			newMachines.push([curMachine[0], null]);
 		}
 		else{
+			
 			from = curMachine[1].shift();
 			to = curMachine[1].shift();
 			//TEST NEGATION
 			poppedMachine = newMachines.pop()[0];
+
+			//console.log(JSON.stringify(poppedMachine));
+			//console.log(JSON.stringify(curMachine[0]));
 			replaced = curMachine[0].replaceEdge(from, 0, to, poppedMachine); //PENDING
+			//console.log(JSON.stringify(replaced));
+			//console.log('----');
 			newMachines.push([replaced, curMachine[1]]);
 		}
+		//console.log(JSON.stringify(newMachines))
 	}
     return newMachines;
 }

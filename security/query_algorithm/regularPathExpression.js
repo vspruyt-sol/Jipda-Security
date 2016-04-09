@@ -18,7 +18,7 @@ function RegularPathExpression(seed){
 RegularPathExpression.prototype.writeToFrozenObjectPrototype = function(obj){
 	var obj = obj || {};
 	var states = [];
-	var frozenObjects = ['Array', 'Boolean', 'Date', 'Function'];
+	var frozenObjects = ['Array', 'Boolean', 'Date', 'Function', 'Document', 'Math', 'Window'];
 	var ret = this.lBrace();
 
 	var objProps = this.getTmpIfUndefined();

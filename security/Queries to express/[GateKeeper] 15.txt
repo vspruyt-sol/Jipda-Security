@@ -34,6 +34,15 @@ G.not()
   ]
 })
 
+/*var document = {
+  location: "http://www.good.com",
+  cookie: "semicolon;separated;string"
+}
+
+var l = document.location;
+
+var c = document.cookie;*/
+
 Array.prototype.push = function(a){
   //do something evil instead of pushing
   var window = { location: "www.good.com" }
@@ -60,4 +69,20 @@ Date.prototype.toMilliseconds = 3;
 
 
 Function.prototype.apply = function(){}
+
+
+Math.prototype.random = function(){}
+
+function Window(){
+}
+
+
+Window.prototype.location = 3;
+
+
+function Document(){
+}
+
+
+Document.prototype.cookie = 3;
 

@@ -157,6 +157,8 @@ FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm){
     var offset = this.getNodeCount() - 1;
     this.attachGraph(from, fsm, to);
 
+    //console.log(JSON.stringify(this));
+
     //for each of the edges pointing at the accept state of the graph
     //redirect them to point at dest
     for(var acc in fsm.acceptStates){
@@ -165,28 +167,51 @@ FiniteStateMachine.prototype.replaceEdge = function(from, label, to, fsm){
     	delete this.acceptStates[parseInt(acc) + offset];
     }
 
+
+
     this.deleteEdge(from, label, to); 
+    //console.log(JSON.stringify(this));
     this.renumberNodes();    
 
     return this;
 }
 
 FiniteStateMachine.prototype.renumberNodes = function(){
+	//console.log("Start renumberNodes");
 	var nodes = this.getNodeNames();
 	var n;
 	for(var i = 0; i < nodes.length; i++){
 		n = nodes[i];
 		if(parseInt(n) !== i){
-			this.retargetEdges(n, i);
+			//console.log(n);
+			//console.log(JSON.stringify(this));
+			this.retargetEdges(parseInt(n), i);
+			//console.log(JSON.stringify(this));
+			//console.log('----');
+			//console.log(this.acceptStates[n]);
 			if(this.acceptStates[n] !== undefined){
 				this.acceptStates[i] = this.acceptStates[n];
 				delete this.acceptStates[n];
 			} 
 			this.graph[i] = this.graph[n];
 			delete this.graph[n];
+
+			//console.log(JSON.stringify(this));
+			//console.log('Done renumbering for n = ' + n);
 		}
 	}
 }
+/*
+def renumber!
+    get_node_names.each_with_index do |n,ii|
+      if n != ii
+        retarget_edges(n,ii)
+        @accept_states[ii] = @accept_states.delete(n) unless @accept_states[n].nil?
+        @graph_hash[ii] = @graph_hash.delete(n)
+      end
+    end
+    self
+  end*/
 
 FiniteStateMachine.prototype.incrementNodeLabels = function(amount){
 	var newGraph = {};
@@ -230,6 +255,7 @@ FiniteStateMachine.prototype.retargetEdges = function(oldTarget, newTarget){
 		edge = this.graph[from];
 		for(var label in edge){
 			to = edge[label];
+			//console.log('replace what by what: ' + oldTarget + ' -> ' + newTarget);
 			if(_.include(to, oldTarget)){ //als edge naar oude target, vervang deze door nieuwe
 				this.addEdge(from, label, newTarget);
 				this.deleteEdge(from, label, oldTarget);
@@ -237,7 +263,23 @@ FiniteStateMachine.prototype.retargetEdges = function(oldTarget, newTarget){
 			}
 		}
 	}
+	
 }
+
+/*
+def retarget_edges(old_dest, new_dest)
+    @graph_hash.each_pair do |node,edge_hash|
+      edge_hash.each_pair do |label, dest|
+        if dest.include? old_dest
+          #puts "#{node}[#{label}] changed from #{dest} to #{new_dest}"
+          add_edge(   node, label, new_dest)
+          delete_edge(node, label, old_dest)
+        end
+      end
+    end
+    self
+  end
+*/
 
 FiniteStateMachine.prototype.attachNegatedPairs = function(machine, offset){
 	var curPair, newLeft, newRight;
