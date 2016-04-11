@@ -45,8 +45,6 @@ RegularPathExpression.prototype.writeToFrozenObjectPrototype = function(obj){
 		}
 	}
 
-	console.log(ret);
-
 	return ret;
 }
 
@@ -311,7 +309,7 @@ RegularPathExpression.prototype.udAssignOrVarDecl = function(obj){ //left, right
 					.rBrace();
 }
 
-RegularPathExpression.prototype.fCall = function(obj){ //name, callee, arguments, argName (eerste arg);
+RegularPathExpression.prototype.fCall = function(obj){ //name, callee, arguments, argName (eerste arg), global;
 	obj = obj || {};
 	var s1 = {}; //als ExpressionStatement
 	var s2 = {}; //als CallExpression
@@ -324,11 +322,13 @@ RegularPathExpression.prototype.fCall = function(obj){ //name, callee, arguments
 	var firstArgName= 	obj.argName || this.getTmpVar('firstArgName'); //if user wants to know first argument name
 	var calleeName 	= 	this.getTmpVar('calleeName'); //tmp var for matching
 	var argName 	=	this.getTmpVar('argName');
+	var global 		=	this.getTmpIfUndefined(obj.global); 	
 
 	//Basic function call
 	this.setupStateChain(s1, ['node','this'], objThis);
 	this.setupStateChain(s1, ['node','expression','callee'], objCallee);
 	this.setupStateChain(s1, ['node','expression','arguments'], objArguments);
+	this.setupStateChain(s1, ['benv','_global'], global);
 	
 	//get first argument
 	if(obj.argName){
@@ -342,6 +342,7 @@ RegularPathExpression.prototype.fCall = function(obj){ //name, callee, arguments
 	this.setupStateChain(s2, ['node','this'], objThis);
 	this.setupStateChain(s2, ['node','callee'], objCallee);
 	this.setupStateChain(s2, ['node','arguments'], objArguments);
+	this.setupStateChain(s2, ['benv','_global'], global);
 	
 	//get first argument
 	if(obj.argName){
@@ -358,6 +359,36 @@ RegularPathExpression.prototype.fCall = function(obj){ //name, callee, arguments
 					.or()
 					.state(s2)
 				.rBrace()
+}
+
+RegularPathExpression.prototype.newExpression = function(obj){ //name, callee, arguments, argName (eerste arg);
+	obj = obj || {};
+	var s = {}; 
+
+	var objThis 	= 	this.getTmpIfUndefined(obj.this); 	
+	var objName 	=	obj.name || this.getTmpVar('objName'); //naam van de functie
+	var objCallee 	= 	obj.callee || this.getTmpVar('objNode'); //de callee node
+	var objArguments= 	obj.arguments || this.getTmpVar('objArguments'); //de arguments node
+	var firstArg 	= 	this.getTmpVar('firstArg');
+	var firstArgName= 	obj.argName || this.getTmpVar('firstArgName'); //if user wants to know first argument name
+	var calleeName 	= 	this.getTmpVar('calleeName'); //tmp var for matching
+	var argName 	=	this.getTmpVar('argName');
+
+	//Basic function call
+	this.setupStateChain(s, ['node','this'], objThis);
+	this.setupStateChain(s, ['node','callee'], objCallee);
+	this.setupStateChain(s, ['node','arguments'], objArguments);
+	
+	//get first argument
+	if(obj.argName){
+		this.setupProperty(s, firstArg, prop('at', objArguments, 0)); //tmp eerste arg
+		this.setupProperty(s, firstArgName, firstArg + '.name');
+	}
+	this.setupProperty(s, objName, objCallee + '.name');
+
+	this.finalize(s, obj);
+
+	return this.state(s);
 }
 
 /**
@@ -811,6 +842,7 @@ var isString = function(s){
 var queryFunctions = {
 	conditions : { //filters
 				equals 		: _.isEqual,
+				nequals		: function(a,b){return (!_.isEqual(a,b));},
 				contains 	: contains, 
 				testTrue 	: function(){return true;},
 				testFalse 	: function(){return false;},

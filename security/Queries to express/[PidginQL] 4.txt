@@ -1,0 +1,91 @@
+4. A database is opened only after the master password
+is checked or when creating a new database.
+"Method doOpenDatabaseActions is called to open the password
+database. We confirmed that this occurs only in the
+newDatabase method or when protected by appropriate checks
+of the master password."
+
+3 solutions, samen 100% coverage, wel false positives als samen gezet
+1. if master password is not correct
+------------------------------------
+G.skipZeroOrMore()
+.beginIfFalse({kont:'?kont', lkont:'?lkont'})
+.not().endIf({kont:'?kont', lkont:'?lkont'}).star()
+.fCall({name:'doOpenDatabaseActions'})
+
+2. all global calls of doOpenDatabaseActions
+--------------------------------------------
+G.skipZeroOrMore()
+.fCall({global: true, name:'doOpenDatabaseActions'})
+
+
+3. call of doOpenDatabaseActions in non-newDatabase function
+------------------------------------------------------------
+G.skipZeroOrMore()
+.beginFCall({name:'?name', lkont:'?lk', kont:'?k',
+             filters:[
+              cond('nequals', '?name', 'newDatabase')
+             ]})
+.not().endFCall({lkont:'?lk', kont:'?k'}).star()
+.fCall({name:'doOpenDatabaseActions'})
+
+
+//1. Creation of new DB
+//2. Call of doOpenDatabaseActions
+//3. Correct master PW
+function Database(serverName, port){
+  //set up database
+    this.serverName = serverName;
+    this.port = port;
+    this.open = function(){ /*...*/};
+    this.close = function(){/*...*/};
+}
+
+var doOpenDatabaseActions = function(db){
+    //this opens the database
+    var x = 3;
+  //do some database actions  
+    //db.close()
+}
+
+var newDatabase = function(s,p){
+  var db = new Database(s,p);
+    doOpenDatabaseActions(db);
+    return db;
+}
+
+
+var badNewDatabase = function(s,p){
+  var db = new Database(s,p);
+    doOpenDatabaseActions(db);
+    return db;
+}
+
+var isMasterPassword = function(pass){
+  //normally, some secure check should happen here
+  if(pass === "masterpassword"){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+var getUserPassword = function(){
+  return {value : 'password'};
+}
+
+var db;
+
+if(isMasterPassword(getUserPassword())){
+    db = newDatabase("ok",80); //OK
+    doOpenDatabaseActions(db); //OK
+}
+else{
+    db = newDatabase("nok",80); //OK
+    doOpenDatabaseActions(db); //NOK
+}
+
+doOpenDatabaseActions(db); //NOK
+
+var baddb = badNewDatabase("nok",80); //NOK

@@ -1,0 +1,76 @@
+9. Public outputs do not depend on a users's password, unless it has been cryptographically hashed
+
+G.skipZeroOrMore()
+.returnOfFunctionCall({functionName:'getPassword', returnAddr : '?addr'})
+.not()
+.state({
+  node:{
+    expression: {
+      callee: {name:'computeHash'},
+      arguments: '?args'
+    }
+  },
+  properties: {
+    '?first' : prop('at', '?args', 0),
+    '?firstName': '?first.name'
+  },
+  lookup:{
+    '?firstName' : '?addr'
+  }
+}).star()
+.lBrace()
+.fCall({name: 'print', 
+        argName: '?outputArg',
+        lookup:{
+          '?outputArg' : '?addr'
+        }})
+.or()
+.fCall({name: 'writeToStorage', 
+        argName: '?outputArg',
+        lookup:{
+          '?outputArg' : '?addr'
+        }})
+.rBrace()
+
+/*let passwords = pgm.returnsOf(‘‘getPassword’’) in let outputs = pgm.formalsOf(‘‘writeToStorage’’) ∪
+pgm.formalsOf(‘‘print’’) in
+let hashFormals = pgm.formalsOf(‘‘computeHash’’) in
+pgm.declassifies(hashFormals, passwords, outputs)*/
+//let declassifies(G, declassifiers, srcs, sinks) = G.removeNodes(declassifiers).between(srcs, sinks) is empty
+
+//passwords
+var getPassword = function(){
+  	//prompt user for password or so
+  	var password = {value: "secret"};
+	return password;
+}
+
+//outputs
+var print = function(secret){
+	//print the secret
+}
+
+var writeToStorage = function(secret){
+	//print the secret
+}
+
+//declassifiers
+var computeHash = function(secret){
+	//return hashed secret
+  	return "hashed";
+}
+
+var password = getPassword();
+
+if(1 + 2 === 3){
+  computeHash(password);
+  //print(password);
+  writeToStorage(password);
+  print(password);
+
+}
+else{
+  print(password);
+  writeToStorage(password);
+}
+
