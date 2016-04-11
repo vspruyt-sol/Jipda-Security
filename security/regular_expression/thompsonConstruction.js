@@ -77,9 +77,9 @@ ThompsonConstruction.prototype.buildMachineStack = function(regex){
 					  	nextSuccChar = succRegexPart.symbol;
 					  }
 					  skip = subExpression.length + 1;
-					  console.log('Start subexpression');
+					  //console.log('Start subexpression');
 					  subGraph = this.toNFA(subExpression);
-					  console.log('End subexpression');
+					  //console.log('End subexpression');
 					  if(negated) {
 					  	subGraph.negatedPairs.push([subGraph.origin,_.keys(subGraph.acceptStates)]);
 					  	negated = false;

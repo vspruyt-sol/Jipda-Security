@@ -549,9 +549,7 @@ AbstractQuery.addExtraPropertiesSwapped = function(table, props, curTheta){
 AbstractQuery.getAddresses = function(obj, env, store, subs){
 	var map = [];
 	var resolved, curAddr, curVal, addrName;
-	var toLookup, prop, names, found, startRes, restRes;
-
-
+	var toLookup, prop, names, found, startRes, restRes, merged;
 
 	for(var varName in obj){
 		addrName = obj[varName];
@@ -572,10 +570,19 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 		}
 		
 		//check for string literals, lambda's and numbers
+		//console.log(resolved);
+
 		if(Utilities.isNumeric(resolved) || resolved === "Lambda" || resolved.charAt(0) === '"' || resolved.charAt(0) === '\''){
+			//if it doesn't match a specified value
+			if(!this.isResolvableVariable(addrName)){
+				if (addrName !== resolved) return false;
+			}
+
 			var newO = {};
 			newO[addrName] = resolved;
-			map.push(newO);
+			map = this.merge(map, [newO]);
+			if(!map) return false;
+			//map.push(newO);
 			continue;
 		}
 
@@ -638,12 +645,20 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 		}
 
 		var newO = {};
+
+		//if it doesn't match a specified value
+		if(!this.isResolvableVariable(addrName)){
+			if (addrName !== curAddr) return false;
+		}
+		
+
 		newO[addrName] = curAddr;
 		//console.log(JSON.stringify([newO]));
 		//console.log(JSON.stringify(map));
 		//console.log(this.merge([newO], map));
-		if(!this.merge(map, [newO])) return false;
-		map.push(newO);
+		map = this.merge(map, [newO]);
+		if(!map) return false;
+		//map.push(newO);
 
 	}
 	

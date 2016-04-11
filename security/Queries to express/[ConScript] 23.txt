@@ -1,0 +1,56 @@
+23. HTTP-cookies only
+
+G.skipZeroOrMore()
+.lBrace()
+.udAssign({rightName:'?n',
+           lookup:
+           {
+             '_global.document.cookie' : '?cookieAddr',
+             '?n' : '?cookieAddr'	
+           }
+          })
+.or()
+.returnOfFunctionCall({returnName:'?n',
+                  lookup:
+                  {
+             		'_global.document.cookie' : '?cookieAddr',
+                    '?n' : '?cookieAddr'	
+                  }
+                 })
+.rBrace()
+
+
+var document = {
+  location: "http://www.good.com",
+  cookie: {value: "semicolon;separated;string"}
+}
+
+var location, doc, cookie1, cookie2, 
+     cookie3, cookie4, cookie5, goodFunc, badFunc;
+
+badFunc = function(){
+  	//do some bad things
+  	var bad;
+  	bad = document.cookie;
+	return bad;
+}
+
+goodFunc = function(){
+  	//do some bad things
+  	var ok;
+  	ok = "ok";
+	return ok;
+}
+
+location = document.location;
+cookie1 = document.cookie;
+doc = document;
+cookie2 = doc.cookie;
+cookie3 = badFunc();
+
+if(badFunc()){
+	cookie4 = badFunc();
+}
+
+cookie5 = goodFunc();
+
