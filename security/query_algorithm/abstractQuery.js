@@ -337,6 +337,7 @@ AbstractQuery.extensions = function(theta, tl){
 }
 
 AbstractQuery.match = function(el, tl, curTheta){
+
 	//curTheta is optional
 	//Given an edge label el and a transition label tl, let match(tl,el), 
 	//which takes a set of symbols as an implicit argument, be the set of minimal substitutions θ 
@@ -398,6 +399,17 @@ AbstractQuery.match = function(el, tl, curTheta){
 
 		substitutions.push(_map);
 	}
+
+	//see what happens when we get more than one result
+	//RESULT: it is perfectly fine to have: [[{?xAddr : "obj-1"}],[{?xAddr : "obj-3"}]]
+	/*if(substitutions.length === 1) {
+		var x = substitutions[0].slice();
+		substitutions[0].push({'?xAddr':'obj-1'});
+
+		x.push({'?xAddr':'obj-2'});
+		substitutions.push(x);
+	}*/
+
 	return tl.negated ? [[{}]] : substitutions; //substitution	
 }
 
@@ -621,6 +633,7 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 				found = false;
 				curVal = store.lookupAval(curAddr);
 				if(curVal.constructor.name === "Obj"){
+					//console.log(curVal);
 					names = curVal.names();
 					for(var j = 0; j < names.length; j++){
 						if(names[j].toString() === prop[i]){
@@ -666,8 +679,8 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 }
 
 AbstractQuery.processLookup = function(lookedUp){
-	if(lookedUp.as && lookedUp.as.values().length > 0){
-
+	//console.log(lookedUp);
+	if(lookedUp.addresses() && lookedUp.addresses().values().length > 0){
 		return lookedUp.as.values()[0];
 	}
 	return lookedUp.toString(); //change to false if we don't want values
