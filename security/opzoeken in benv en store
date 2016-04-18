@@ -1,8 +1,0 @@
-opzoeken:
-1. zoek in env naar adres van var (kan global zijn, dan is adres 1, anders krijg je iets als obj-6)
-2. herhaal voor geneste properties:
-	2.1 val = store.lookupAval(adres)
-	2.2 properties vind je in val.names(), zoek juiste property prop
-	2.3 sla property op en zoek adres via: val.lookup(prop)sdsdsddd
-	2.4 Hieruit krijg je op index 0 een JipdaValue (ref)/ Some (prim) met het adres/waarde van de var die je zoekt.
-	    Indien genest, ga naar 2.1 met nieuw adres

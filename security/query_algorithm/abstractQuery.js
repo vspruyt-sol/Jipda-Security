@@ -350,56 +350,23 @@ AbstractQuery.match = function(el, tl, curTheta){
 	switch(tl.name){
 		case 'state'		: 	_map = this.matchState(el, tl, curTheta);
 								break;
-		case '_'			: 	_map = []; 
+		case '_'			: 	_map = [[]]; 
 								break;
 		default:
 			throw "Can not handle 'tl.name': " + tl.name + ". Source: AbstractQuery.match(el, tl)"
 	}
 
-	//If we look at this, be sure to clean up temp variables
-	//WE ARE IN THE MIDDLE OF A NEGATION! 
-	//ATTENTION: NO NESTED NEGATION ALLOWED
-	//ALL VARIABLES IN A NEGATION HAVE TO BE BOUND ALREADY
-	/*if(tl.negationMarkers.length > 0){
-		//Do this for all negationmarkers
-		for(var i = 0; i < tl.negationMarkers.length; i++){
-			//create it if it doesn't exist (default value)
-			if(negationMap[tl.negationMarkers[i].id] === undefined) negationMap[tl.negationMarkers[i].id] = true;
-
-			if(tl.negationMarkers[i].last){
-				if(!_map) negationMap[tl.negationMarkers[i].id] = false;
-				lastMatch = lastMatch || negationMap[tl.negationMarkers[i].id];
-				return negationMap[tl.negationMarkers[i].id] ? [] : [[]];
-			}
-			else{
-				if(!_map){
-					negationMap[tl.negationMarkers[i].id] = false;
-				}
-				
-			}
-
-		}
-		return lastMatch ? [] : [[]];
-		// ALTIJD PAS HET ALGO STOPPEN/DOORGAAN ALS DE VOLLEDIGE NEGATIE KLAAR IS
-		// Eerste geval: we zijn aan het einde van de negatie
-		// dus, als last = true && match: return [], anders return [[]];
-		// Tweede geval: er is een match gevonden, maar nog niet aan einde
-		// dus, pas de map aan naar mapValue = mapValue && true en return [[]]; (om het algo niet te stoppen)
-		// Derde geval: er is geen match gevonden, maar nog niet aan einde
-		// dus, pas de map aan naar mapValue = false && return [[]]; (om het algo niet te stoppen)
-	}*/
-
 	if(_map){
-		//Drop temp variables!
-		//_map = AbstractQuery.cleanupTempVars(_map);
-
-		if(tl.negated && AbstractQuery.merge(_map, curTheta)){
-			return [];
-		}
-
-		substitutions.push(_map);
+		for(var i = 0; i < _map.length; i++){
+			if(tl.negated && AbstractQuery.merge(_map[i], curTheta)){
+				//substitutions.push(_map[i]);
+				return [];
+			}			
+			substitutions.push(_map[i]);
+		}	
 	}
 
+	//console.log(substitutions);
 	//see what happens when we get more than one result
 	//RESULT: it is perfectly fine to have: [[{?xAddr : "obj-1"}],[{?xAddr : "obj-3"}]]
 	/*if(substitutions.length === 1) {
@@ -409,7 +376,7 @@ AbstractQuery.match = function(el, tl, curTheta){
 		x.push({'?xAddr':'obj-2'});
 		substitutions.push(x);
 	}*/
-
+	//return substitutions;
 	return tl.negated ? [[{}]] : substitutions; //substitution	
 }
 
@@ -467,9 +434,9 @@ AbstractQuery.verifyConditions = function(table, conds, curTheta){
 			resolvedArgs.push(resolvedArg);
 		}
 		res = func.apply(this, resolvedArgs);
-		if(!res) return [];
+		if(!res) return false; //DIT WAS [], om 14U 14 april
 	}
-	return table;
+	return table.length === 0 ? false : table;
 }
 
 AbstractQuery.addExtraProperties = function(table, props, curTheta){
@@ -543,7 +510,7 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 			}
 		}
 	}
-	return table;
+	return table.length === 0 ? false : table;
 }
 
 AbstractQuery.addExtraPropertiesSwapped = function(table, props, curTheta){
@@ -559,7 +526,7 @@ AbstractQuery.addExtraPropertiesSwapped = function(table, props, curTheta){
 }
 
 AbstractQuery.getAddresses = function(obj, env, store, subs){
-	var map = [];
+	var map = [[]], newMap = [], foundAddresses;
 	var resolved, curAddr, curVal, addrName;
 	var toLookup, prop, names, found, startRes, restRes, merged;
 
@@ -573,16 +540,17 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 		//benv:{?varName : ?addr}
 		if(this.isResolvableVariable(startRes)){
 			resolved = this.resolveVariable(startRes, subs);
-			resolved = [].concat.apply([resolved], restRes).join('.');
 			if(!resolved) return false;
+			resolved = [].concat.apply([resolved], restRes).join('.');	
 		}
 		//benv:{?varName : ?addr}
 		else{
 			resolved = varName;
 		}
 		
-		//check for string literals, lambda's and numbers
-		//console.log(resolved);
+		/*************************************************
+		* Check for string literals, lambdas and numbers *
+		**************************************************/
 
 		if(Utilities.isNumeric(resolved) || resolved === "Lambda" || resolved.charAt(0) === '"' || resolved.charAt(0) === '\''){
 			//if it doesn't match a specified value
@@ -592,18 +560,28 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 
 			var newO = {};
 			newO[addrName] = resolved;
-			map = this.merge(map, [newO]);
-			if(!map) return false;
+			newMap = [];
+			for(var i = 0; i < map.length; i++){
+				merged = this.merge(map[i], [newO]);
+				if(merged) newMap.push(merged);
+			}
+			map = newMap.slice(); //set back into map
+			//map = this.merge(map, [newO]); //[{?x:1},{?y:2}]
+			if(!map || map.length === 0) return false;
 			//map.push(newO);
 			continue;
 		}
+
+		/****************************************
+		* Finds the starting point in the store *
+		*****************************************/
 
 		if(resolved instanceof Object){
 			//TODO
 		}
 		else{ //String
 			if(env._global || startRes === '_global'){
-				curAddr = 1;
+				curAddr = [1];
 				prop = (startRes === '_global') ? resolved.split('.').slice(1) : resolved.split('.'); //still have to look for resolved in the global object
 			}
 			else{
@@ -615,92 +593,133 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 				curAddr = env.lookup(toLookup);
 				if(curAddr.toString() === "_") {
 					//Not found in environment, maybe in global object
-					curAddr = 1;
+					curAddr = [1];
 					prop = resolved.split('.');
 				}
 				else{
-					curAddr = this.processLookup(store.lookupAval(curAddr));
-					if(!curAddr) return false;
+					curAddr = this.processLookup(store.lookupAval(curAddr)); 
+					if(!curAddr || curAddr.length === 0) return false;
 				}
 			}
 		}
 
-		//We now have the address from the store
-		//If prop.length > 0 zoek verder
+		/**********************************
+		* Find all addresses in the store *
+		***********************************/
 
-		for(var i = 0; i < prop.length; i++){
-			try{
-				found = false;
-				curVal = store.lookupAval(curAddr);
-				if(curVal.constructor.name === "Obj"){
-					//console.log(curVal);
-					names = curVal.names();
-					for(var j = 0; j < names.length; j++){
-						if(names[j].toString() === prop[i]){
-							//TODO if !curAddr return false ofzo
-							curAddr = this.processLookup(curVal.lookup(names[j])[0]);
-							if(!curAddr) return false;
-							found = true;
-							break;
+		var recurLookup = function(curAddrs, props, store, acc){
+			var names, curVal, newCurAddrs, found;
+			for(var i = 0; i < curAddrs.length; i++){
+				//currAddr of form: ["obj-1","obj-2"]
+				newCurAddrs = [];
+				//descend down the first prop to get the next set of addresses
+				if(props.length > 0){
+					curVal = store.lookupAval(curAddrs[i]);
+					found = false;
+					if(curVal.isObject()){
+						names = curVal.names();
+						for(var h = 0; h < names.length; h++){
+							if(names[h].toString() === props[0]){ //first prop
+								newCurAddrs = AbstractQuery.processLookup(curVal.lookup(names[h])[0]); 
+								if(!newCurAddrs || newCurAddrs.length === 0) continue;
+								found = true;
+								break;
+							}
 						}
+						//if we didn't find it, it is not in this object address, so continue for the next curAddr
+						if(!found) continue;
+
+						//We did find it, TODO
+						recurLookup(newCurAddrs, props.slice(1), store, acc);
 					}
-					if(!found) return false;
+					else{
+						NewCurAddrs = AbstractQuery.processLookup(curVal); //TODO: hier kan lijst uit komen
+						if(!newCurAddrs || newCurAddrs.length === 0) continue;
+					}
 				}
-				else{
-					curAddr = this.processLookup(curVal);
-					if(!curAddr) return false;
+				else{ //we have our final value
+					acc.push(curAddrs[i]);
 				}
 			}
-			catch(e){
-				console.log(e);
-				return false;
-			}
+			return acc;
 		}
 
-		var newO = {};
-
-		//if it doesn't match a specified value
-		if(!this.isResolvableVariable(addrName)){
-			if (addrName !== curAddr) return false;
-		}
 		
+		//After this, we are sure to have a (possibly empty) list of final values
+		foundAddresses = recurLookup(curAddr, prop, store, []);
 
-		newO[addrName] = curAddr;
-		//console.log(JSON.stringify([newO]));
-		//console.log(JSON.stringify(map));
-		//console.log(this.merge([newO], map));
-		map = this.merge(map, [newO]);
-		if(!map) return false;
-		//map.push(newO);
+		//If the lookup wasn't successful
+		if(foundAddresses.length === 0) return false;
 
+		/********************************************
+		* Assemble/merge the results of recurLookup *
+		*********************************************/
+
+		//for every substitution, make a new SET of substitutions, one for each found address
+		newMap = [];
+		for(var s = 0; s < map.length; s++){
+			for(var i = 0; i < foundAddresses.length; i++){
+				var newO = {};
+				//if it doesn't match a specified value
+				if(!this.isResolvableVariable(addrName)){
+					if (addrName !== foundAddresses[i]) continue;
+				}
+				//create new sub for the address
+				newO[addrName] = foundAddresses[i];
+
+				merged = this.merge(map[s], [newO]);
+				if(merged) newMap.push(merged);
+			}
+		}
+		map = newMap.slice();	
 	}
-	
-	return map;
+
+	newMap = [];
+	for(var i = 0; i < map.length; i++){
+		merged = this.merge(map[i], subs);
+		if(merged) newMap.push(merged);
+	}
+	map = newMap.slice();
+
+	return map.length > 0 ? map : false;
 }
 
 AbstractQuery.processLookup = function(lookedUp){
 	//console.log(lookedUp);
 	if(lookedUp.addresses() && lookedUp.addresses().values().length > 0){
-		return lookedUp.as.values()[0];
+		//console.log(lookedUp.as.values());
+		return lookedUp.as.values(); //TODO: HIER DE VOLLEDIGE LIJST MEEGEVEN
 	}
-	return lookedUp.toString(); //change to false if we don't want values
+	return [lookedUp.toString()]; //change to false if we don't want values, TODO: wrap in list
 }
 
 AbstractQuery.matchState = function(el, tl, curTheta){
 	var tlInfo = tl.state;
-	var subst = [];
+	var subst = [[]];
 	var matchInfo, reified;
-	var benv, store, mapping;
+	var benv, store, mapping, newSubs, tmpSubs;
 
 	//TODO herschrijven naar minder duplicate code
 	for(var key in tlInfo){
 		switch (key){
 			case 'filters': 
 						//console.log(this.verifyConditions(subst, tlInfo[key], curTheta));
-						subst = this.verifyConditions(subst, tlInfo[key], curTheta);
+						newSubs = [];
+						for(var i = 0;i < subst.length; i++){
+							tmpSubs = this.verifyConditions(subst[i], tlInfo[key], curTheta);
+							if(tmpSubs) newSubs.push(tmpSubs);
+						}
+						subst = newSubs.slice();
+						//subst = this.verifyConditions(subst, tlInfo[key], curTheta); //[{},{}]
 						break;
 			case 'properties': 
-						subst = this.addExtraProperties(subst, tlInfo[key], curTheta);
+						newSubs = [];
+						for(var i = 0;i < subst.length; i++){
+							tmpSubs = this.addExtraProperties(subst[i], tlInfo[key], curTheta);
+							if(tmpSubs) newSubs.push(tmpSubs);
+						}
+						subst = newSubs.slice();
+						//subst = this.addExtraProperties(subst, tlInfo[key], curTheta); //[{},{}]
 						break;
 			case 'lookup':
 						benv = 	mapStateKey('benv', el);
@@ -709,46 +728,53 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 
 						//console.log(benv);
 						if(!benv || !store) return false;
-						matchInfo = this.getAddresses(mapping, benv, store, subst);
-						//pass along the corresponding statepart
-						if(matchInfo){
-							subst.push.apply(subst, matchInfo)
+
+						//1. for each subst
+						//2. getAddresses
+						//3. put each subst of getAddresses in subst
+
+						//Subs are already merged in getAddresses
+						newSubs = [];
+						for(var i = 0; i < subst.length; i++){
+							matchInfo = this.getAddresses(mapping, benv, store, subst[i]);//[[{},{}],[{},{}]]
+							if(matchInfo){
+								newSubs.push.apply(newSubs, matchInfo)
+							}
 						}
-						else{
-							return false;
-						};
+						//if(newSubs.length === 0) return false;
+						subst = newSubs.slice();
 						break;
-			/*case 'storeTest': //TESTING
-						store = mapStateKey('store', el);
-						//console.log(store);
-						if(!store) return false;
-						matchInfo = this.matchRecursive('store', tlInfo[key], mapStateKey('store',el)); //pass along the corresponding statepart
-						if(matchInfo){
-							subst.push.apply(subst, matchInfo)
-						}
-						else{
-							return false;
-						};
-						break;*/
 			default: 	reified = mapStateKey(key, el);
 						//if(key === '_global') console.log(key + '->' + reified);
 						if(reified === undefined) return false;
-						matchInfo = this.matchRecursive(key, tlInfo[key], reified); //pass along the corresponding statepart
-						if(matchInfo){
-							subst.push.apply(subst, matchInfo)
+
+						newSubs = [];
+						for(var i = 0; i < subst.length; i++){
+							tmpSubs = this.matchRecursive(key, tlInfo[key], reified, subst[i]); //[{},{}]
+							if(tmpSubs){
+								newSubs.push(tmpSubs)
+							}
 						}
-						else{
-							return false;
-						};
+						//if(newSubs.length === 0) return false;
+						subst = newSubs.slice();
+						//matchInfo = this.matchRecursive(key, tlInfo[key], reified); //[{},{}]
+
+						//if(matchInfo){
+						//	subst.push.apply(subst, matchInfo)
+						//}
+						//else{
+						//	return false;
+						//};
 		}
 	}
+
+	//console.log(subst);
+
 	return subst.length === 0 ? false : subst;
 }
 
 AbstractQuery.matchRecursive = function(key, value, statePart, subs){
 	var reified, matchInfo, merged, tmp;
-
-	//console.log(key + '-> ' + value + ' = ' + statePart);
 
 	subs = subs || [];
 	if(value instanceof Array){

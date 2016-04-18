@@ -7,7 +7,7 @@ G.skipZeroOrMore()
     type: 'VariableDeclaration',
   },
   benv:{
-    _global: false
+    _global: true
   }
 })
 .or()
@@ -16,7 +16,7 @@ G.skipZeroOrMore()
     type: 'FunctionDeclaration'
   },
   benv:{
-    _global: false
+    _global: true
   }
 })
 .rBrace()

@@ -48,7 +48,7 @@ RegularPathExpression.prototype.writeToFrozenObjectPrototype = function(obj){
 	return ret;
 }
 
-RegularPathExpression.prototype.beginFCall = function(obj){ //this, kont, lkont, name, callee, arguments, argName (first argument)
+RegularPathExpression.prototype.beginApply = function(obj){ //this, kont, lkont, name, procedure, arguments, argName (first argument)
 	var s1 = {};
 
 
@@ -56,7 +56,7 @@ RegularPathExpression.prototype.beginFCall = function(obj){ //this, kont, lkont,
 	var objKont 	= this.getTmpIfUndefined(obj.kont); 
 	var objLkont 	= this.getTmpIfUndefined(obj.lkont); 
 	var objName 	= this.getTmpIfUndefined(obj.name); 
-	var objCallee 	= this.getTmpIfUndefined(obj.callee); 
+	var objProcedure= this.getTmpIfUndefined(obj.procedure); 
 	var objArguments= this.getTmpIfUndefined(obj.arguments); 
 	var objArgName 	= obj.argName || false; 
 
@@ -66,11 +66,11 @@ RegularPathExpression.prototype.beginFCall = function(obj){ //this, kont, lkont,
 	this.finalize(s1, obj);
 	
 
-	return this .fCall({this: objThis, name: objName, callee: objCallee, arguments: objArguments, argName: objArgName})
+	return this .fCall({this: objThis, name: objName, procedure: objProcedure, arguments: objArguments, argName: objArgName})
 				.state(s1);
 }
 
-RegularPathExpression.prototype.endFCall = function(obj){ //kont, lkont
+RegularPathExpression.prototype.endApply = function(obj){ //kont, lkont
 	var s1 = {};
 
 	var objKont 	= this.getTmpIfUndefined(obj.kont); 
@@ -101,7 +101,7 @@ RegularPathExpression.prototype.returnStatement = function(obj){ //name, argumen
 	return this.state(s);
 }
 
-RegularPathExpression.prototype.returnOfFunctionCall = function(obj){ //functionName, returnName, returnAddr
+RegularPathExpression.prototype.procedureExit = function(obj){ //functionName, returnName, returnAddr
 
 	var objFunc = {
 		name: this.getTmpIfUndefined(obj.functionName),
@@ -127,9 +127,9 @@ RegularPathExpression.prototype.returnOfFunctionCall = function(obj){ //function
 	} 
 
 	return this .lBrace()
-				.beginFCall(objFunc)
+				.beginApply(objFunc)
 				.not()
-					.endFCall(objFunc)
+					.endApply(objFunc)
 					.star()
 				.returnStatement(objReturn)
 				.rBrace();
@@ -309,14 +309,14 @@ RegularPathExpression.prototype.udAssignOrVarDecl = function(obj){ //left, right
 					.rBrace();
 }
 
-RegularPathExpression.prototype.fCall = function(obj){ //name, callee, arguments, argName (eerste arg), global;
+RegularPathExpression.prototype.fCall = function(obj){ //name, procedure, arguments, argName (eerste arg), global;
 	obj = obj || {};
 	var s1 = {}; //als ExpressionStatement
 	var s2 = {}; //als CallExpression
 
 	var objThis 	= 	this.getTmpIfUndefined(obj.this); 	
 	var objName 	=	obj.name || this.getTmpVar('objName'); //naam van de functie
-	var objCallee 	= 	obj.callee || this.getTmpVar('objNode'); //de callee node
+	var objProcedure= 	obj.procedure || this.getTmpVar('objProcedure'); //de callee node
 	var objArguments= 	obj.arguments || this.getTmpVar('objArguments'); //de arguments node
 	var firstArg 	= 	this.getTmpVar('firstArg');
 	var firstArgName= 	obj.argName || this.getTmpVar('firstArgName'); //if user wants to know first argument name
@@ -326,7 +326,7 @@ RegularPathExpression.prototype.fCall = function(obj){ //name, callee, arguments
 
 	//Basic function call
 	this.setupStateChain(s1, ['node','this'], objThis);
-	this.setupStateChain(s1, ['node','expression','callee'], objCallee);
+	this.setupStateChain(s1, ['node','expression','callee'], objProcedure);
 	this.setupStateChain(s1, ['node','expression','arguments'], objArguments);
 	this.setupStateChain(s1, ['benv','_global'], global);
 	
@@ -336,11 +336,11 @@ RegularPathExpression.prototype.fCall = function(obj){ //name, callee, arguments
 		this.setupProperty(s1, firstArgName, firstArg + '.name');
 	}
 	
-	this.setupProperty(s1, objName, objCallee + '.name');
+	this.setupProperty(s1, objName, objProcedure + '.name');
 
 	//Basic function call
 	this.setupStateChain(s2, ['node','this'], objThis);
-	this.setupStateChain(s2, ['node','callee'], objCallee);
+	this.setupStateChain(s2, ['node','callee'], objProcedure);
 	this.setupStateChain(s2, ['node','arguments'], objArguments);
 	this.setupStateChain(s2, ['benv','_global'], global);
 	
@@ -349,7 +349,7 @@ RegularPathExpression.prototype.fCall = function(obj){ //name, callee, arguments
 		this.setupProperty(s2, firstArg, prop('at', objArguments, 0)); //tmp eerste arg
 		this.setupProperty(s2, firstArgName, firstArg + '.name');
 	}
-	this.setupProperty(s2, objName, objCallee + '.name');
+	this.setupProperty(s2, objName, objProcedure + '.name');
 
 	this.finalize(s1, obj);
 	this.finalize(s2, obj);
@@ -361,13 +361,13 @@ RegularPathExpression.prototype.fCall = function(obj){ //name, callee, arguments
 				.rBrace()
 }
 
-RegularPathExpression.prototype.newExpression = function(obj){ //name, callee, arguments, argName (eerste arg);
+RegularPathExpression.prototype.newExpression = function(obj){ //name, procedure, arguments, argName (eerste arg);
 	obj = obj || {};
 	var s = {}; 
 
 	var objThis 	= 	this.getTmpIfUndefined(obj.this); 	
 	var objName 	=	obj.name || this.getTmpVar('objName'); //naam van de functie
-	var objCallee 	= 	obj.callee || this.getTmpVar('objNode'); //de callee node
+	var objProcedure= 	obj.procedure || this.getTmpVar('objProcedure'); //de callee node
 	var objArguments= 	obj.arguments || this.getTmpVar('objArguments'); //de arguments node
 	var firstArg 	= 	this.getTmpVar('firstArg');
 	var firstArgName= 	obj.argName || this.getTmpVar('firstArgName'); //if user wants to know first argument name
@@ -376,7 +376,7 @@ RegularPathExpression.prototype.newExpression = function(obj){ //name, callee, a
 
 	//Basic function call
 	this.setupStateChain(s, ['node','this'], objThis);
-	this.setupStateChain(s, ['node','callee'], objCallee);
+	this.setupStateChain(s, ['node','callee'], objProcedure);
 	this.setupStateChain(s, ['node','arguments'], objArguments);
 	
 	//get first argument
@@ -384,7 +384,7 @@ RegularPathExpression.prototype.newExpression = function(obj){ //name, callee, a
 		this.setupProperty(s, firstArg, prop('at', objArguments, 0)); //tmp eerste arg
 		this.setupProperty(s, firstArgName, firstArg + '.name');
 	}
-	this.setupProperty(s, objName, objCallee + '.name');
+	this.setupProperty(s, objName, objProcedure + '.name');
 
 	this.finalize(s, obj);
 
@@ -841,8 +841,8 @@ var isString = function(s){
 //TODO: getEnvAddr, getStoreVal
 var queryFunctions = {
 	conditions : { //filters
-				equals 		: _.isEqual,
-				nequals		: function(a,b){return (!_.isEqual(a,b));},
+				'===' 		: _.isEqual,
+				'!=='		: function(a,b){return (!_.isEqual(a,b));},
 				contains 	: contains, 
 				testTrue 	: function(){return true;},
 				testFalse 	: function(){return false;},
@@ -852,28 +852,5 @@ var queryFunctions = {
 				identity 		: function(a){ return a; },
 				length			: function(a){ return a.length; },
 				at 				: function(a,idx){ return a[idx]; },
-				getEnvAddr		: function(env, varName){
-										//als global 'global' meegeven
-										try{
-											var addr =  env.lookup(varName);
-											return addr;
-										}
-										catch(e){
-											return undefined;
-										}
-										
-								  },
-				getStoreVal		: function(store, envAddr){
-										//krijgt environment mee ipv addres en ook de node waarvan je de val wilt
-										//als global geef global object terug, anders custom functie aanroepen
-										try{
-											var val = store.lookupAval(envAddr);
-											return val;
-										}
-										catch(e){
-											return undefined;
-										}
-										
-								  },
 				}
 }
