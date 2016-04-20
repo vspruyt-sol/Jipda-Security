@@ -2,50 +2,27 @@
 
 G.skipZeroOrMore()
 .lBrace()
-.state({
-  node:{
-    type: 'VariableDeclaration',
-  },
-  benv:{
-    _global: true
-  }
-})
+.assign({leftName:'?name'})
 .or()
-.state({
-  node:{
-    type: 'FunctionDeclaration'
-  },
-  benv:{
-    _global: true
-  }
-})
+.variableDeclaration({leftName:'?name'})
+.or()
+.functionDeclaration({name:'?name'})
 .rBrace()
+.skipZeroOrMore()
+.state({lookup:{
+  		'?name': '?nameAddr',
+  		'_global.?name' : '?nameAddr'
+		}})
 
+
+a = {val: {val2: 'E'} };
+var b = {val: 3 };
+
+function C(){}
 
 //This is a namespace
-(function(arg){
-  	//perform some actions
-  	var ok = "someString";
-  	var alsoOk = function(){
-  		//also ok
-    }
-    
-    function Ok(){
+(function(){
+  	d = 4;
+  	var e = "someString";//OK
+})();
 
-	}
-  
-  	var good = new Ok();
-
-})(1);
-
-var nOkVar = "3";
-
-var nOkFunc = function(){
-	//a global function
-}
-
-function Nok(){
-
-}
-
-var nOkCtor = new Nok();

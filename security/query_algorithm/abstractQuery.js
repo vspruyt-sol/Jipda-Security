@@ -403,9 +403,9 @@ AbstractQuery.isResolvableVariable = function(x){
 
 AbstractQuery.resolveVariable = function(varName, table){
 	for(var i = 0; i < table.length; i++){
-		if(table[i][varName]) return table[i][varName];
+		if(table[i][varName] !== undefined) return table[i][varName];
 	}
-	return false;
+	return undefined;
 }
 
 AbstractQuery.verifyConditions = function(table, conds, curTheta){
@@ -460,7 +460,7 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 			for(var i = 0; i < args.length; i++){
 				if(this.isResolvableVariable(args[i])){
 					resolvedArg = this.resolveVariable(args[i], lookupTable);
-					if(resolvedArg.length === 0) return false; //couldn't find a resolution
+					if(resolvedArg === undefined) return false; //couldn't find a resolution
 				}
 				else{
 					resolvedArg = args[i];
@@ -468,7 +468,7 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 				resolvedArgs.push(resolvedArg);
 			}
 			res = func.apply(this, resolvedArgs);
-			if(!res) return false;
+			if(res === undefined) return false;
 			var obj = {};
 			obj[key] = res;
 			//for the current lookup
@@ -480,7 +480,7 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 			accessors = propString.split('.').slice(1);
 			for(var i = 0; i < lookupTable.length; i++){
 				subSubs = lookupTable[i];
-				if(subSubs[toLookup]) lookedUp = subSubs[toLookup] //lookup variable
+				if(subSubs[toLookup] !== undefined) lookedUp = subSubs[toLookup] //lookup variable
 				if(subSubs[key]){ //variable already defined
 					//throw 'Substitution for ' + key + ' already exists.'
 					break; 
@@ -497,7 +497,7 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 						}
 						obj[key] = lookupInfo;
 					}
-					if(obj[key]){
+					if(obj[key] !== undefined){
 						lookupTable.push(obj);
 						table.push(obj);
 					} 
@@ -528,7 +528,7 @@ AbstractQuery.addExtraPropertiesSwapped = function(table, props, curTheta){
 AbstractQuery.getAddresses = function(obj, env, store, subs){
 	var map = [[]], newMap = [], foundAddresses;
 	var resolved, curAddr, curVal, addrName;
-	var toLookup, prop, names, found, startRes, restRes, merged;
+	var toLookup, prop, names, found, startRes, restRes, merged, resolvedProp;
 
 	for(var varName in obj){
 		addrName = obj[varName];
@@ -540,7 +540,7 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 		//benv:{?varName : ?addr}
 		if(this.isResolvableVariable(startRes)){
 			resolved = this.resolveVariable(startRes, subs);
-			if(!resolved) return false;
+			if(resolved === undefined) return false;
 			resolved = [].concat.apply([resolved], restRes).join('.');	
 		}
 		//benv:{?varName : ?addr}
@@ -603,6 +603,19 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 			}
 		}
 
+		/******************************
+		* Resolve properties (if any) *
+		*******************************/
+
+		for(var i = 0; i < prop.length; i++){
+			resolvedProp = prop[i];
+			if(this.isResolvableVariable(prop[i])){
+				resolvedProp = this.resolveVariable(prop[i], subs);
+				if(resolvedProp === undefined) return false; 
+			}
+			prop[i] = resolvedProp;
+		}
+
 		/**********************************
 		* Find all addresses in the store *
 		***********************************/
@@ -614,9 +627,12 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 				newCurAddrs = [];
 				//descend down the first prop to get the next set of addresses
 				if(props.length > 0){
-					curVal = store.lookupAval(curAddrs[i]);
+					try{
+						curVal = store.lookupAval(curAddrs[i]);
+					}
+					catch(e) {continue;}
 					found = false;
-					if(curVal.isObject()){
+					if(curVal.isObject() || curVal.isFunction()){
 						names = curVal.names();
 						for(var h = 0; h < names.length; h++){
 							if(names[h].toString() === props[0]){ //first prop
@@ -629,7 +645,7 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 						//if we didn't find it, it is not in this object address, so continue for the next curAddr
 						if(!found) continue;
 
-						//We did find it, TODO
+						//We did find it
 						recurLookup(newCurAddrs, props.slice(1), store, acc);
 					}
 					else{
@@ -685,17 +701,22 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 }
 
 AbstractQuery.processLookup = function(lookedUp){
-	//console.log(lookedUp);
+	
 	if(lookedUp.addresses() && lookedUp.addresses().values().length > 0){
+		//console.log(lookedUp.addresses());
 		//console.log(lookedUp.as.values());
-		return lookedUp.as.values(); //TODO: HIER DE VOLLEDIGE LIJST MEEGEVEN
+		/*if(!lookedUp.as){
+			console.log('Functions lookup is not supported yet!');
+			return false;
+		}*/
+		return lookedUp.addresses().values();
 	}
 	return [lookedUp.toString()]; //change to false if we don't want values, TODO: wrap in list
 }
 
 AbstractQuery.matchState = function(el, tl, curTheta){
 	var tlInfo = tl.state;
-	var subst = [[]];
+	var subst = [curTheta];
 	var matchInfo, reified;
 	var benv, store, mapping, newSubs, tmpSubs;
 
@@ -743,6 +764,9 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 						}
 						//if(newSubs.length === 0) return false;
 						subst = newSubs.slice();
+						break;
+			case 'value': 
+						console.log('I WANT VALUE');
 						break;
 			default: 	reified = mapStateKey(key, el);
 						//if(key === '_global') console.log(key + '->' + reified);
@@ -866,6 +890,8 @@ AbstractQuery.merge = function(theta, otherTheta){
 		return undefined;
 	}
 
+	theta = theta || [];
+	otherTheta = otherTheta || [];
 	res = mergeIterate(theta.slice(), otherTheta.slice()); //Changed this to merge copies instead of the actual arrays
 
 	//console.log(JSON.stringify(res));
@@ -941,7 +967,7 @@ var mapStateKey = function(key, statePart){
 
 	switch (key){
 		case 'this' : 	return JipdaInfo.getInfo(statePart); break;
-		case 'id'	: 	return JipdaInfo.getInfo(statePart['_id']); break;
+		//case 'id'	: 	return JipdaInfo.getInfo(statePart['_id']); break;
 		default		: 	return statePart[key] !== undefined ? JipdaInfo.getInfo(statePart[key]) : undefined;
 	}
 	

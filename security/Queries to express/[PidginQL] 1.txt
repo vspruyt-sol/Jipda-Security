@@ -16,6 +16,17 @@ G.skipZeroOrMore()
 .endIf({kont: '?kont', 
 	    lkont:'?lkont'})
 
+of met false positives!
+
+G.skipZeroOrMore()
+.beginApply({name:'isAdministrator',kont:'?k',lkont:'?lk'})
+.not()
+.endApply({ kont:'?k',lkont:'?lk'})
+.star()
+.returnStatement({})
+.skipZeroOrMore()
+.fCall({name:'broadcast'})
+
       of
 
 G.skipZeroOrMore()

@@ -21,6 +21,22 @@ G.skipZeroOrMore()
 .rBrace()
 
 
+
+var evilScript;
+var scripts = ["badscript1","badscript2"];
+
+for(var i = 0; i < scripts.length; i++){
+  evilScript = scripts[i];
+  document.writeln(evilScript); //violation
+}
+
+var o = {};
+o.f = document.writeln;
+o.f("1"); //Violation
+
+
+
+
 var document = {
   write: function(arg){ 
     // do something

@@ -113,6 +113,7 @@ SecurityAnalysis.prototype.processQueryResult = function(queryResult){
 		processed.push(queryResult[i]);
 	}
 
+	console.log(processed);
 
 	this.markQueryResult(processed, 'violation');
 

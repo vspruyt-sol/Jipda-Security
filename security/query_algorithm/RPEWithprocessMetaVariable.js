@@ -21,7 +21,7 @@ RegularPathExpression.prototype.writeToFrozenObjectPrototype = function(obj){
 	var frozenObjects = ['Array', 'Boolean', 'Date', 'Function', 'Document', 'Math', 'Window'];
 	var ret = this.lBrace();
 
-	var objProps = this.getTmpIfUndefined();
+	var objProps = this.processGetMetavariable();
 
 	for(var i = 0; i < frozenObjects.length; i++){
 		var s = {};
@@ -49,15 +49,16 @@ RegularPathExpression.prototype.writeToFrozenObjectPrototype = function(obj){
 }
 
 RegularPathExpression.prototype.beginApply = function(obj){ //this, kont, lkont, name, procedure, arguments, argName (first argument)
+	obj = obj || {};
 	var s1 = {};
 
 
-	var objThis 	= this.getTmpIfUndefined(obj.this);
-	var objKont 	= this.getTmpIfUndefined(obj.kont); 
-	var objLkont 	= this.getTmpIfUndefined(obj.lkont); 
-	var objName 	= this.getTmpIfUndefined(obj.name); 
-	var objProcedure= this.getTmpIfUndefined(obj.procedure); 
-	var objArguments= this.getTmpIfUndefined(obj.arguments); 
+	var objThis 	= this.processGetMetavariable('this', obj);
+	var objKont 	= this.processGetMetavariable('kont', obj);
+	var objLkont 	= this.processGetMetavariable('lkont', obj);
+	var objName 	= this.processGetMetavariable('name', obj);
+	var objProcedure= this.processGetMetavariable('procedure', obj);
+	var objArguments= this.processGetMetavariable('arguments', obj);
 	var objArgName 	= obj.argName || false; 
 
 	this.setupStateChain(s1, ['kont'], objKont);
@@ -71,10 +72,12 @@ RegularPathExpression.prototype.beginApply = function(obj){ //this, kont, lkont,
 }
 
 RegularPathExpression.prototype.endApply = function(obj){ //kont, lkont
+	obj = obj || {};
 	var s1 = {};
 
-	var objKont 	= this.getTmpIfUndefined(obj.kont); 
-	var objLkont 	= this.getTmpIfUndefined(obj.lkont); 
+	var objKont 	= this.processGetMetavariable('kont', obj);
+	var objLkont 	= this.processGetMetavariable('lkont', obj);
+
 
 	this.setupStateChain(s1, ['kont'], objKont);
 	this.setupStateChain(s1, ['lkont'], objLkont);
@@ -82,39 +85,56 @@ RegularPathExpression.prototype.endApply = function(obj){ //kont, lkont
 	return this.state(s1);
 }
 
-RegularPathExpression.prototype.returnStatement = function(obj){ //name, argument
+RegularPathExpression.prototype.returnStatement = function(obj){ //name, argument, returnValue
 	obj = obj || {};
 
-	var s = {};
+	var s1 = {};
+	var s2 = {}
 
-	var objThis = this.getTmpIfUndefined(obj.this); 
-	var objName = this.getTmpIfUndefined(obj.name); 
-	var objArgument = this.getTmpIfUndefined(obj.argument); 
+	var objThis 	= this.processGetMetavariable('this', obj); 
+	var objName 	= this.processGetMetavariable('name', obj); 
+	var objArgument = this.processGetMetavariable('argument', obj);
+	var objBody 	= this.processGetMetavariable();
+	var objRetVal 	= this.processGetMetavariable('returnValue', obj);
 
-	this.setupStateChain(s, ['node','this'], objThis);
-	this.setupStateChain(s, ['node','type'], 'ReturnStatement');
-	this.setupStateChain(s, ['node','name'], objName);
-	this.setupStateChain(s, ['node','argument'], objArgument);
+	this.setupStateChain(s1, ['node','this'], objThis);
+	this.setupStateChain(s1, ['node','type'], 'ReturnStatement');
+	this.setupStateChain(s1, ['node','name'], objName);
+	this.setupStateChain(s1, ['node','argument'], objArgument);
+	//this.setupProperty(s1, objRetVal, objThis + '.argument.value');
 
-	this.finalize(s, obj);
+	this.setupStateChain(s2, ['node','body'], objBody);
+	this.setupStateChain(s2, ['node','type'], 'BlockStatement');
+	this.setupProperty(s2, objThis, prop('at', objBody, 0));
+	this.setupProperty(s2, 'ReturnStatement', objThis + '.type');
+	this.setupProperty(s2, objName, objThis + '.name');
+	this.setupProperty(s2, objArgument, objThis + '.argument');
+	//this.setupProperty(s2, objRetVal, objThis + '.argument.value');
 
-	return this.state(s);
+
+	this.finalize(s1, obj);
+	this.finalize(s2, obj);
+
+	return this 	.lBrace()
+						.state(s1)
+						.or()
+						.state(s2)
+					.rBrace()
 }
 
 RegularPathExpression.prototype.procedureExit = function(obj){ //functionName, returnName, returnAddr
 
 	var objFunc = {
-		name: this.getTmpIfUndefined(obj.functionName),
-		kont: this.getTmpIfUndefined(),
-		lkont:this.getTmpIfUndefined(),
+		name: this.processGetMetavariable('functionName', obj),
+		kont: this.processGetMetavariable(),
+		lkont:this.processGetMetavariable(),
 		properties: obj.properties,
 		filters: obj.filters,
-
 	}
 
 	var objReturn = { 
 		this: obj.this,
-		name: this.getTmpIfUndefined(obj.returnName),
+		name: this.processGetMetavariable('returnName', obj),
 		properties: obj.properties,
 		filters: obj.filters,
 		lookup: obj.lookup
@@ -238,8 +258,9 @@ RegularPathExpression.prototype.endIf = function(obj){ //kont, lkont
 	return this.state(s);				
 }
 
-RegularPathExpression.prototype.assign = function(obj){ //left, right, leftName, rightName
+RegularPathExpression.prototype.assignmentExpression = function(obj){ //left, right, leftName, rightName
 	//Variables
+	obj = obj || {};
 	var s = {};
 
 	var objThis = this.getTmpIfUndefined(obj.this); 
@@ -265,6 +286,7 @@ RegularPathExpression.prototype.assign = function(obj){ //left, right, leftName,
 
 RegularPathExpression.prototype.variableDeclaration = function(obj){ //left, right, leftName, rightName, decls
 	//todo fill in params
+	obj = obj || {};
 	var s = {};
 
 	var objThis = this.getTmpIfUndefined(obj.this); 
@@ -276,7 +298,6 @@ RegularPathExpression.prototype.variableDeclaration = function(obj){ //left, rig
 	var objFirstDecl = this.getTmpIfUndefined();
 
 	this.setupStateChain(s, ['node','this'], objThis);
-	this.setupStateChain(s, ['node','type'], 'VariableDeclaration');
 	this.setupStateChain(s, ['node','declarations'], objDecls);
 
 	this.setupProperty(s, objFirstDecl, prop('at', objDecls, 0));
@@ -290,40 +311,23 @@ RegularPathExpression.prototype.variableDeclaration = function(obj){ //left, rig
 	return this.state(s);
 }
 
-RegularPathExpression.prototype.functionDeclaration = function(obj){
-	//todo fill in params
-	obj = obj || {};
-	var s = {};
-
-	var objThis = this.getTmpIfUndefined(obj.this); 
-	var objName = this.getTmpIfUndefined(obj.name); 
-
-	this.setupStateChain(s, ['node','this'], objThis);
-	this.setupStateChain(s, ['node','type'], 'FunctionDeclaration');	
-	this.setupStateChain(s, ['node', 'id', 'name'], objName);
-
-	this.finalize(s, obj);
-
-	return this.state(s);
-}
-
-RegularPathExpression.prototype.assignOrVarDecl = function(obj){ //left, right, leftName, rightName
+RegularPathExpression.prototype.AssignOrVarDecl = function(obj){ //left, right, leftName, rightName
 	obj = obj || {};
 
-	var objThis = this.getTmpIfUndefined(obj.this); 
-	var objLeft = this.getTmpIfUndefined(obj.left);
-	var objName = this.getTmpIfUndefined(obj.name);
-	var objRight = this.getTmpIfUndefined(obj.right);
+	var objThis 	= this.getTmpIfUndefined(obj.this); 
+	var objLeft 	= this.getTmpIfUndefined(obj.left);
+	var objName 	= this.getTmpIfUndefined(obj.name);
+	var objRight 	= this.getTmpIfUndefined(obj.right);
 	var objLeftName = this.getTmpIfUndefined(obj.leftName);
-	var objRightName = this.getTmpIfUndefined(obj.rightName);
-	var props = obj.properties || {};
-	var filters = obj.filters || {};
-	var lookup = obj.lookup || {};
+	var objRightName= this.getTmpIfUndefined(obj.rightName);
+	var props 		= obj.properties || {};
+	var filters 	= obj.filters || {};
+	var lookup 		= obj.lookup || {};
 
 	return this 	.lBrace()
-					.variableDeclaration({this: objThis, name: objName, left: objLeft, right: objRight, leftName: objLeftName, rightName: objRightName, properties: props, filters: filters, lookup: lookup})
+					.varariableDeclaration({this: objThis, name: objName, left: objLeft, right: objRight, leftName: objLeftName, rightName: objRightName, properties: props, filters: filters, lookup: lookup})
 					.or()
-					.assign({this: objThis, name: objName, left: objLeft, right: objRight, leftName: objLeftName, rightName: objRightName, properties: props, filters: filters, lookup: lookup})
+					.assignmentExpression({this: objThis, name: objName, left: objLeft, right: objRight, leftName: objLeftName, rightName: objRightName, properties: props, filters: filters, lookup: lookup})
 					.rBrace();
 }
 
@@ -332,15 +336,16 @@ RegularPathExpression.prototype.fCall = function(obj){ //name, procedure, argume
 	var s1 = {}; //als ExpressionStatement
 	var s2 = {}; //als CallExpression
 
-	var objThis 	= 	this.getTmpIfUndefined(obj.this); 	
-	var objName 	=	obj.name || this.getTmpVar('objName'); //naam van de functie
-	var objProcedure= 	obj.procedure || this.getTmpVar('objProcedure'); //de callee node
-	var objArguments= 	obj.arguments || this.getTmpVar('objArguments'); //de arguments node
-	var firstArg 	= 	this.getTmpVar('firstArg');
-	var firstArgName= 	obj.argName || this.getTmpVar('firstArgName'); //if user wants to know first argument name
-	var calleeName 	= 	this.getTmpVar('calleeName'); //tmp var for matching
-	var argName 	=	this.getTmpVar('argName');
-	var global 		=	this.getTmpIfUndefined(obj.global); 	
+	var objThis 	= 	this.processGetMetavariable('this', obj);
+	var objName 	=	this.processGetMetavariable('name', obj); //naam van de functie
+	var objProcedure= 	this.processGetMetavariable('procedure', obj); //de callee node
+	var objArguments= 	this.processGetMetavariable('arguments', obj); //de arguments node
+	var firstArg 	= 	this.processGetMetavariable();
+	var firstArgName= 	this.processGetMetavariable('argName', obj); //if user wants to know first argument name
+	var calleeName 	= 	this.processGetMetavariable(); //tmp var for matching
+	var argName 	=	this.processGetMetavariable();
+	var global 		=	this.processGetMetavariable();
+
 
 	//Basic function call
 	this.setupStateChain(s1, ['node','this'], objThis);
@@ -385,14 +390,14 @@ RegularPathExpression.prototype.newExpression = function(obj){ //name, procedure
 	obj = obj || {};
 	var s = {}; 
 
-	var objThis 	= 	this.getTmpIfUndefined(obj.this); 	
-	var objName 	=	obj.name || this.getTmpVar('objName'); //naam van de functie
-	var objProcedure= 	obj.procedure || this.getTmpVar('objProcedure'); //de callee node
-	var objArguments= 	obj.arguments || this.getTmpVar('objArguments'); //de arguments node
-	var firstArg 	= 	this.getTmpVar('firstArg');
-	var firstArgName= 	obj.argName || this.getTmpVar('firstArgName'); //if user wants to know first argument name
-	var calleeName 	= 	this.getTmpVar('calleeName'); //tmp var for matching
-	var argName 	=	this.getTmpVar('argName');
+	var objThis 	= 	this.processGetMetavariable('this', obj) 	
+	var objName 	=	this.processGetMetavariable('name', obj) //naam van de functie
+	var objProcedure= 	this.processGetMetavariable('procedure', obj) //de callee node
+	var objArguments= 	this.processGetMetavariable('arguments', obj) //de arguments node
+	var firstArg 	= 	this.processGetMetavariable();
+	var firstArgName= 	this.processGetMetavariable('argName', obj) //if user wants to know first argument name
+	var calleeName 	= 	this.processGetMetavariable();//tmp var for matching
+	var argName 	=	this.processGetMetavariable();
 
 	//Basic function call
 	this.setupStateChain(s, ['node','this'], objThis);
@@ -411,22 +416,12 @@ RegularPathExpression.prototype.newExpression = function(obj){ //name, procedure
 	return this.state(s);
 }
 
-//Small hack to find the final states
-RegularPathExpression.prototype.finalState = function(obj){
+//TODO add fields (if necessary)
+RegularPathExpression.prototype.functionDeclaration = function(obj){ //name, procedure, arguments, argName (eerste arg);
 	obj = obj || {};
 	var s = {}; 
 
-	var objSuccs 	= 	this.getTmpIfUndefined(); 	
-	var objSuccSuccs=	this.getTmpIfUndefined(); 	
-	var objFirst 	=	this.getTmpIfUndefined();
-	var objCount   	=	this.getTmpIfUndefined();
-
-	//Basic function call
-	this.setupStateChain(s, ['_successors'], objSuccs);
-	this.setupProperty(s, objFirst, prop('at', objSuccs, 0)); //tmp eerste arg
-	this.setupProperty(s, objSuccSuccs, objFirst + '.state._successors');
-	this.setupProperty(s, objCount, prop('length', objSuccSuccs));
-	this.setupFilter(s, '===', objCount, 0);
+	//TODO
 
 	this.finalize(s, obj);
 
@@ -441,31 +436,31 @@ RegularPathExpression.prototype.finalState = function(obj){
 
 RegularPathExpression.prototype.udOpenClosedFile = function(obj){
 	obj = obj || {};
-	var fileName = obj.name || this.getTmpVar('objName');
+	var fileName = this.processGetMetavariable('name', obj);
 
-	return 	this	.udFCall({name: 'close', argName: fileName})
+	return 	this	.fCall({name: 'close', argName: fileName})
 					.not()
 					//.lBrace()
-					.udFCall({name: 'open'})
+					.fCall({name: 'open'})
 					//.rBrace()
 					.star()
-					.udFCall({name: 'access', argName: fileName});
+					.fCall({name: 'access', argName: fileName});
 }
 
 RegularPathExpression.prototype.udClosedAllOpenedFiles = function(obj){
 	obj = obj || {};
-	var fileName = obj.name || this.getTmpVar('objName');
+	var fileName = this.processGetMetavariable('name', obj);
 
 	//(open(f) _* (access(f) _*)* close(f))*
 	return 	this	.lBrace()
-						.udFCall({name: 'open', argName: fileName})
+						.fCall({name: 'open', argName: fileName})
 						.skipZeroOrMore()
 						.lBrace()
-							.udFCall({name: 'access', argName: fileName})
+							.fCall({name: 'access', argName: fileName})
 							.skipZeroOrMore()
 						.rBrace()
 						.star()
-						.udFCall({name: 'close', argName: fileName})
+						.fCall({name: 'close', argName: fileName})
 					.rBrace()
 					//.star()
 }
@@ -475,16 +470,14 @@ RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 	// | tmp = x
 	// | udRecTest(tmp)
 
-	// TODO: Right addr has to match in every step
-
 	//info from argument
 	obj = obj || {};
 	//state info for alias
 	var s = {};
-	var leaked 	= obj.leakedValue || this.getTmpVar('leaked');
+	var leaked 	= this.processGetMetavariable('leakedValue', obj);
 	var alias 	= this.getRecVar('leakedAlias'); //use temp var if you don't want to know the aliases
-	var left = this.getTmpVar('left');
-	var right = this.getTmpVar('right');
+	var left 	= this.processGetMetavariable();
+	var right 	= this.processGetMetavariable();
 	//var env = this.getTmpVar('env');
 	//new obj for recursive function
 	var newObj 	= {};
@@ -511,11 +504,11 @@ RegularPathExpression.prototype.udAvailableExpression = function(obj){ //left(Na
 	obj = obj || {};
 	var s = {};
 
-	var objLeft = obj.left || this.getTmpVar('obLeft');
-	var objRight = obj.right || this.getTmpVar('obRight');
-	var objLeftName = obj.leftName || this.getTmpVar('obLeftName');
-	var objRightName = obj.rightName || this.getTmpVar('obRightName');
-	var objOperator = obj.operator || this.getTmpVar('obOperator');
+	var objLeft 	= this.processGetMetavariable('left', obj);
+	var objRight 	= this.processGetMetavariable('right', obj);
+	var objLeftName = this.processGetMetavariable('leftName', obj);
+	var objRightName= this.processGetMetavariable('rightName', obj);
+	var objOperator = this.processGetMetavariable('operator', obj);
 
 	this.setupStateChain(s, ['node','type'], 'BinaryExpression');
 	this.setupStateChain(s, ['node','left'], objLeft);
@@ -547,11 +540,6 @@ RegularPathExpression.prototype.finalize = function(state, obj){
 	//then look some things up about the state.
 	//When this info are grabbed, we can look some things up.
 	//Finally, we can filter the acquired results.
-	this.processKont(state, obj);
-	this.processLkont(state, obj);
-	this.processValue(state, obj);
-	this.processBenv(state, obj);
-	this.processStore(state, obj);
 	this.processProperties(state, obj);
 	this.processLookups(state, obj);
 	this.processFilters(state, obj);
@@ -634,29 +622,17 @@ RegularPathExpression.prototype.processLookups = function(state, obj){
 	return state;
 }
 
-RegularPathExpression.prototype.processBenv = function(state, obj){
-	if(obj.benv) state.benv = obj.benv;
-	return state;
-}
+//removes the name from the object and returns a fresh metavariable
+RegularPathExpression.prototype.processGetMetavariable = function(name, obj){
+	if(name === undefined) return this.getTmpVar('');
 
-RegularPathExpression.prototype.processStore = function(state, obj){
-	if(obj.store) state.store = obj.store;
-	return state;
-}
+	var n = obj[name];
+	if(n !== undefined){
+		delete obj[name];
+		return n;
+	}
+	return this.getTmpVar('');
 
-RegularPathExpression.prototype.processKont = function(state, obj){
-	if(obj.kont) state.kont = obj.kont;
-	return state;
-}
-
-RegularPathExpression.prototype.processLkont = function(state, obj){
-	if(obj.lkont) state.lkont = obj.lkont;
-	return state;
-}
-
-RegularPathExpression.prototype.processValue = function(state, obj){
-	if(obj.value) state.value = obj.value;
-	return state;
 }
 
 /**
@@ -771,7 +747,6 @@ RegularPathExpression.prototype.skipOneOrMore = function(obj){
 	return this;
 }
 
-
 //Plus
 RegularPathExpression.prototype.plus = function(obj){
 
@@ -812,7 +787,6 @@ RegularPathExpression.prototype.getTmpIfUndefined = function(name){
 	}
 	return name;
 }
-
 
 /**
  * -------------
@@ -916,8 +890,8 @@ var queryFunctions = {
 				'===' 		: _.isEqual,
 				'!=='		: function(a,b){return (!_.isEqual(a,b));},
 				contains 	: contains, 
-				testTrue 	: function(){return true;},
-				testFalse 	: function(){return false;},
+				isTrue 		: function(a){return a===true;},
+				isFalse 	: function(a){return a===false;},
 				isString 	: isString
 				},
 	properties : {
