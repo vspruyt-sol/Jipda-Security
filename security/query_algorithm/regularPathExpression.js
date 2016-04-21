@@ -924,5 +924,6 @@ var queryFunctions = {
 				identity 		: function(a){ return a; },
 				length			: function(a){ return a.length; },
 				at 				: function(a,idx){ return a[idx]; },
+				memberOf 		: function(a){ return new BundledResult(a);}
 				}
 }

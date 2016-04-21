@@ -1,0 +1,15 @@
+RECURSIEVE FUNCTIE
+
+G.skipZeroOrMore()
+.beginApply({kont:'?k',lkont:'?lk'})
+.not().endApply({kont:'?k',lkont:'?lk'}).star()
+.returnStatement({returnName:'recFunc'})
+
+var recFunc = function(x){
+  if(x === 0) {
+    return 1;
+  }
+  return recFunc(x-1);
+}
+
+x = recFunc(3);

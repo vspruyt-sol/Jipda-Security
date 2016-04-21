@@ -434,13 +434,14 @@ AbstractQuery.verifyConditions = function(table, conds, curTheta){
 			resolvedArgs.push(resolvedArg);
 		}
 		res = func.apply(this, resolvedArgs);
-		if(!res) return false; //DIT WAS [], om 14U 14 april
+		if(!res) return false;
 	}
 	return table.length === 0 ? false : table;
 }
 
 AbstractQuery.addExtraProperties = function(table, props, curTheta){
 	//curTheta is added to access already bound variables from previous matching steps
+	var map = [table], newMap;
 	var lookupTable = table;
 
 	if(curTheta) lookupTable = AbstractQuery.merge(table, curTheta);
@@ -469,20 +470,82 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 			}
 			res = func.apply(this, resolvedArgs);
 			if(res === undefined) return false;
-			var obj = {};
-			obj[key] = res;
-			//for the current lookup
-			lookupTable.push(obj);
-			table.push(obj);
+			if(res.constructor.name === "BundledResult"){ //if we have multiple results
+				newMap = [];
+				for(var s = 0; s < map.length; s++){
+					for(var j = 0; j < res.vals.length; j++){
+						var newO = {};
+						newO[key] = res.vals[j];
+						merged = this.merge(map[s], [newO]);
+						if(merged) newMap.push(merged);
+					}
+				}
+				map = newMap.slice();
+			}
+			else{
+				var obj = {};
+				obj[key] = res;
+				/*NEWLY ADDED TEST CODE*/
+				newMap = [];
+				for(var s = 0; s < map.length; s++){
+					merged = this.merge(map[s], [obj]);
+					if(merged) newMap.push(merged);
+				}
+				map = newMap.slice();
+				/*END*/
+				
+				//for the current lookup
+				lookupTable.push(obj);
+				table.push(obj);
+			}
+			
 		}
 		else{
+			toLookup = propString.split('.')[0];
+			accessors = propString.split('.').slice(1);
+			if(this.isResolvableVariable(toLookup)){
+				lookedUp = this.resolveVariable(toLookup, lookupTable);
+			}
+			else{
+				lookedUp = toLookup;
+			}
+			if(lookedUp === undefined){
+				return false;
+			}
+			var obj = {};
+			//console.log(lookedUp);
+			lookupInfo = JipdaInfo.getInfo(lookedUp); //expression matching on val
+			//lookupInfo = lookedUp;
+
+			for(var g = 0; g < accessors.length; g++){
+				if(lookupInfo) lookupInfo = lookupInfo[accessors[g]];
+			}
+			obj[key] = lookupInfo;
+
+			if(obj[key] !== undefined){
+				/*NEWLY ADDED TEST CODE*/
+				newMap = [];
+				for(var s = 0; s < map.length; s++){
+					merged = this.merge(map[s], [obj]);
+					if(merged) newMap.push(merged);
+				}
+				map = newMap.slice();
+				/*END*/
+				lookupTable.push(obj);
+				table.push(obj);
+			}
+			else{
+				return false;
+			}
+		}
+		/*else{
 			toLookup = propString.split('.')[0];
 			accessors = propString.split('.').slice(1);
 			for(var i = 0; i < lookupTable.length; i++){
 				subSubs = lookupTable[i];
 				if(subSubs[toLookup] !== undefined) lookedUp = subSubs[toLookup] //lookup variable
 				if(subSubs[key]){ //variable already defined
-					//throw 'Substitution for ' + key + ' already exists.'
+					//throw 'Substitution for ' + key + ' already exists with value : ' + subSubs[key] + ' instead of '+ lookedUp +'.'
 					break; 
 				}
 				if(lookedUp){ //not already defined and found in table
@@ -498,6 +561,14 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 						obj[key] = lookupInfo;
 					}
 					if(obj[key] !== undefined){
+						//NEWLY ADDED TEST CODE
+						newMap = [];
+						for(var s = 0; s < map.length; s++){
+							merged = this.merge(map[s], [obj]);
+							if(merged) newMap.push(merged);
+						}
+						map = newMap.slice();
+						//END
 						lookupTable.push(obj);
 						table.push(obj);
 					} 
@@ -506,11 +577,14 @@ AbstractQuery.addExtraProperties = function(table, props, curTheta){
 					}
 					
 				}
-				lookedUp = false;
+				lookedUp = undefined;
 			}
-		}
+		}*/
 	}
-	return table.length === 0 ? false : table;
+	console.log(map);
+	console.log(table);
+	return map.length === 0 ? false : map;
+	//return table.length === 0 ? false : table;
 }
 
 AbstractQuery.addExtraPropertiesSwapped = function(table, props, curTheta){
@@ -525,10 +599,17 @@ AbstractQuery.addExtraPropertiesSwapped = function(table, props, curTheta){
 	return this.addExtraProperties(table, swapped, curTheta);
 }
 
-AbstractQuery.getAddresses = function(obj, env, store, subs){
+AbstractQuery.getAddresses = function(obj, env, store, subs, curTheta){
 	var map = [[]], newMap = [], foundAddresses;
 	var resolved, curAddr, curVal, addrName;
 	var toLookup, prop, names, found, startRes, restRes, merged, resolvedProp;
+
+	var lookupTable = subs;
+
+	if(curTheta) lookupTable = AbstractQuery.merge(subs, curTheta);
+
+	//var lookupTable = table;
+	if(!lookupTable) return false;	
 
 	for(var varName in obj){
 		addrName = obj[varName];
@@ -539,7 +620,7 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 
 		//benv:{?varName : ?addr}
 		if(this.isResolvableVariable(startRes)){
-			resolved = this.resolveVariable(startRes, subs);
+			resolved = this.resolveVariable(startRes, lookupTable);
 			if(resolved === undefined) return false;
 			resolved = [].concat.apply([resolved], restRes).join('.');	
 		}
@@ -610,7 +691,7 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 		for(var i = 0; i < prop.length; i++){
 			resolvedProp = prop[i];
 			if(this.isResolvableVariable(prop[i])){
-				resolvedProp = this.resolveVariable(prop[i], subs);
+				resolvedProp = this.resolveVariable(prop[i], lookupTable);
 				if(resolvedProp === undefined) return false; 
 			}
 			prop[i] = resolvedProp;
@@ -696,7 +777,6 @@ AbstractQuery.getAddresses = function(obj, env, store, subs){
 		if(merged) newMap.push(merged);
 	}
 	map = newMap.slice();
-
 	return map.length > 0 ? map : false;
 }
 
@@ -716,7 +796,7 @@ AbstractQuery.processLookup = function(lookedUp){
 
 AbstractQuery.matchState = function(el, tl, curTheta){
 	var tlInfo = tl.state;
-	var subst = [curTheta];
+	var subst = [[]];
 	var matchInfo, reified;
 	var benv, store, mapping, newSubs, tmpSubs;
 
@@ -724,23 +804,26 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 	for(var key in tlInfo){
 		switch (key){
 			case 'filters': 
-						//console.log(this.verifyConditions(subst, tlInfo[key], curTheta));
 						newSubs = [];
 						for(var i = 0;i < subst.length; i++){
 							tmpSubs = this.verifyConditions(subst[i], tlInfo[key], curTheta);
 							if(tmpSubs) newSubs.push(tmpSubs);
 						}
 						subst = newSubs.slice();
-						//subst = this.verifyConditions(subst, tlInfo[key], curTheta); //[{},{}]
 						break;
 			case 'properties': 
 						newSubs = [];
-						for(var i = 0;i < subst.length; i++){
+						/*for(var i = 0;i < subst.length; i++){
 							tmpSubs = this.addExtraProperties(subst[i], tlInfo[key], curTheta);
 							if(tmpSubs) newSubs.push(tmpSubs);
+						}*/
+						for(var i = 0; i < subst.length; i++){
+							matchInfo = this.addExtraProperties(subst[i], tlInfo[key], curTheta);//[[{},{}],[{},{}]]
+							if(matchInfo){
+								newSubs.push.apply(newSubs, matchInfo)
+							}
 						}
 						subst = newSubs.slice();
-						//subst = this.addExtraProperties(subst, tlInfo[key], curTheta); //[{},{}]
 						break;
 			case 'lookup':
 						benv = 	mapStateKey('benv', el);
@@ -757,7 +840,7 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 						//Subs are already merged in getAddresses
 						newSubs = [];
 						for(var i = 0; i < subst.length; i++){
-							matchInfo = this.getAddresses(mapping, benv, store, subst[i]);//[[{},{}],[{},{}]]
+							matchInfo = this.getAddresses(mapping, benv, store, subst[i], curTheta);//[[{},{}],[{},{}]]
 							if(matchInfo){
 								newSubs.push.apply(newSubs, matchInfo)
 							}

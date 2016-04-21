@@ -210,6 +210,8 @@ var equalTheta = function(theta, otherTheta){
     return iterate(theta, otherTheta);
 }
 
-
+function BundledResult(vals){
+  this.vals = vals;
+}
 //ARRAY EQUALITY
 //http://stackoverflow.com/questions/3115982/how-to-check-if-two-arrays-are-equal-with-javascript

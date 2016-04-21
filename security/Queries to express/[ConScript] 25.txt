@@ -2,10 +2,10 @@
 
 G.skipZeroOrMore()
 .fCall({
-  callee:'?callee',
+  procedure:'?proc',
   arguments:'?args',
   properties:{
-    '?name' : '?callee.name'
+    '?name' : '?proc.name'
   },
   lookup:{'?name': '?alertAddress',
           '_global.alert': '?alertAddress'}
