@@ -574,6 +574,8 @@ RegularPathExpression.prototype.setupStateChain = function(obj, chain, val){
 
 RegularPathExpression.prototype.setupProperty = function(obj, left, right){
 	if(!obj.properties) obj.properties = {};
+	if(!obj.lookup) obj.lookup = {};
+	if(!obj.filters) obj.filters = [];
 	//Is variable
 	if(isVar(left)){
 		obj.properties[left] = right;
@@ -601,7 +603,7 @@ RegularPathExpression.prototype.processProperties = function(state, obj){
 RegularPathExpression.prototype.setupFilter = function(obj, f){
 	var args = Array.prototype.slice.call(arguments, 2);
 	var fArgs = Array.prototype.concat.apply([], [f, args])
-
+	if(!obj.lookup) obj.lookup = {};
 	if(!obj.filters) obj.filters = [];
 	obj.filters.push(cond.apply(this,fArgs));	
 	//console.log(obj.filters);

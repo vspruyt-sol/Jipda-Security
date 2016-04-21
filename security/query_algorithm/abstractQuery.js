@@ -439,152 +439,173 @@ AbstractQuery.verifyConditions = function(table, conds, curTheta){
 	return table.length === 0 ? false : table;
 }
 
+AbstractQuery.addExtraProperty = function(key, map, lookupTables, propString, curTheta){
+	if(propString instanceof Array){ //[function, [arguments]]
+		func = propString[0];
+		args = propString[1];
+		res = this.addExtraPropertyWithFunc(map, lookupTables, func, args, key);
+	}
+	else{
+		toLookup = propString.split('.')[0];
+		accessors = propString.split('.').slice(1);
+		res = this.addExtraPropertyWithChain(map, lookupTables, toLookup, accessors, key);
+	}
+	return res;
+}
+
 AbstractQuery.addExtraProperties = function(table, props, curTheta){
 	//curTheta is added to access already bound variables from previous matching steps
-	var map = [table], newMap;
+	var map, lookupTables;
 	var lookupTable = table;
 
 	if(curTheta) lookupTable = AbstractQuery.merge(table, curTheta);
 
 	//var lookupTable = table;
 	if(!lookupTable) return false;	
+	map = [lookupTable];
+	lookupTables = [lookupTable]; //DEZE ZIJN HETZELFDE DUS ER KLOPT IETS NIET!
 
-	var toLookup, propString, subSubs, accessors, lookupInfo, lookedUp, func, args, resolvedArg, res;
-	var matches = true;
-	var resolvedArgs = [];
+	var propString, res, added, newLT, merged, found = [];
 	for(var key in props){
 		propString = props[key];
-		if(propString instanceof Array){ //[function, [arguments]]
-			resolvedArgs = [];
-			func = propString[0];
-			args = propString[1];
-			for(var i = 0; i < args.length; i++){
-				if(this.isResolvableVariable(args[i])){
-					resolvedArg = this.resolveVariable(args[i], lookupTable);
-					if(resolvedArg === undefined) return false; //couldn't find a resolution
-				}
-				else{
-					resolvedArg = args[i];
-				}
-				resolvedArgs.push(resolvedArg);
-			}
-			res = func.apply(this, resolvedArgs);
-			if(res === undefined) return false;
-			if(res.constructor.name === "BundledResult"){ //if we have multiple results
-				newMap = [];
-				for(var s = 0; s < map.length; s++){
-					for(var j = 0; j < res.vals.length; j++){
-						var newO = {};
-						newO[key] = res.vals[j];
-						merged = this.merge(map[s], [newO]);
-						if(merged) newMap.push(merged);
-					}
-				}
-				map = newMap.slice();
-			}
-			else{
-				var obj = {};
-				obj[key] = res;
-				/*NEWLY ADDED TEST CODE*/
-				newMap = [];
-				for(var s = 0; s < map.length; s++){
-					merged = this.merge(map[s], [obj]);
-					if(merged) newMap.push(merged);
-				}
-				map = newMap.slice();
-				/*END*/
-				
-				//for the current lookup
-				lookupTable.push(obj);
-				table.push(obj);
-			}
-			
-		}
-		else{
-			toLookup = propString.split('.')[0];
-			accessors = propString.split('.').slice(1);
-			if(this.isResolvableVariable(toLookup)){
-				lookedUp = this.resolveVariable(toLookup, lookupTable);
-			}
-			else{
-				lookedUp = toLookup;
-			}
-			if(lookedUp === undefined){
-				return false;
-			}
-			var obj = {};
-			//console.log(lookedUp);
-			lookupInfo = JipdaInfo.getInfo(lookedUp); //expression matching on val
-			//lookupInfo = lookedUp;
-
-			for(var g = 0; g < accessors.length; g++){
-				if(lookupInfo) lookupInfo = lookupInfo[accessors[g]];
-			}
-			obj[key] = lookupInfo;
-
-			if(obj[key] !== undefined){
-				/*NEWLY ADDED TEST CODE*/
-				newMap = [];
-				for(var s = 0; s < map.length; s++){
-					merged = this.merge(map[s], [obj]);
-					if(merged) newMap.push(merged);
-				}
-				map = newMap.slice();
-				/*END*/
-				lookupTable.push(obj);
-				table.push(obj);
-			}
-			else{
-				return false;
+			//prefetch lookuptable values
+		res = this.addExtraProperty(key, map, lookupTables, propString, curTheta);
+		map = res[0];
+		added = res[1];
+		//update lookup table to contain added properties
+		newLT = [];
+		for(var i = 0; i < lookupTables.length; i++){
+			for(var j = 0; j < added.length; j++){
+				merged = this.merge(lookupTables[i], [added[j]]);
+				if(merged) newLT.push(merged);
 			}
 		}
-		/*else{
-			toLookup = propString.split('.')[0];
-			accessors = propString.split('.').slice(1);
-			for(var i = 0; i < lookupTable.length; i++){
-				subSubs = lookupTable[i];
-				if(subSubs[toLookup] !== undefined) lookedUp = subSubs[toLookup] //lookup variable
-				if(subSubs[key]){ //variable already defined
-					//throw 'Substitution for ' + key + ' already exists with value : ' + subSubs[key] + ' instead of '+ lookedUp +'.'
-					break; 
-				}
-				if(lookedUp){ //not already defined and found in table
-					var obj = {};
-					//console.log(lookedUp);
-					lookupInfo = JipdaInfo.getInfo(lookedUp); //expression matching on val
-					//lookupInfo = lookedUp;
-
-					if(lookupInfo){
-						for(var g = 0; g < accessors.length; g++){
-							if(lookupInfo) lookupInfo = lookupInfo[accessors[g]];
-						}
-						obj[key] = lookupInfo;
-					}
-					if(obj[key] !== undefined){
-						//NEWLY ADDED TEST CODE
-						newMap = [];
-						for(var s = 0; s < map.length; s++){
-							merged = this.merge(map[s], [obj]);
-							if(merged) newMap.push(merged);
-						}
-						map = newMap.slice();
-						//END
-						lookupTable.push(obj);
-						table.push(obj);
-					} 
-					else{
-						return false; // was return [];
-					}
-					
-				}
-				lookedUp = undefined;
-			}
-		}*/
+		lookupTables = newLT.slice();
 	}
-	console.log(map);
-	console.log(table);
+
 	return map.length === 0 ? false : map;
 	//return table.length === 0 ? false : table;
+}
+
+AbstractQuery.addExtraPropertyWithChain = function(map, lookupTables, toLookup, accessors, key){
+	//lookup in every table
+	found = [];
+	//get unique found set TODO
+	var lookedUp, lookupInfo, merged, newMap = [];
+	for(var i = 0; i < map.length; i++){		
+		if(this.isResolvableVariable(toLookup)){
+			lookedUp = this.resolveVariable(toLookup, map[i]);
+		}
+		else{
+			lookedUp = toLookup;
+		}
+		if(lookedUp === undefined){ // als niet leeg
+			return false;
+		}
+		var obj = {};
+		//console.log(lookedUp);
+		lookupInfo = JipdaInfo.getInfo(lookedUp); //expression matching on val
+		//lookupInfo = lookedUp;
+
+		for(var g = 0; g < accessors.length; g++){
+			if(lookupInfo) lookupInfo = lookupInfo[accessors[g]];
+		}
+		obj[key] = lookupInfo;
+
+		if(obj[key] !== undefined){
+			//add to found objects
+			if(!contains(found, obj)) found.push(obj);
+			/*NEWLY ADDED TEST CODE*/
+			newMap = [];
+			for(var s = 0; s < map.length; s++){
+				if(s === i){
+					merged = this.merge(map[s], [obj]);
+					if(merged) newMap.push(merged);
+				}
+				else{
+					newMap.push(map[s]);
+				}
+				
+			}
+			map = newMap.slice();
+			/*END*/
+			//lookupTable.push(obj);
+		}
+		else{
+			return false;
+		}
+	}
+
+	//Once we found all objects, it is time to add them to the map
+	/*console.log(JSON.stringify(found));
+	newMap = [];
+	for(var s = 0; s < map.length; s++){
+		for(var f = 0; f < found.length; f++){
+			merged = this.merge(map[s], [found[f]]);
+			if(merged) newMap.push(merged);
+		}
+	}
+	map = newMap.slice();*/
+
+	return [map, found];
+}
+
+AbstractQuery.addExtraPropertyWithFunc = function(map, lookupTables, func, args, key){
+	var merged, newMap = [],res, resolvedArg, resolvedArgs = [], found = [];
+	for (var l = 0; l < map.length; l++){
+		for(var i = 0; i < args.length; i++){
+			if(this.isResolvableVariable(args[i])){
+				resolvedArg = this.resolveVariable(args[i], map[l]);
+				if(resolvedArg === undefined) return false; //couldn't find a resolution
+			}
+			else{
+				resolvedArg = args[i];
+			}
+			resolvedArgs.push(resolvedArg);
+		}
+		res = func.apply(this, resolvedArgs);
+		if(res === undefined) return false;
+		if(res.constructor.name === "BundledResult"){ //if we have multiple results
+			//newMap = [];
+			//for(var s = 0; s < map.length; s++){
+				for(var j = 0; j < res.vals.length; j++){
+					var newO = {};
+					newO[key] = res.vals[j];
+					if(!contains(found, obj)) found.push(newO);
+			//		merged = this.merge(map[s], [newO]);
+			//		if(merged) {newMap.push(merged);console.log('waaa');}
+				}
+			//}
+			//map = newMap.slice();
+		}
+		else{
+			var obj = {};
+			obj[key] = res;
+			/*NEWLY ADDED TEST CODE*/
+			//newMap = [];
+			//for(var s = 0; s < map.length; s++){
+			//	merged = this.merge(map[s], [obj]);
+			//	if(merged) {newMap.push(merged);};
+			//}
+			//map = newMap.slice();
+			/*END*/
+			
+			if(!contains(found, obj)) found.push(obj);
+		}
+	}
+
+
+	//Once all is found, add them to the map
+	newMap = [];
+	for(var s = 0; s < map.length; s++){
+		for(var f = 0; f < found.length; f++){
+			merged = this.merge(map[s], [found[f]]);
+			if(merged) newMap.push(merged);
+		}
+	}
+	map = newMap.slice();
+
+	return [map, found];
 }
 
 AbstractQuery.addExtraPropertiesSwapped = function(table, props, curTheta){
@@ -799,7 +820,7 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 	var subst = [[]];
 	var matchInfo, reified;
 	var benv, store, mapping, newSubs, tmpSubs;
-
+	console.log('--START--')
 	//TODO herschrijven naar minder duplicate code
 	for(var key in tlInfo){
 		switch (key){
@@ -838,10 +859,12 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 						//3. put each subst of getAddresses in subst
 
 						//Subs are already merged in getAddresses
+
 						newSubs = [];
 						for(var i = 0; i < subst.length; i++){
 							matchInfo = this.getAddresses(mapping, benv, store, subst[i], curTheta);//[[{},{}],[{},{}]]
 							if(matchInfo){
+								//console.log(JSON.stringify(matchInfo));
 								newSubs.push.apply(newSubs, matchInfo)
 							}
 						}
@@ -874,7 +897,7 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 						//};
 		}
 	}
-
+	console.log('--END--')
 	//console.log(subst);
 
 	return subst.length === 0 ? false : subst;

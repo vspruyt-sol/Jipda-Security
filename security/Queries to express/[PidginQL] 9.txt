@@ -1,7 +1,7 @@
 9. Public outputs do not depend on a users's password, unless it has been cryptographically hashed
 
 G.skipZeroOrMore()
-.returnOfFunctionCall({functionName:'getPassword', returnAddr : '?addr'})
+.procedureExit({functionName:'getPassword', returnAddr : '?addr'})
 .not()
 .state({
   node:{
@@ -11,8 +11,8 @@ G.skipZeroOrMore()
     }
   },
   properties: {
-    '?first' : prop('at', '?args', 0),
-    '?firstName': '?first.name'
+    '?arg' : prop('memberOf', '?args'),
+    '?firstName': '?arg.name'
   },
   lookup:{
     '?firstName' : '?addr'

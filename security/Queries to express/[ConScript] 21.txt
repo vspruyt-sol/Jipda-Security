@@ -2,16 +2,15 @@
 
 G.skipZeroOrMore()
 .fCall({
-  callee:'?callee',
+  name:'setTimeout',
   arguments:'?args',
   properties:{
-    '?name' : '?callee.name',
-    '?secArg': prop('at', '?args', 0),
-  	'?arg': '?secArg.name'
+    '?arg' : prop('memberOf', '?args'),
+    '?name': '?arg.name',
   },
-  lookup:{'?arg': '?lookedUp'},
+  lookup:{'?name': '?lookedUp'},
   filters:[
-  	cond('isString', '?lookedUp')
+    cond('isString', '?lookedUp')
   ]
 })
 
