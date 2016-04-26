@@ -135,6 +135,51 @@ RegularPathExpression.prototype.procedureExit = function(obj){ //functionName, r
 				.rBrace();
 }
 
+RegularPathExpression.prototype.variableUse = function(obj){ //name, addr
+	var obj = obj || obj;
+	var s1 = {}, s2 = {}, s3 = {}, s4 = {};
+
+	var objName = this.getTmpIfUndefined(obj.name); 
+
+	this.setupStateChain(s1, ['node','name'], objName);
+	this.setupStateChain(s1, ['node','type'], 'Identifier');
+
+
+	this.setupStateChain(s2, ['node','left','name'], objName);
+	this.setupStateChain(s2, ['node','type'], 'BinaryExpression');	
+
+	this.setupStateChain(s3, ['node','right','name'], objName);
+	this.setupStateChain(s3, ['node','type'], 'BinaryExpression');
+
+	this.setupStateChain(s4, ['node','callee','name'], objName);
+	this.setupStateChain(s4, ['node','type'], 'CallExpression');
+
+	//lookup of address
+	if(obj.addr) {
+		var o = {};
+		o[objName] = obj.addr;
+		s1.lookup = o;
+		s2.lookup = o;
+		s3.lookup = o;
+		s3.lookup = o;
+	} 
+
+	this.finalize(s1, obj);
+	this.finalize(s2, obj);
+	this.finalize(s3, obj);
+	this.finalize(s4, obj);
+
+	return this .lBrace()
+					.state(s1)
+					.or()
+					.state(s2)
+					.or()
+					.state(s3)
+					.or()
+					.state(s4)
+				.rBrace();
+}
+
 RegularPathExpression.prototype.beginIf = function(obj){ //this, test, cons, alt, kont, lkont
 	var s1 = {}, s2 = {}, s3 = {};
 
@@ -169,6 +214,26 @@ RegularPathExpression.prototype.beginIf = function(obj){ //this, test, cons, alt
 					.or()
 					.state(s3)
 				.rBrace()
+}
+
+RegularPathExpression.prototype.ifStatement = function(obj){ //this, test, cons, alt, kont, lkont
+	var s1 = {};
+
+	var objThis = this.getTmpIfUndefined(obj.this); 
+	var objTest = this.getTmpIfUndefined(obj.test); 
+	var objCons = this.getTmpIfUndefined(obj.cons); 
+	var objAlt  = this.getTmpIfUndefined(obj.alt); 
+
+	this.setupStateChain(s1, ['node','this'], objThis);
+	this.setupStateChain(s1, ['node','test'], objTest);
+	this.setupStateChain(s1, ['node','consequent'], objCons);
+	this.setupStateChain(s1, ['node','alternate'], objAlt);
+	this.setupStateChain(s1, ['node','type'], 'IfStatement');
+
+	this.finalize(s1, obj);
+
+	return this.state(s1);
+				
 }
 
 RegularPathExpression.prototype.beginIfTrue = function(obj){ //this, test, cons, alt, kont, lkont
@@ -340,7 +405,7 @@ RegularPathExpression.prototype.fCall = function(obj){ //name, procedure, argume
 	var firstArgName= 	obj.argName || this.getTmpVar('firstArgName'); //if user wants to know first argument name
 	var calleeName 	= 	this.getTmpVar('calleeName'); //tmp var for matching
 	var argName 	=	this.getTmpVar('argName');
-	var global 		=	this.getTmpIfUndefined(obj.global); 	
+	var global 		=	this.getTmpIfUndefined(obj.global); 
 
 	//Basic function call
 	this.setupStateChain(s1, ['node','this'], objThis);
@@ -470,12 +535,37 @@ RegularPathExpression.prototype.udClosedAllOpenedFiles = function(obj){
 					//.star()
 }
 
+RegularPathExpression.prototype.taintedBy = function(obj){ //x, y
+	obj = obj || {};
+	var s1 = {};
+	var s2 = {};
+	var newObj = {};
+	var x = this.getTmpIfUndefined(obj.x);
+	var y = this.getTmpIfUndefined(obj.y);
+	var flow = this.getTmpIfUndefined();
+
+	newObj.x = flow;
+	newObj.y = y;
+
+	this.setupStateChain(s1, ['node','expression','right','name'], x); //alias
+	this.setupStateChain(s1, ['node','expression','left','name'], y); //leaked
+	this.setupStateChain(s2, ['node','expression','right','name'], x); //alias
+	this.setupStateChain(s2, ['node','expression','left','name'], flow); //leaked
+
+	return this .lBrace()
+				.state(s1) //assign from x to y
+				.or()
+				.state(s2) //assign from x to tmp
+				.skipZeroOrMore()
+				.rec(newObj,this.taintedBy)
+				.rBrace();
+
+}
+
 RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 	// sink(x);
 	// | tmp = x
 	// | udRecTest(tmp)
-
-	// TODO: Right addr has to match in every step
 
 	//info from argument
 	obj = obj || {};
@@ -499,7 +589,7 @@ RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 
 
 	return this 	.lBrace()
-					.udFCall({name: 'sink', argName: leaked})
+					.fCall({name: 'sink', argName: leaked})
 					.or()
 					.state(s)
 					.skipZeroOrMore()

@@ -334,7 +334,7 @@ JipdaInfo.conditionalExpression = function(exp){
 		test		: test,
 		consequent 	: cons,
 		alternate 	: alt || {name: "NotDefined"}, 
-		type		: 'ConditionalExpression',
+		type		: exp.type,
 		//location 	: exp.loc,
 	}
 }

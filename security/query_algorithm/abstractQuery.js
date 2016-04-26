@@ -820,7 +820,6 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 	var subst = [[]];
 	var matchInfo, reified;
 	var benv, store, mapping, newSubs, tmpSubs;
-	console.log('--START--')
 	//TODO herschrijven naar minder duplicate code
 	for(var key in tlInfo){
 		switch (key){
@@ -875,7 +874,7 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 						console.log('I WANT VALUE');
 						break;
 			default: 	reified = mapStateKey(key, el);
-						//if(key === '_global') console.log(key + '->' + reified);
+						//if(key === 'kont') console.log(key + '->' + reified);
 						if(reified === undefined) return false;
 
 						newSubs = [];
@@ -888,7 +887,7 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 						//if(newSubs.length === 0) return false;
 						subst = newSubs.slice();
 						//matchInfo = this.matchRecursive(key, tlInfo[key], reified); //[{},{}]
-
+						//console.log(JSON.stringify(subst));
 						//if(matchInfo){
 						//	subst.push.apply(subst, matchInfo)
 						//}
@@ -897,7 +896,6 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 						//};
 		}
 	}
-	console.log('--END--')
 	//console.log(subst);
 
 	return subst.length === 0 ? false : subst;
@@ -942,7 +940,9 @@ AbstractQuery.matchRecursive = function(key, value, statePart, subs){
 			//console.log(statePart);
 			//console.log('----');
 			//obj[value] =  statePart;
-			subs.push(obj);
+			//if(value == '?id') console.log('added ' + value + ' -> ' + statePart + ' to ' + JSON.stringify(subs));
+			//subs.push(obj); //IN CASE ANYTHING GOES WRONG: REVERT TO THIS
+			subs = AbstractQuery.merge(subs, [obj]);
 		}
 		else{
 			//TODO check wildcard

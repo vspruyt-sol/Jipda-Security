@@ -3,33 +3,73 @@
 G.skipZeroOrMore()
 .procedureExit({functionName:'getPassword', returnAddr : '?addr'})
 .not()
-.state({
-  node:{
-    expression: {
-      callee: {name:'computeHash'},
-      arguments: '?args'
+  .state({
+    node:{  expression: {
+              callee: {name:'computeHash'},
+              arguments: '?args'
+          }
+    },
+    properties: {
+      '?arg' : prop('memberOf', '?args'),
+      '?firstName': '?arg.name'
+    },
+    lookup:{
+      '?firstName' : '?addr'
     }
-  },
-  properties: {
-    '?arg' : prop('memberOf', '?args'),
-    '?firstName': '?arg.name'
-  },
-  lookup:{
-    '?firstName' : '?addr'
-  }
-}).star()
+  }).star()
+.ifStatement({cons:'?cons', alt:'?alt'})
+.skipZeroOrMore()
+.variableUse({addr:'?addr'})
+.skipZeroOrMore()
 .lBrace()
-.fCall({name: 'print', 
-        argName: '?outputArg',
-        lookup:{
-          '?outputArg' : '?addr'
-        }})
+.state({node:{this:'?cons'}, kont:'?k', lkont:'?lk'})
 .or()
-.fCall({name: 'writeToStorage', 
-        argName: '?outputArg',
-        lookup:{
-          '?outputArg' : '?addr'
-        }})
+.state({node:{this:'?alt'}, kont:'?k', lkont:'?lk'})
+.rBrace()
+.not().state({kont:'?k', lkont:'?lk'}).star()
+.fCall({name: 'print'})
+
+
+
+
+G.skipZeroOrMore()
+.procedureExit({functionName:'getPassword', returnAddr : '?addr'})
+.not()
+  .state({
+    node:{
+      expression: {
+        callee: {name:'computeHash'},
+        arguments: '?args'
+      }
+    },
+    properties: {
+      '?arg' : prop('memberOf', '?args'),
+      '?firstName': '?arg.name'
+    },
+    lookup:{
+      '?firstName' : '?addr'
+    }
+  }).star()
+.lBrace()
+  .fCall({name: 'print',
+          arguments:'?oArgs',
+          properties: {
+            '?oArg' : prop('memberOf', '?oArgs'),
+            '?oArgName': '?oArg.name'
+          },
+          lookup:{
+            '?oArgName' : '?addr'
+          }})
+  .or()
+  .fCall({name: 'writeToStorage',
+          arguments:'?oArgs',
+          properties: {
+            '?oArg' : prop('memberOf', '?oArgs'),
+            '?oArgName': '?oArg.name'
+          },
+          lookup:{
+            '?oArgName' : '?addr'
+          }})
 .rBrace()
 
 /*let passwords = pgm.returnsOf(‘‘getPassword’’) in let outputs = pgm.formalsOf(‘‘writeToStorage’’) ∪

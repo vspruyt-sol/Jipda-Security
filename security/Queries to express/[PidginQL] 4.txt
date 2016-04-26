@@ -5,29 +5,21 @@ database. We confirmed that this occurs only in the
 newDatabase method or when protected by appropriate checks
 of the master password."
 
-3 solutions, samen 100% coverage, wel false positives als samen gezet
-1. if master password is not correct
-------------------------------------
 G.skipZeroOrMore()
-.beginIfFalse({kont:'?kont', lkont:'?lkont'})
-.not().endIf({kont:'?kont', lkont:'?lkont'}).star()
-.fCall({name:'doOpenDatabaseActions'})
-
-2. all global calls of doOpenDatabaseActions
---------------------------------------------
-G.skipZeroOrMore()
-.fCall({global: true, name:'doOpenDatabaseActions'})
-
-
-3. call of doOpenDatabaseActions in non-newDatabase function
-------------------------------------------------------------
-G.skipZeroOrMore()
-.beginFCall({name:'?name', lkont:'?lk', kont:'?k',
+.ifStatement({cons:'?cons', alt:'?alt'})
+.skipZeroOrMore()
+.fCall({name:'isMasterPassword'})
+.not().state({node:'?cons'}).star()
+//Part 1
+.beginApply({name:'?name', lkont:'?lk', kont:'?k',
              filters:[
-              cond('nequals', '?name', 'newDatabase')
+              cond('!==', '?name', 'newDatabase')
              ]})
-.not().endFCall({lkont:'?lk', kont:'?k'}).star()
+.not().endApply({lkont:'?lk', kont:'?k'}).star()
 .fCall({name:'doOpenDatabaseActions'})
+//Part 2
+//.fCall({global:true, name:'doOpenDatabaseActions'})
+
 
 
 //1. Creation of new DB

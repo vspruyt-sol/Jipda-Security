@@ -123,7 +123,7 @@ SecurityAnalysis.prototype.processQueryResult = function(queryResult){
 //GRAPHICS
 SecurityAnalysis.prototype.markQueryResult = function(results, marker){
 	//var ids = _fromStateIds(triples);
-	var ids = results.map(function(x){ return x.v._id; });
+	var ids = results.map(function(x){ return x.v._id - 1; });
 	var info, theta;
 	for(var i = 0; i < ids.length; i++){
 			info = this.states[ids[i]].marker ? this.states[ids[i]].marker.info + Utilities.objToString(results[i].theta) + '<br />' : Utilities.objToString(results[i].theta) + '<br />';
