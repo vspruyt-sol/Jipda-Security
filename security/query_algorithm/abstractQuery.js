@@ -350,6 +350,14 @@ AbstractQuery.match = function(el, tl, curTheta){
 	switch(tl.name){
 		case 'state'		: 	_map = this.matchState(el, tl, curTheta);
 								break;
+		case 'EvalState'	: 	_map = (el.constructor.name !== 'EvalState') ? false : _map = this.matchState(el, tl, curTheta);
+								break;
+		case 'KontState'	: 	_map = (el.constructor.name !== 'KontState') ? false : _map = this.matchState(el, tl, curTheta);
+								break;
+		case 'ResultState'	: 	_map = (el.constructor.name !== 'ResultState') ? false : _map = this.matchState(el, tl, curTheta);
+								break;
+		case 'ReturnState'	: 	_map = (el.constructor.name !== 'ReturnState') ? false : _map = this.matchState(el, tl, curTheta);
+								break;
 		case '_'			: 	_map = [[]]; 
 								break;
 		default:

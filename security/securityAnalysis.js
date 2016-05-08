@@ -9,6 +9,7 @@ function SecurityAnalysis(codeSrc, query){
 	this.query = query;
 	this.nfa = false;
 	this.dfa = false;
+	this.prevMap = {}
 }
 
 SecurityAnalysis.prototype.initialize = function(){
@@ -123,26 +124,30 @@ SecurityAnalysis.prototype.processQueryResult = function(queryResult){
 //GRAPHICS
 SecurityAnalysis.prototype.markQueryResult = function(results, marker){
 	//var ids = _fromStateIds(triples);
-	var ids = results.map(function(x){ return x.v._id - 1; });
+	var ids = results.map(function(x){ return [x.v._id, this.prevMap[x.v._id]]; }, this);
 	var info, theta;
 	for(var i = 0; i < ids.length; i++){
-			info = this.states[ids[i]].marker ? this.states[ids[i]].marker.info + Utilities.objToString(results[i].theta) + '<br />' : Utilities.objToString(results[i].theta) + '<br />';
+			//info = this.states[ids[i][0]].marker ? this.states[ids[i]].marker.info + Utilities.objToString(results[i].theta) + '<br />' : Utilities.objToString(results[i].theta) + '<br />';
 			//theta = this.states[ids[i]].marker ? this.states[ids[i]].marker.theta.push(results[i].theta) : [results[i].theta];
 			
-			if(this.states[ids[i]].marker){
-				theta = this.states[ids[i]].marker.theta.slice(),
-				theta.push(results[i].theta);
-				//theta = 
-			}
-			else{
-				theta = [results[i].theta];
-			}
+			for(var j = 0; j < ids[i][1].length; j++){
+				info = this.states[ids[i][1][j]].marker ? this.states[ids[i][1][j]].marker.info + Utilities.objToString(results[i].theta) + '<br />' : Utilities.objToString(results[i].theta) + '<br />';
+			
+				if(this.states[ids[i][1][j]].marker){
+					theta = this.states[ids[i][1][j]].marker.theta.slice(),
+					theta.push(results[i].theta);
+					//theta = 
+				}
+				else{
+					theta = [results[i].theta];
+				}
 
-			this.states[ids[i]].marker = {
-										'className'	: marker,
-										'info'		: info,
-										'theta'		: theta
-									 };
+				this.states[ids[i][1][j]].marker = {
+											'className'	: marker,
+											'info'		: info,
+											'theta'		: theta
+										 };
+			}
 	}
 }
 
@@ -156,6 +161,11 @@ SecurityAnalysis.prototype.graphToTriples = function(g){
 	this.tripleStore = [];
 	var doneList = [];
 	var t;
+	var lastList = [];
+	var cur;
+
+	//prev of first node is undefined, so add it manually
+	this.prevMap[1] = [0];
 
 	//initial node only has 1 successor
 	this.tripleStore.push(new GraphTriple(
@@ -182,13 +192,22 @@ SecurityAnalysis.prototype.graphToTriples = function(g){
 			var tState = state._successors[k].state;
 			if(tState._successors.length > 0){ 
 				for (var h = 0; h < tState._successors.length; h++){
+					if(tState._successors[h].state._successors.length === 0) {
+						lastList.push(tState._successors[h].state);
+					}
 					t = new GraphTriple(
 							new DummyNode(tState._id), 
 							tState,
 							new DummyNode(tState._successors[h].state._id),
 							false, 
-							tState._successors[h].state._successors.length === 0 //final
+							false //final
 						);
+					if(this.prevMap[tState._successors[h].state._id]){
+						this.prevMap[tState._successors[h].state._id].push(tState._id);
+					}
+					else{
+						this.prevMap[tState._successors[h].state._id] = [tState._id]
+					}
 					if(!Utilities.containsTriple(this.tripleStore,t)){
 						this.tripleStore.push(t);
 					}
@@ -196,6 +215,18 @@ SecurityAnalysis.prototype.graphToTriples = function(g){
 			}				
 		}		
 	}
+
+	for(var i = 0; i < lastList.length; i++){
+		cur = lastList[i];
+		this.tripleStore.push(new GraphTriple(
+								new DummyNode(cur._id),
+								cur,
+								new DummyNode(cur._id + 9999), //TODO find unique id
+								false,
+								true));
+		this.prevMap[cur._id + 9999] = [cur._id]
+	}
+
 	return this.tripleStore;
 }
 

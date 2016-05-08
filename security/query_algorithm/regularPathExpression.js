@@ -764,6 +764,35 @@ RegularPathExpression.prototype.state = function(obj){
 	return this;
 }
 
+
+//EvalState
+RegularPathExpression.prototype.evalState = function(obj){
+	this._map.push(new RegexPart('EvalState', obj, 'idx' + this._map.length));
+	//Fluent API
+	return this;
+}
+
+//KontState
+RegularPathExpression.prototype.kontState = function(obj){
+	this._map.push(new RegexPart('KontState', obj, 'idx' + this._map.length));
+	//Fluent API
+	return this;
+}
+
+//ResultState
+RegularPathExpression.prototype.resultState = function(obj){
+	this._map.push(new RegexPart('ResultState', obj, 'idx' + this._map.length));
+	//Fluent API
+	return this;
+}
+
+//ReturnState
+RegularPathExpression.prototype.returnState = function(obj){
+	this._map.push(new RegexPart('ReturnState', obj, 'idx' + this._map.length));
+	//Fluent API
+	return this;
+}
+
 //subgraph (for recursion)
 RegularPathExpression.prototype.rec = function(obj, f){
 	//context that has an empty _map (for the creation of the subgraph)
