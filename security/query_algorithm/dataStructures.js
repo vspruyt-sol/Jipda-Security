@@ -1,6 +1,6 @@
 function Query(rpe, type, direction){
   try{
-    this.rpe = eval('var G = new RegularPathExpression(); ' + rpe);
+    this.rpe = eval('var G = new JSQL(); ' + rpe);
   }
   catch(err){
     this.rpe = false;

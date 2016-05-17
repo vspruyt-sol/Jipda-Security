@@ -182,6 +182,87 @@ function UniversalQuery(G, P, F, v0, s0){
 
 UniversalQuery.prototype.runNaiveWithNegation = function(){
 	//used variables
+	var tripleG, tripleP, theta, matched, tripleW, theta1, theta2, tripleTemp, tripleTemp2;
+	//start algorithm
+	var R = [];
+	var W = [];
+	for(var i = 0; i < this.G.length; i++){
+		tripleG = this.G[i];
+		if(tripleG.from.equals(this.v0)){ //Is de Jipda-node gelijk aan onze initial (Jipda-)node
+			for(var j = 0; j < this.P.length; j++){
+				tripleP = this.P[j];	
+				if(tripleP.from.equals(this.s0)){ //Is de NFA-node gelijk aan de initial (NFA-)node
+					theta = AbstractQuery.match(tripleG.edge,tripleP.edge);
+					for(var k = 0; k < theta.length; k++){
+						W = AbstractQuery.union(W, [new WorklistTriple(tripleG.target, tripleP.target, theta[k])]);
+					}
+				}
+			}
+		}
+	}
+	console.log(JSON.stringify(W));
+	var T = {};
+	var U = {};
+	while(W.length > 0){
+		tripleW = W.shift();
+		R = AbstractQuery.union(R, [tripleW]);
+		for(var i = 0; i < this.G.length; i++){
+			tripleG = this.G[i];
+			if(tripleG.from.equals(tripleW.v)){
+				matched = false;
+				//hier prevMatch ofzo resetten (bijhouden of er veranderingen in match zijn)
+				for(var j = 0; j < this.P.length; j++){
+					tripleP = this.P[j];	
+					if(tripleP.from.equals(tripleW.s)){
+						theta1 = AbstractQuery.match(tripleG.edge,tripleP.edge);
+						for(var k = 0; k < theta1.length; k++){
+							theta2 = AbstractQuery.merge(tripleW.theta, theta1[k]);
+							if(theta2){
+								if(matched){
+									throw 'Determinism condition doesn\'t hold for universal query!';
+								}
+								matched = (tripleP.edge.name === '_' ? matched : true); 
+								//TODO: controleren of we de lijnen hieronder nog moeten doen
+								tripleTemp = new WorklistTriple(tripleG.target, tripleP.target, theta2);
+								if(!contains(R, tripleTemp)){
+									W = AbstractQuery.union(W, [tripleTemp]);
+								}
+							}
+						}//end for		
+						if(!matched){
+							tripleTemp2 = new WorklistTriple(tripleG.target, undefined, undefined);
+							if(!contains(R, tripleTemp2)){
+								W = AbstractQuery.union(W, [tripleTemp2]);
+							}
+						}
+					}
+				} //end for 
+			}
+		} //end for
+		if(!T[tripleW.v]){
+			T[tripleW.v] = contains(this.F, tripleW.s);
+		}
+		if(T[tripleW.v]){
+			//console.log(U[tripleW.v]);
+			if(U[tripleW.v] === false){
+				U[tripleW.v] = false;
+			}
+			else{
+				var thetaUv = U[tripleW.v] || [];
+				U[tripleW.v] = AbstractQuery.merge(tripleW.theta, thetaUv);
+			}
+			
+		}
+		else{
+			U[tripleW.v] = undefined;
+		}
+	} //end while
+	return this.transformToPairs(U);
+}
+
+
+/*UniversalQuery.prototype.runNaiveWithNegation2 = function(){
+	//used variables
 	//for matchedPair, 1 and 2 are just names without any meaning
 	var tripleG, tripleP, theta, tripleW, theta1, theta2, tripleTemp, tripleTemp2, matchPair;
 	//start algorithm
@@ -246,8 +327,13 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 				matchPair = undefined;
 				for(var j = 0; j < this.P.length; j++){
 					tripleP = this.P[j];	
+						console.log(tripleW.theta.length);
+						console.log(tripleW);
+						console.log(tripleP);
+						console.log('----');
 					if(tripleP.from.equals(tripleW.s)){
-						
+						//console.log(tripleW);
+
 						if(tripleP.edge.name === 'subGraph'){
 							var newTriples;
 							if(subgraphCache[tripleP]){
@@ -264,8 +350,10 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 						}
 						else{
 							theta1 = AbstractQuery.match(tripleG.edge,tripleP.edge, tripleW.theta);
+							//console.log(theta1);
 							for(var k = 0; k < theta1.length; k++){
 								theta2 = AbstractQuery.merge(tripleW.theta, theta1[k]);
+								//console.log(theta2);
 								if(theta2){
 									if(matchPair === undefined || matchPair[3] === "_"){ //suppress error
 										matchPair = {
@@ -299,9 +387,12 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 
 		if((T[tripleW.v] === undefined) || (T[tripleW.v] !== false)){
 			T[tripleW.v] = contains(this.F, tripleW.s);
+
+			//console.log(this.F);
 		}
 		if(T[tripleW.v]){
 			if(U[tripleW.v] === undefined){
+				console.log(tripleW.theta);
 				U[tripleW.v] = tripleW.theta;
 			}
 			else{
@@ -312,8 +403,10 @@ UniversalQuery.prototype.runNaiveWithNegation = function(){
 			U[tripleW.v] = undefined;
 		}
 	} //end while
+
+	//console.log(U);
 	return this.transformToPairs(U);
-}
+}*/
 
 UniversalQuery.prototype.transformToPairs = function(res){
 	var val;
@@ -363,6 +456,8 @@ AbstractQuery.match = function(el, tl, curTheta){
 		default:
 			throw "Can not handle 'tl.name': " + tl.name + ". Source: AbstractQuery.match(el, tl)"
 	}
+
+	//console.log(_map);
 
 	if(_map){
 		for(var i = 0; i < _map.length; i++){
@@ -792,7 +887,7 @@ AbstractQuery.getAddresses = function(obj, env, store, subs, curTheta){
 				}
 				//create new sub for the address
 				newO[addrName] = foundAddresses[i];
-
+				console.log(foundAddresses[i]);
 				merged = this.merge(map[s], [newO]);
 				if(merged) newMap.push(merged);
 			}
@@ -823,11 +918,40 @@ AbstractQuery.processLookup = function(lookedUp){
 	return [lookedUp.toString()]; //change to false if we don't want values, TODO: wrap in list
 }
 
+AbstractQuery.processValue = function(subs, curTheta, vals, key){
+	var map = [[]];
+	var newMap = [];
+	var lookupTable = subs;
+	var resolved = false, merged;
+
+	if(curTheta) lookupTable = AbstractQuery.merge(subs, curTheta);
+
+	if(!lookupTable) return false;
+
+	//resolve key
+	if(this.isResolvableVariable(key)){
+		resolved = this.resolveVariable(key, lookupTable);
+	}
+	
+	console.log(vals);
+	for(var i = 0; i < vals.length; i++){
+
+		//if it doesn't match
+		if(resolved && resolved !== vals[i]) continue;
+		var obj = {};
+		obj[key] = vals[i];
+		merged = this.merge(subs, [obj]);
+		if(merged) newMap.push(merged);
+	}
+
+	return newMap.length > 0 ? newMap : false;
+}
+
 AbstractQuery.matchState = function(el, tl, curTheta){
 	var tlInfo = tl.state;
 	var subst = [[]];
 	var matchInfo, reified;
-	var benv, store, mapping, newSubs, tmpSubs;
+	var benv, store, mapping, newSubs, tmpSubs, as;
 	//TODO herschrijven naar minder duplicate code
 	for(var key in tlInfo){
 		switch (key){
@@ -879,7 +1003,21 @@ AbstractQuery.matchState = function(el, tl, curTheta){
 						subst = newSubs.slice();
 						break;
 			case 'value': 
-						console.log('I WANT VALUE');
+						reified = mapStateKey(key, el);
+						if(reified === undefined) return false;
+						//addresses
+						as = reified.addresses().values();
+						newSubs = [];
+						for(var i = 0; i < subst.length; i++){
+							matchInfo = this.processValue(subst[i], curTheta, as, tlInfo[key]);//[[{},{}],[{},{}]]
+							console.log(matchInfo);
+							if(matchInfo){
+								//console.log(JSON.stringify(matchInfo));
+								newSubs.push.apply(newSubs, matchInfo)
+							}
+						}
+						subst = newSubs.slice();
+
 						break;
 			default: 	reified = mapStateKey(key, el);
 						//if(key === 'kont') console.log(key + '->' + reified);
@@ -1041,7 +1179,7 @@ AbstractQuery.expandSubgraph = function(triple, currPattern){
 	f 		= triple.edge.expandFunction;
 	state 	= triple.edge.state;
 	uid 	= triple.edge.expandContext;
-	ctx 	= new RegularPathExpression(uid);
+	ctx 	= new JSQL(uid);
 	rpe 	= f.call(ctx, state);
 	triples = rpe.toDFA().triples;
 	nextIndex = currPattern.reduce(function(acc, o){ 
@@ -1080,6 +1218,7 @@ var mapStateKey = function(key, statePart){
 	//console.log(statePart[key] !== undefined ? statePart[key] : "UNDEFINED");
 
 	switch (key){
+		case 'value': 	return statePart[key] != undefined ? statePart[key] : undefined;
 		case 'this' : 	return JipdaInfo.getInfo(statePart); break;
 		//case 'id'	: 	return JipdaInfo.getInfo(statePart['_id']); break;
 		default		: 	return statePart[key] !== undefined ? JipdaInfo.getInfo(statePart[key]) : undefined;

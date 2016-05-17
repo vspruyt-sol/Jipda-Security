@@ -58,6 +58,7 @@ SecurityAnalysis.prototype.detect = function(){
 			query = new ExistentialQuery(this.tripleStore, this.dfa.triples, this.dfa.acceptStates, startNode.from, this.dfa.startingNode);
 		}
 		else{
+			console.log(this.dfa);
 			query = new UniversalQuery(this.tripleStore, this.dfa.triples, this.dfa.acceptStates, startNode.from, this.dfa.startingNode);
 		}
 		result = query.runNaiveWithNegation();
@@ -116,7 +117,7 @@ SecurityAnalysis.prototype.processQueryResult = function(queryResult){
 
 	console.log(processed);
 
-	this.markQueryResult(processed, 'violation');
+	this.markQueryResult(processed, 'violation0');
 
 	return processed;
 }
@@ -125,8 +126,9 @@ SecurityAnalysis.prototype.processQueryResult = function(queryResult){
 SecurityAnalysis.prototype.markQueryResult = function(results, marker){
 	//var ids = _fromStateIds(triples);
 	var ids = results.map(function(x){ return [x.v._id, this.prevMap[x.v._id]]; }, this);
-	var info, theta;
+	var info, theta, color;
 	for(var i = 0; i < ids.length; i++){
+			color = i%5;
 			//info = this.states[ids[i][0]].marker ? this.states[ids[i]].marker.info + Utilities.objToString(results[i].theta) + '<br />' : Utilities.objToString(results[i].theta) + '<br />';
 			//theta = this.states[ids[i]].marker ? this.states[ids[i]].marker.theta.push(results[i].theta) : [results[i].theta];
 			
@@ -143,7 +145,7 @@ SecurityAnalysis.prototype.markQueryResult = function(results, marker){
 				}
 
 				this.states[ids[i][1][j]].marker = {
-											'className'	: marker,
+											'className'	: marker, //+ '' + color,
 											'info'		: info,
 											'theta'		: theta
 										 };

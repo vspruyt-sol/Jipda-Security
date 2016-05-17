@@ -221,14 +221,62 @@ marker#highlightarrowhead path
   fill: #FFF;
 }
 
-.violation rect
+.violation0 rect
 {
   fill: #d9534f;
   stroke: #d43f3a;
   stroke-width: 3px;
 }
 
-.violation g text
+.violation0 g text
+{
+  fill: #fff;
+}
+
+.violation1 rect
+{
+  fill: #99CC00;
+  stroke: #99CC33;
+  stroke-width: 3px;
+}
+
+.violation1 g text
+{
+  fill: #fff;
+}
+
+.violation2 rect
+{
+  fill: #FF9900;
+  stroke: #FF9933;
+  stroke-width: 3px;
+}
+
+.violation2 g text
+{
+  fill: #fff;
+}
+
+.violation3 rect
+{
+  fill: #003300;
+  stroke: #003333;
+  stroke-width: 3px;
+}
+
+.violation3 g text
+{
+  fill: #fff;
+}
+
+.violation4 rect
+{
+  fill: #FF3366;
+  stroke: #FF6666;
+  stroke-width: 3px;
+}
+
+.violation4 g text
 {
   fill: #fff;
 }

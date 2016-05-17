@@ -1,4 +1,4 @@
-function RegularPathExpression(seed){ 
+function JSQL(seed){ 
 	//Index x represents edge with label 'x' in the NFA 
 	this._map = [];
 	//Check braces
@@ -15,7 +15,7 @@ function RegularPathExpression(seed){
  * -----------------------
  */
 
-RegularPathExpression.prototype.writeToFrozenObjectPrototype = function(obj){
+JSQL.prototype.writeToFrozenObjectPrototype = function(obj){
 	var obj = obj || {};
 	var states = [];
 	var frozenObjects = ['Array', 'Boolean', 'Date', 'Function', 'Document', 'Math', 'Window'];
@@ -48,7 +48,7 @@ RegularPathExpression.prototype.writeToFrozenObjectPrototype = function(obj){
 	return ret;
 }
 
-RegularPathExpression.prototype.beginApply = function(obj){ //this, kont, lkont, name, procedure, arguments, argName (first argument)
+JSQL.prototype.beginApply = function(obj){ //this, kont, lkont, name, procedure, arguments, argName (first argument)
 	var s1 = {};
 
 
@@ -70,7 +70,7 @@ RegularPathExpression.prototype.beginApply = function(obj){ //this, kont, lkont,
 				.state(s1);
 }
 
-RegularPathExpression.prototype.endApply = function(obj){ //kont, lkont
+JSQL.prototype.endApply = function(obj){ //kont, lkont
 	var s1 = {};
 
 	var objKont 	= this.getTmpIfUndefined(obj.kont); 
@@ -82,7 +82,7 @@ RegularPathExpression.prototype.endApply = function(obj){ //kont, lkont
 	return this.state(s1);
 }
 
-RegularPathExpression.prototype.returnStatement = function(obj){ //name, argument
+JSQL.prototype.returnStatement = function(obj){ //name, argument
 	obj = obj || {};
 
 	var s = {};
@@ -101,7 +101,7 @@ RegularPathExpression.prototype.returnStatement = function(obj){ //name, argumen
 	return this.state(s);
 }
 
-RegularPathExpression.prototype.procedureExit = function(obj){ //functionName, returnName, returnAddr
+JSQL.prototype.procedureExit = function(obj){ //functionName, returnName, returnAddr
 
 	var objFunc = {
 		name: this.getTmpIfUndefined(obj.functionName),
@@ -135,7 +135,7 @@ RegularPathExpression.prototype.procedureExit = function(obj){ //functionName, r
 				.rBrace();
 }
 
-RegularPathExpression.prototype.variableUse = function(obj){ //name, addr
+JSQL.prototype.variableUse = function(obj){ //name, addr
 	var obj = obj || obj;
 	var s1 = {}, s2 = {}, s3 = {}, s4 = {};
 
@@ -180,7 +180,7 @@ RegularPathExpression.prototype.variableUse = function(obj){ //name, addr
 				.rBrace();
 }
 
-RegularPathExpression.prototype.beginIf = function(obj){ //this, test, cons, alt, kont, lkont
+JSQL.prototype.beginIf = function(obj){ //this, test, cons, alt, kont, lkont
 	var s1 = {}, s2 = {}, s3 = {};
 
 	var objThis = this.getTmpIfUndefined(obj.this); 
@@ -216,7 +216,7 @@ RegularPathExpression.prototype.beginIf = function(obj){ //this, test, cons, alt
 				.rBrace()
 }
 
-RegularPathExpression.prototype.ifStatement = function(obj){ //this, test, cons, alt, kont, lkont
+JSQL.prototype.ifStatement = function(obj){ //this, test, cons, alt, kont, lkont
 	var s1 = {};
 
 	var objThis = this.getTmpIfUndefined(obj.this); 
@@ -236,7 +236,7 @@ RegularPathExpression.prototype.ifStatement = function(obj){ //this, test, cons,
 				
 }
 
-RegularPathExpression.prototype.beginIfTrue = function(obj){ //this, test, cons, alt, kont, lkont
+JSQL.prototype.beginIfTrue = function(obj){ //this, test, cons, alt, kont, lkont
 	var s1 = {}, s2 = {};
 
 	var objThis = this.getTmpIfUndefined(obj.this); 
@@ -264,7 +264,7 @@ RegularPathExpression.prototype.beginIfTrue = function(obj){ //this, test, cons,
 				.state(s2)
 }
 
-RegularPathExpression.prototype.beginIfFalse = function(obj){ //this, test, cons, alt, kont, lkont
+JSQL.prototype.beginIfFalse = function(obj){ //this, test, cons, alt, kont, lkont
 	var s1 = {}, s2 = {};
 
 	var objThis = this.getTmpIfUndefined(obj.this); 
@@ -291,7 +291,7 @@ RegularPathExpression.prototype.beginIfFalse = function(obj){ //this, test, cons
 				.state(s2)
 }
 
-RegularPathExpression.prototype.endIf = function(obj){ //kont, lkont
+JSQL.prototype.endIf = function(obj){ //kont, lkont
 	var s = {};
 
 	var objKont = this.getTmpIfUndefined(obj.kont); 
@@ -303,7 +303,8 @@ RegularPathExpression.prototype.endIf = function(obj){ //kont, lkont
 	return this.state(s);				
 }
 
-RegularPathExpression.prototype.assign = function(obj){ //left, right, leftName, rightName
+JSQL.prototype.assign = function(obj){ //left, right, leftName, rightName
+	var obj = obj || {};
 	//Variables
 	var s = {};
 
@@ -328,7 +329,7 @@ RegularPathExpression.prototype.assign = function(obj){ //left, right, leftName,
 	return this.state(s);
 }
 
-RegularPathExpression.prototype.variableDeclaration = function(obj){ //left, right, leftName, rightName, decls
+JSQL.prototype.variableDeclaration = function(obj){ //left, right, leftName, rightName, decls
 	//todo fill in params
 	var s = {};
 
@@ -355,7 +356,7 @@ RegularPathExpression.prototype.variableDeclaration = function(obj){ //left, rig
 	return this.state(s);
 }
 
-RegularPathExpression.prototype.functionDeclaration = function(obj){
+JSQL.prototype.functionDeclaration = function(obj){
 	//todo fill in params
 	obj = obj || {};
 	var s = {};
@@ -372,7 +373,7 @@ RegularPathExpression.prototype.functionDeclaration = function(obj){
 	return this.state(s);
 }
 
-RegularPathExpression.prototype.assignOrVarDecl = function(obj){ //left, right, leftName, rightName
+JSQL.prototype.assignOrVarDecl = function(obj){ //left, right, leftName, rightName
 	obj = obj || {};
 
 	var objThis = this.getTmpIfUndefined(obj.this); 
@@ -392,7 +393,7 @@ RegularPathExpression.prototype.assignOrVarDecl = function(obj){ //left, right, 
 					.rBrace();
 }
 
-RegularPathExpression.prototype.fCall = function(obj){ //name, procedure, arguments, argName (eerste arg), global;
+JSQL.prototype.fCall = function(obj){ //name, procedure, arguments, argName (eerste arg), global;
 	obj = obj || {};
 	var s1 = {}; //als ExpressionStatement
 	var s2 = {}; //als CallExpression
@@ -444,9 +445,9 @@ RegularPathExpression.prototype.fCall = function(obj){ //name, procedure, argume
 				.rBrace()
 }
 
-RegularPathExpression.prototype.functionCall = RegularPathExpression.prototype.fCall;
+JSQL.prototype.functionCall = JSQL.prototype.fCall;
 
-RegularPathExpression.prototype.newExpression = function(obj){ //name, procedure, arguments, argName (eerste arg);
+JSQL.prototype.newExpression = function(obj){ //name, procedure, arguments, argName (eerste arg);
 	obj = obj || {};
 	var s = {}; 
 
@@ -457,18 +458,13 @@ RegularPathExpression.prototype.newExpression = function(obj){ //name, procedure
 	var firstArg 	= 	this.getTmpVar('firstArg');
 	var firstArgName= 	obj.argName || this.getTmpVar('firstArgName'); //if user wants to know first argument name
 	var calleeName 	= 	this.getTmpVar('calleeName'); //tmp var for matching
-	var argName 	=	this.getTmpVar('argName');
 
 	//Basic function call
 	this.setupStateChain(s, ['node','this'], objThis);
 	this.setupStateChain(s, ['node','callee'], objProcedure);
 	this.setupStateChain(s, ['node','arguments'], objArguments);
 	
-	//get first argument
-	if(obj.argName){
-		this.setupProperty(s, firstArg, prop('at', objArguments, 0)); //tmp eerste arg
-		this.setupProperty(s, firstArgName, firstArg + '.name');
-	}
+
 	this.setupProperty(s, objName, objProcedure + '.name');
 
 	this.finalize(s, obj);
@@ -476,8 +472,8 @@ RegularPathExpression.prototype.newExpression = function(obj){ //name, procedure
 	return this.state(s);
 }
 
-//Small hack to find the final states
-RegularPathExpression.prototype.finalState = function(obj){
+//Small hack to find the final states, NOT NEEDED ANYMORE, USE ResultState()
+JSQL.prototype.finalState = function(obj){
 	obj = obj || {};
 	var s = {}; 
 
@@ -504,7 +500,7 @@ RegularPathExpression.prototype.finalState = function(obj){
  * -------------------
  */
 
-RegularPathExpression.prototype.udOpenClosedFile = function(obj){
+JSQL.prototype.udOpenClosedFile = function(obj){
 	obj = obj || {};
 	var fileName = obj.name || this.getTmpVar('objName');
 
@@ -517,7 +513,7 @@ RegularPathExpression.prototype.udOpenClosedFile = function(obj){
 					.udFCall({name: 'access', argName: fileName});
 }
 
-RegularPathExpression.prototype.udClosedAllOpenedFiles = function(obj){
+JSQL.prototype.udClosedAllOpenedFiles = function(obj){
 	obj = obj || {};
 	var fileName = obj.name || this.getTmpVar('objName');
 
@@ -535,21 +531,29 @@ RegularPathExpression.prototype.udClosedAllOpenedFiles = function(obj){
 					//.star()
 }
 
-RegularPathExpression.prototype.taintedBy = function(obj){ //x, y
+JSQL.prototype.taintedBy = function(obj){ //x, y, rec
 	obj = obj || {};
 	var s1 = {};
 	var s2 = {};
 	var newObj = {};
-	var x = this.getTmpIfUndefined(obj.x);
-	var y = this.getTmpIfUndefined(obj.y);
-	var flow = this.getTmpIfUndefined();
+	var orig = this.getTmpIfUndefined(obj.orig);
+	var alias = this.getTmpIfUndefined(obj.alias);
+	var flow;
 
-	newObj.x = flow;
-	newObj.y = y;
+	if(obj.rec){
+		flow = this.getRecVar(obj.rec);
+	}
+	else{
+		flow = this.getTmpIfUndefined();
+	}
 
-	this.setupStateChain(s1, ['node','expression','right','name'], x); //alias
-	this.setupStateChain(s1, ['node','expression','left','name'], y); //leaked
-	this.setupStateChain(s2, ['node','expression','right','name'], x); //alias
+	newObj.orig = flow;
+	newObj.alias = alias;
+	newObj.rec = obj.rec;
+
+	this.setupStateChain(s1, ['node','expression','right','name'], orig); //alias
+	this.setupStateChain(s1, ['node','expression','left','name'], alias); //leaked
+	this.setupStateChain(s2, ['node','expression','right','name'], orig); //alias
 	this.setupStateChain(s2, ['node','expression','left','name'], flow); //leaked
 
 	return this .lBrace()
@@ -562,7 +566,7 @@ RegularPathExpression.prototype.taintedBy = function(obj){ //x, y
 
 }
 
-RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
+JSQL.prototype.udRecSink = function(obj){ //leakedValue
 	// sink(x);
 	// | tmp = x
 	// | udRecTest(tmp)
@@ -597,7 +601,7 @@ RegularPathExpression.prototype.udRecSink = function(obj){ //leakedValue
 					.rBrace();
 }
 
-RegularPathExpression.prototype.udAvailableExpression = function(obj){ //left(Name),right(Name), Operator
+JSQL.prototype.udAvailableExpression = function(obj){ //left(Name),right(Name), Operator
 	obj = obj || {};
 	var s = {};
 
@@ -630,7 +634,7 @@ RegularPathExpression.prototype.udAvailableExpression = function(obj){ //left(Na
  * ------------------------------
  */
 
-RegularPathExpression.prototype.finalize = function(state, obj){
+JSQL.prototype.finalize = function(state, obj){
 	//Do all boilerplate code
 	//This order is important!
 	//We first want to express extra properties, 
@@ -648,7 +652,7 @@ RegularPathExpression.prototype.finalize = function(state, obj){
 	
 }
 
-RegularPathExpression.prototype.setupStateChain = function(obj, chain, val){
+JSQL.prototype.setupStateChain = function(obj, chain, val){
 	var cur = obj;
 	for(var i = 0; i < chain.length; i++){
 		if(i === chain.length - 1){
@@ -662,7 +666,7 @@ RegularPathExpression.prototype.setupStateChain = function(obj, chain, val){
 	}
 }
 
-RegularPathExpression.prototype.setupProperty = function(obj, left, right){
+JSQL.prototype.setupProperty = function(obj, left, right){
 	if(!obj.properties) obj.properties = {};
 	if(!obj.lookup) obj.lookup = {};
 	if(!obj.filters) obj.filters = [];
@@ -681,7 +685,7 @@ RegularPathExpression.prototype.setupProperty = function(obj, left, right){
 	}	
 }
 
-RegularPathExpression.prototype.processProperties = function(state, obj){
+JSQL.prototype.processProperties = function(state, obj){
 	if(obj.properties){
 		for(var key in obj.properties){
 			this.setupProperty(state, key, obj.properties[key]);
@@ -690,7 +694,7 @@ RegularPathExpression.prototype.processProperties = function(state, obj){
 	return state;
 }
 
-RegularPathExpression.prototype.setupFilter = function(obj, f){
+JSQL.prototype.setupFilter = function(obj, f){
 	var args = Array.prototype.slice.call(arguments, 2);
 	var fArgs = Array.prototype.concat.apply([], [f, args])
 	if(!obj.lookup) obj.lookup = {};
@@ -699,7 +703,7 @@ RegularPathExpression.prototype.setupFilter = function(obj, f){
 	//console.log(obj.filters);
 }
 
-RegularPathExpression.prototype.processFilters = function(state, obj){
+JSQL.prototype.processFilters = function(state, obj){
 	var filter;
 	if(obj.filters){
 		if(!state.filters) state.filters = [];
@@ -715,7 +719,7 @@ RegularPathExpression.prototype.processFilters = function(state, obj){
 	return state;
 }
 
-RegularPathExpression.prototype.processLookups = function(state, obj){
+JSQL.prototype.processLookups = function(state, obj){
 	if(obj.lookup){
 		if(!state.lookup) state.lookup = {};
 		for(var i in obj.lookup){
@@ -726,27 +730,27 @@ RegularPathExpression.prototype.processLookups = function(state, obj){
 	return state;
 }
 
-RegularPathExpression.prototype.processBenv = function(state, obj){
+JSQL.prototype.processBenv = function(state, obj){
 	if(obj.benv) state.benv = obj.benv;
 	return state;
 }
 
-RegularPathExpression.prototype.processStore = function(state, obj){
+JSQL.prototype.processStore = function(state, obj){
 	if(obj.store) state.store = obj.store;
 	return state;
 }
 
-RegularPathExpression.prototype.processKont = function(state, obj){
+JSQL.prototype.processKont = function(state, obj){
 	if(obj.kont) state.kont = obj.kont;
 	return state;
 }
 
-RegularPathExpression.prototype.processLkont = function(state, obj){
+JSQL.prototype.processLkont = function(state, obj){
 	if(obj.lkont) state.lkont = obj.lkont;
 	return state;
 }
 
-RegularPathExpression.prototype.processValue = function(state, obj){
+JSQL.prototype.processValue = function(state, obj){
 	if(obj.value) state.value = obj.value;
 	return state;
 }
@@ -758,7 +762,7 @@ RegularPathExpression.prototype.processValue = function(state, obj){
  */
 
 //State
-RegularPathExpression.prototype.state = function(obj){
+JSQL.prototype.state = function(obj){
 	this._map.push(new RegexPart('state', obj, 'idx' + this._map.length));
 	//Fluent API
 	return this;
@@ -766,38 +770,38 @@ RegularPathExpression.prototype.state = function(obj){
 
 
 //EvalState
-RegularPathExpression.prototype.evalState = function(obj){
+JSQL.prototype.evalState = function(obj){
 	this._map.push(new RegexPart('EvalState', obj, 'idx' + this._map.length));
 	//Fluent API
 	return this;
 }
 
 //KontState
-RegularPathExpression.prototype.kontState = function(obj){
+JSQL.prototype.kontState = function(obj){
 	this._map.push(new RegexPart('KontState', obj, 'idx' + this._map.length));
 	//Fluent API
 	return this;
 }
 
 //ResultState
-RegularPathExpression.prototype.resultState = function(obj){
+JSQL.prototype.resultState = function(obj){
 	this._map.push(new RegexPart('ResultState', obj, 'idx' + this._map.length));
 	//Fluent API
 	return this;
 }
 
 //ReturnState
-RegularPathExpression.prototype.returnState = function(obj){
+JSQL.prototype.returnState = function(obj){
 	this._map.push(new RegexPart('ReturnState', obj, 'idx' + this._map.length));
 	//Fluent API
 	return this;
 }
 
 //subgraph (for recursion)
-RegularPathExpression.prototype.rec = function(obj, f){
+JSQL.prototype.rec = function(obj, f){
 	//context that has an empty _map (for the creation of the subgraph)
 	//and an index equal to the 'this' object, to avoid overlapping of tmpVars/recVars
-	//var thisContext = new RegularPathExpression();
+	//var thisContext = new JSQL();
 	//thisContext.uid = this.uid;
 	this._map.push(new RegexPart('subGraph', obj, 'idx' + this._map.length, f, this.uid));
 	//Fluent API
@@ -811,7 +815,7 @@ RegularPathExpression.prototype.rec = function(obj, f){
  */
 
 //Left brace
-RegularPathExpression.prototype.lBrace = function(obj){
+JSQL.prototype.lBrace = function(obj){
 	this.depth++;
 	this._map.push(new RegexPart('lBrace', obj, '('));
 	//Fluent API
@@ -819,7 +823,7 @@ RegularPathExpression.prototype.lBrace = function(obj){
 }
 
 //Right brace
-RegularPathExpression.prototype.rBrace = function(obj){
+JSQL.prototype.rBrace = function(obj){
 	if(this.depth === 0) throw 'Can\'t close a non-existing brace. Check brace order';
 	
 	this.depth--;
@@ -829,14 +833,14 @@ RegularPathExpression.prototype.rBrace = function(obj){
 }
 
 //or
-RegularPathExpression.prototype.or = function(obj){
+JSQL.prototype.or = function(obj){
 	this._map.push(new RegexPart('or', obj, '|'));
 	//Fluent API
 	return this;
 }
 
 //Wildcard
-RegularPathExpression.prototype.wildcard = function(obj){
+JSQL.prototype.wildcard = function(obj){
 
 	this._map.push(new RegexPart('wildcard', obj, '_'));
 	//Fluent API
@@ -844,7 +848,7 @@ RegularPathExpression.prototype.wildcard = function(obj){
 }
 
 //Wildcard
-RegularPathExpression.prototype.wildcards = function(times){
+JSQL.prototype.wildcards = function(times){
 
 	//Push wildcard times
 	for(var i = 0; i < times; i++){
@@ -856,7 +860,7 @@ RegularPathExpression.prototype.wildcards = function(times){
 }
 
 //Not
-RegularPathExpression.prototype.not = function(obj){
+JSQL.prototype.not = function(obj){
 
 	this._map.push(new RegexPart('not', obj, '¬'));
 	//Fluent API
@@ -864,7 +868,7 @@ RegularPathExpression.prototype.not = function(obj){
 }
 
 //Star
-RegularPathExpression.prototype.star = function(obj){
+JSQL.prototype.star = function(obj){
 
 	this._map.push(new RegexPart('star', obj, '*'));
 	//Fluent API
@@ -872,7 +876,7 @@ RegularPathExpression.prototype.star = function(obj){
 }
 
 //Wildcard followed by Star
-RegularPathExpression.prototype.skipZeroOrMore = function(obj){
+JSQL.prototype.skipZeroOrMore = function(obj){
 
 	this.lBrace();
 	this._map.push(new RegexPart('wildcard', obj, '_'));
@@ -883,7 +887,7 @@ RegularPathExpression.prototype.skipZeroOrMore = function(obj){
 }
 
 //Wildcard followed by Plus
-RegularPathExpression.prototype.skipOneOrMore = function(obj){
+JSQL.prototype.skipOneOrMore = function(obj){
 	this.lBrace();
 	this._map.push(new RegexPart('wildcard', obj, '_'));
 	this._map.push(new RegexPart('plus', obj, '+'));
@@ -894,7 +898,7 @@ RegularPathExpression.prototype.skipOneOrMore = function(obj){
 
 
 //Plus
-RegularPathExpression.prototype.plus = function(obj){
+JSQL.prototype.plus = function(obj){
 
 	this._map.push(new RegexPart('plus', obj, '+'));
 	//Fluent API
@@ -907,27 +911,27 @@ RegularPathExpression.prototype.plus = function(obj){
  * ----
  */
 
-RegularPathExpression.prototype.toString = function(obj){
+JSQL.prototype.toString = function(obj){
 	return this._map.map(function(x){ return x.toString(); }).join('');
 }
 
-RegularPathExpression.prototype.toPrettyString = function(obj){
+JSQL.prototype.toPrettyString = function(obj){
 	return this._map.map(function(x){ return x.toString() + '\n'; }).join('.');
 }
 
-RegularPathExpression.prototype.getUid = function(){
+JSQL.prototype.getUid = function(){
 	return this.uid++;
 }
 
-RegularPathExpression.prototype.getTmpVar = function(name){
+JSQL.prototype.getTmpVar = function(name){
 	return '?__tmp__' + name + this.uid++;
 }
 
-RegularPathExpression.prototype.getRecVar = function(name){
+JSQL.prototype.getRecVar = function(name){
 	return '?r:' + name + this.uid++;
 }
 
-RegularPathExpression.prototype.getTmpIfUndefined = function(name){
+JSQL.prototype.getTmpIfUndefined = function(name){
 	if(!name){
 		return this.getTmpVar('');
 	}
@@ -940,7 +944,7 @@ RegularPathExpression.prototype.getTmpIfUndefined = function(name){
  * BUILD NFA/DFA
  * -------------
  */
-RegularPathExpression.prototype.toNFA = function(){
+JSQL.prototype.toNFA = function(){
 	if(this.depth !== 0) throw 'Not all braces are closed!'; 
 	var tsc = new ThompsonConstruction();
 	//returns a finite state machine, we need to convert it to array of graph triples, e.g.:
@@ -954,7 +958,7 @@ RegularPathExpression.prototype.toNFA = function(){
 	return nfa;
 }
 
-RegularPathExpression.prototype.toDFA = function(){
+JSQL.prototype.toDFA = function(){
 	if(this.depth !== 0) throw 'Not all braces are closed!'; 
 	
 	var tsc = new ThompsonConstruction();
@@ -1036,6 +1040,8 @@ var queryFunctions = {
 	conditions : { //filters
 				'===' 		: _.isEqual,
 				'!=='		: function(a,b){return (!_.isEqual(a,b));},
+				'>'			: function(a,b){return a>b;},
+				'<'			: function(a,b){return a<b;},
 				contains 	: contains, 
 				testTrue 	: function(){return true;},
 				testFalse 	: function(){return false;},
