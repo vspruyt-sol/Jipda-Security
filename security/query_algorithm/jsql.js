@@ -1010,20 +1010,31 @@ var isVar = function(x){
 
 //Builtin functions for properties
 var prop = function(f){
+	var found;
 	var args = Array.prototype.slice.call(arguments, 1);
-
-	//lookup function
-	var found = queryFunctions.properties[f];
+	if(typeof f === 'string'){
+		//lookup function
+		found = queryFunctions.properties[f];
+	}
+	else if(typeof f === 'function'){
+		found = f;
+	}
 	if(!found) throw 'function ' + f + ' is not a valid function';
 	return [found, args];
 }
 
 //Builtin functions for conditions
 var cond = function(f){
+	var found;
 	var args = Array.prototype.slice.call(arguments, 1);
-
-	//lookup function
-	var found = queryFunctions.conditions[f];
+	if(typeof f === 'string'){
+		//lookup function
+		found = queryFunctions.conditions[f];
+	}
+	else if(typeof f === 'function'){
+		found = f;
+	}
+	
 	if(!found) throw 'function ' + f + ' is not a valid function';
 	return [found, args];
 }
